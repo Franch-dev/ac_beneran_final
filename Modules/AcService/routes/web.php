@@ -7,20 +7,33 @@ use App\Http\Controllers\MasjidController;
 use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\ServiceOrderController;
 use App\Http\Controllers\SyncController;
+use App\Models\Masjid;
 use Illuminate\Support\Facades\Route;
+use Modules\AcService\Http\Controllers\AcServiceHomeController;
 
-Route::get('/modules/ac-service', function () {
-    return redirect()->route('dashboard');
-})->name('modules.ac-service.index');
+Route::get('/modules/ac-service', [AcServiceHomeController::class, '__invoke'])->name('modules.ac-service.index');
+
+Route::get('/modules/ac-service/guest-order', function () {
+    if (auth()->check()) {
+        return redirect()->route('dashboard');
+    }
+
+    $masjids = Masjid::query()
+        ->orderBy('name')
+        ->get(['id', 'name', 'custom_id']);
+
+    return view('ac-service::guest-order', compact('masjids'));
+})->name('modules.ac-service.guest-order.index');
+
+Route::post('/modules/ac-service/guest-order', [ServiceOrderController::class, 'guestStore'])
+    ->name('modules.ac-service.guest-order.store');
 
 $module = collect(config('modules.catalog', []))->firstWhere('key', 'ac-service');
 $domain = $module['subdomain'] ?? null;
 
 if ($domain) {
     Route::domain($domain)->group(function (): void {
-        Route::get('/', function () {
-            return redirect()->route('dashboard');
-        })->name('modules.ac-service.subdomain.index');
+        Route::get('/', [AcServiceHomeController::class, '__invoke'])->name('modules.ac-service.subdomain.index');
     });
 }
 
@@ -143,6 +156,7 @@ Route::middleware(['auth', 'role:technician'])->group(function () {
     Route::get ('/technician',                          [TechnicianController::class, 'dashboard'])->name('technician.dashboard');
     Route::get ('/technician/snapshot',                 [TechnicianController::class, 'snapshot'])->name('technician.snapshot');
     Route::get ('/technician/spk/{serviceOrder}',       [TechnicianController::class, 'spkView'])->name('technician.spk');
+    Route::get ('/technician/invoice/{serviceOrder}',    [TechnicianController::class, 'invoiceView'])->name('technician.invoice');
     Route::post('/workflow/{serviceOrder}/progress',    [WorkflowController::class, 'updateProgress'])
          ->middleware('throttle:writes')
          ->name('workflow.progress');
@@ -158,6 +172,5 @@ Route::middleware(['auth', 'role:viewer'])->group(function () {
     Route::get('/viewer', [ViewerController::class, 'dashboard'])->name('viewer.dashboard');
     Route::get('/viewer/snapshot', [ViewerController::class, 'snapshot'])->name('viewer.snapshot');
 });
-
 
 
