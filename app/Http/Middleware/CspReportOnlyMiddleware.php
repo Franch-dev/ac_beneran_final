@@ -31,6 +31,19 @@ class CspReportOnlyMiddleware
             $connectSrc[] = 'ws://localhost:5173';
         }
 
+        $styleSrc = [
+            "'self'",
+            "'unsafe-inline'",
+            'https://fonts.googleapis.com',
+            'https://cdnjs.cloudflare.com',
+            'https://unpkg.com',
+        ];
+
+        if (app()->environment('local')) {
+            $styleSrc[] = 'http://127.0.0.1:5173';
+            $styleSrc[] = 'http://localhost:5173';
+        }
+
         $policy = implode('; ', [
             "default-src 'self'",
             "base-uri 'self'",
@@ -39,7 +52,7 @@ class CspReportOnlyMiddleware
             "object-src 'none'",
             "img-src 'self' data: https:",
             "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://unpkg.com",
+            'style-src '.implode(' ', $styleSrc),
             'script-src '.implode(' ', $scriptSrc),
             'connect-src '.implode(' ', $connectSrc),
             "upgrade-insecure-requests",

@@ -17,4 +17,16 @@ Route::middleware('auth')->prefix('ac-anggota')->group(function (): void {
 // Auth
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login')->middleware('guest');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login')->name('login.post');
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware(['web', 'auth']);
+
+// Sitemap
+Route::get('/sitemap', function () {
+    return view('sitemap');
+})->name('sitemap');
+
+Route::get('/sitemap.json', function () {
+    return response()->json(config('sitemap'));
+})->name('sitemap.json');
+
+Route::post('/service-orders/close', [App\Http\Controllers\CloseOrderController::class, '__invoke'])->name('service-orders.close')->middleware('auth');
+

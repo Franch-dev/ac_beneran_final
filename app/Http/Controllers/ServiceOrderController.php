@@ -128,6 +128,89 @@ class ServiceOrderController extends Controller
         ]);
     }
 
+    public function guestStore(Request $request)
+    {
+        $validated = $request->validate([
+            'masjid_id' => ['required', Rule::exists('ac_service.masjids', 'id')],
+            'meeting_person' => 'required|in:dkm,marbot',
+            'phone' => 'required|string|max:20',
+            'service_date' => 'required|date|after_or_equal:today',
+            'notes' => 'nullable|string|max:1000',
+            'details' => 'required|array|min:1',
+            'details.*.pk_type' => 'required|in:1PK,2PK,5PK',
+            'details.*.brand' => 'required|string|max:100',
+            'details.*.quantity' => 'required|integer|min:1|max:100',
+        ]);
+
+        $masjid = Masjid::with('acUnits')->findOrFail($validated['masjid_id']);
+
+        $existingOrder = ServiceOrder::query()
+            ->where('masjid_id', $validated['masjid_id'])
+            ->active()
+            ->latest('service_date')
+            ->latest()
+            ->first();
+
+        if ($existingOrder && ! $request->boolean('force_replace')) {
+            return back()->withErrors(['masjid_id' => 'Masjid ini sudah memiliki service order aktif. Silakan cek kembali atau hubungi admin.'])->withInput();
+        }
+
+        $order = DB::connection('ac_service')->transaction(function () use ($request, $validated, $masjid, $existingOrder) {
+            if ($existingOrder && $request->boolean('force_replace')) {
+                $existingOrder->invoice()?->delete();
+                $existingOrder->delete();
+            }
+
+            $order = ServiceOrder::create([
+                'masjid_id' => $validated['masjid_id'],
+                'order_number' => ServiceOrder::generateOrderNumber(),
+                'meeting_person' => $validated['meeting_person'],
+                'phone' => $validated['phone'],
+                'service_date' => $validated['service_date'],
+                'notes' => $validated['notes'] ?? null,
+                'status' => 'pending',
+            ]);
+
+            foreach ($validated['details'] as $detail) {
+                $serverPrice = getHargaServis($masjid->type, $detail['pk_type']);
+                $requestPrice = isset($detail['price_per_unit']) ? (int) $detail['price_per_unit'] : 0;
+
+                ServiceDetail::create([
+                    'service_order_id' => $order->id,
+                    'pk_type' => $detail['pk_type'],
+                    'brand' => $detail['brand'],
+                    'quantity' => $detail['quantity'],
+                    'price_per_unit' => $serverPrice > 0 ? $serverPrice : $requestPrice,
+                ]);
+            }
+
+            WorkflowStep::create([
+                'service_order_id' => $order->id,
+                'step' => 'created',
+                'actor_id' => auth()->id(),
+                'actor_name' => auth()->check() ? auth()->user()->name : 'Guest',
+                'actor_role' => auth()->check() ? auth()->user()->role : 'guest',
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
+            RealtimeSync::afterCommit('service_order.created', [
+                'resource' => 'service_order',
+                'resource_id' => $order->id,
+                'masjid_id' => $order->masjid_id,
+                'service_order_id' => $order->id,
+                'payload' => [
+                    'status' => $order->status,
+                ],
+            ]);
+
+            return $order;
+        });
+
+        $this->flushMonitoringCaches();
+
+        return back()->with('success', 'Permintaan service order Anda berhasil terkirim. Kami akan menindaklanjutinya segera.');
+    }
+
     public function approve(ServiceOrder $serviceOrder): JsonResponse
     {
         if ($serviceOrder->status !== 'pending') {

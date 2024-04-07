@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\InternalRedirectPath;
+use App\Support\PlatformNavigation;
 use App\Support\DebugBfd979Log;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,7 +13,9 @@ class AuthController extends Controller
     public function showLogin(Request $request)
     {
         if (Auth::check()) {
-            return redirect()->route('dashboard');
+            $target = InternalRedirectPath::normalize($request->query('redirect'));
+
+            return redirect()->to($target ?? PlatformNavigation::homeUrl());
         }
 
         // #region agent log
@@ -22,7 +26,7 @@ class AuthController extends Controller
         // #endregion
 
         return view('auth.login', [
-            'redirectTo' => $this->safeInternalPath($request->query('redirect')),
+            'redirectTo' => InternalRedirectPath::normalize($request->query('redirect')),
         ]);
     }
 
@@ -50,33 +54,15 @@ class AuthController extends Controller
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
-            $target = $this->safeInternalPath($validated['redirect'] ?? null);
+            $target = InternalRedirectPath::normalize($validated['redirect'] ?? null);
             if ($target !== null) {
                 return redirect()->to($target);
             }
 
-            return redirect()->intended(route('dashboard'));
+            return redirect()->intended(PlatformNavigation::homeUrl());
         }
 
         return back()->withErrors(['email' => 'Email atau password salah.']);
-    }
-
-    /**
-     * Allow only same-origin relative paths (SSO callback flows can pass ?redirect=/modules/...).
-     */
-    protected function safeInternalPath(?string $path): ?string
-    {
-        if ($path === null || $path === '') {
-            return null;
-        }
-
-        $path = trim($path);
-
-        if (! str_starts_with($path, '/') || str_starts_with($path, '//') || str_contains($path, '://') || str_contains($path, "\0")) {
-            return null;
-        }
-
-        return $path;
     }
 
     public function logout(Request $request)
@@ -84,6 +70,7 @@ class AuthController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect()->route('home');
+
+        return redirect()->to(PlatformNavigation::homeUrl());
     }
 }

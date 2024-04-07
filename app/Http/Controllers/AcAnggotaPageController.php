@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AcUnit;
-use App\Models\Masjid;
+use App\Models\Anggota;
+use App\Models\AnggotaAcUnit;
+use App\Support\PlatformNavigation;
 use Illuminate\Contracts\View\View;
 use Throwable;
 
@@ -13,7 +14,12 @@ class AcAnggotaPageController extends Controller
     {
         [$totalAnggota, $totalUnit] = $this->resolveMetrics();
 
-        return view('ac-anggota.home', compact('totalAnggota', 'totalUnit'));
+        $dashboardPath = route('ac-anggota.dashboard', [], false);
+        $monitoringPath = route('ac-anggota.monitoring', [], false);
+        $dashboardUrl = auth()->check() ? route('ac-anggota.dashboard') : PlatformNavigation::loginUrl($dashboardPath);
+        $monitoringUrl = auth()->check() ? route('ac-anggota.monitoring') : PlatformNavigation::loginUrl($monitoringPath);
+
+        return view('ac-anggota.home', compact('totalAnggota', 'totalUnit', 'dashboardUrl', 'monitoringUrl'));
     }
 
     public function dashboard(): View
@@ -21,11 +27,11 @@ class AcAnggotaPageController extends Controller
         [$totalAnggota, $totalUnit] = $this->resolveMetrics();
 
         try {
-            $sampleAnggota = Masjid::query()
+            $sampleAnggota = Anggota::query()
                 ->withCount('acUnits')
                 ->orderByDesc('ac_units_count')
                 ->limit(8)
-                ->get(['id', 'name', 'type', 'custom_id']);
+                ->get(['id', 'name', 'custom_id', 'membership_status', 'address']);
         } catch (Throwable $exception) {
             report($exception);
             $sampleAnggota = collect();
@@ -37,8 +43,8 @@ class AcAnggotaPageController extends Controller
     public function monitoring(): View
     {
         try {
-            $units = AcUnit::query()
-                ->with('masjid:id,name,type,custom_id')
+            $units = AnggotaAcUnit::query()
+                ->with('anggota:id,name,custom_id,address')
                 ->orderByDesc('updated_at')
                 ->limit(100)
                 ->get();
@@ -54,8 +60,8 @@ class AcAnggotaPageController extends Controller
     {
         try {
             return [
-                Masjid::count(),
-                (int) AcUnit::sum('quantity'),
+                Anggota::count(),
+                (int) AnggotaAcUnit::sum('quantity'),
             ];
         } catch (Throwable $exception) {
             report($exception);

@@ -57,6 +57,11 @@ class WorkflowController extends Controller
             return response()->json(['success' => false, 'message' => 'Order harus approved sebelum bisa ditugaskan.'], 422);
         }
 
+        // Check if invoice exists - manager must create invoice before assigning
+        if (!$serviceOrder->invoice) {
+            return response()->json(['success' => false, 'message' => 'SPK dan Invoice harus dibuat sebelum menugaskan teknisi. Silakan buat Invoice terlebih dahulu.'], 422);
+        }
+
         $technician = User::findOrFail($validated['technician_id']);
 
         if (! $technician->isTechnician()) {

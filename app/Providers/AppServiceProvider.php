@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Support\ModulePageRegistry;
+use App\Support\PlatformNavigation;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Database\Events\QueryExecuted;
@@ -10,6 +12,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
 use PDO;
 
 class AppServiceProvider extends ServiceProvider
@@ -27,6 +30,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        View::share('platformHomeUrl', PlatformNavigation::homeUrl());
+        View::share('platformCatalogUrl', PlatformNavigation::catalogUrl());
+        View::composer('layouts.*', function ($view): void {
+            $view->with('modulePageRegistry', ModulePageRegistry::current());
+        });
+
         RateLimiter::for('login', function (Request $request) {
             $email = (string) $request->input('email', '');
             $throttleKey = strtolower($email).'|'.$request->ip();
