@@ -9,7 +9,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com https://cdnjs.cloudflare.com https://unpkg.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: https:; frame-ancestors 'none';">
+    @php
+        $viteCsp = app()->environment('local')
+            ? 'http://127.0.0.1:5173 http://localhost:5173'
+            : '';
+    @endphp
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com {{ $viteCsp }}; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com https://cdnjs.cloudflare.com https://unpkg.com {{ $viteCsp }}; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: https;">
     <meta name="theme-color" content="#2F5D50">
     <meta name="description" content="Sistem Manajemen Servis AC untuk Masjid dan Musholla">
     <title>@yield('title', 'AC Servis Masjid')</title>
@@ -27,7 +33,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&display=swap">
     @stack('styles')
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @php $viteManifestExists = file_exists(public_path('build/manifest.json')); @endphp
+    @if ($viteManifestExists)
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @endif
     <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css">
     <style>
         :root {
@@ -95,6 +104,26 @@
     <!-- Global Popup Overlay -->
     <div class="overlay" id="overlay" onclick="closeAllPopups()"></div>
 
+    <!-- Close Order Popup -->
+    <div class="popup" id="closeOrderPopup">
+        <div class="popup-header">
+            <h3><i class="fas fa-check-circle"></i> Order Selesai</h3>
+            <button class="popup-close" onclick="closePopup('closeOrderPopup')">&times;</button>
+        </div>
+        <div class="popup-body">
+            <p>Pilih order yang ingin ditutup:</p>
+            <form id="closeOrderForm" action="{{ route('service-orders.close') }}" method="POST">
+                @csrf
+                <div id="orderList"></div>
+                <div class="popup-actions">
+                    <button type="submit" class="btn btn-success">Selesai</button>
+                    <button type="button" class="btn btn-secondary" onclick="closePopup('closeOrderPopup')">Batal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
     <!-- Logout Confirm Popup -->
     <div class="popup" id="logoutPopup">
         <div class="popup-header">
@@ -104,7 +133,7 @@
         <div class="popup-body">
             <p>Apakah Anda yakin ingin logout?</p>
             <div class="popup-actions">
-                <form action="{{ route('logout') }}" method="POST" style="display:inline">
+                <form action="{{ route('logout', [], false) }}" method="POST" style="display:inline">
                     @csrf
                     <button type="submit" class="btn btn-danger">Ya, Logout</button>
                 </form>
@@ -114,7 +143,9 @@
     </div>
 
     {{-- Vite boots the shared UI runtime; legacy public/js modules still provide page-specific globals. --}}
-    <script src="{{ asset('js/app.js') }}"></script>
+    @unless ($viteManifestExists)
+        <script src="{{ asset('js/core-application-runtime.js') }}"></script>
+    @endunless
     <script src="{{ asset('js/liquid-glass.js') }}" defer></script>
     @stack('scripts')
 </body>

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id" data-theme="light">
 <head>
     <meta charset="UTF-8">
@@ -12,12 +12,15 @@
         }
     </script>
     <title>Login - Forkis Platform</title>
+    @php $viteManifestExists = file_exists(public_path('build/manifest.json')); @endphp
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
-    <!-- Liquid Glass Design System 2026 -->
     <link rel="stylesheet" href="{{ asset('css/liquid-glass.css') }}">
     <link rel="stylesheet" href="{{ asset('css/liquid-glass-components.css') }}">
     <link rel="stylesheet" href="{{ asset('css/liquid-glass-integration.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    @if ($viteManifestExists)
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @endif
 </head>
 <body class="login-body">
     <div class="login-container">
@@ -26,10 +29,10 @@
                 <div class="login-logo">
                     <i class="fas fa-snowflake"></i>
                 </div>
-                <h1>AC Servis Masjid</h1>
-                <p>Masuk ke sistem manajemen</p>
-                <a href="{{ route('home') }}" class="btn btn-outline btn-sm" style="margin-top:0.5rem">
-                    <i class="fas fa-home"></i> Go to Home
+                <h1>Forkis Platform</h1>
+                <p>Masuk ke hub layanan dan operasional</p>
+                <a href="{{ $platformHomeUrl }}" class="btn btn-outline btn-sm" style="margin-top:0.5rem">
+                    <i class="fas fa-home"></i> Kembali ke Home
                 </a>
             </div>
 
@@ -39,7 +42,6 @@
                 </div>
             @endif
 
-            {{-- Path-only URL keeps POST on the current browser host (avoids 419 when APP_URL is another host). --}}
             <form action="{{ route('login.post', [], false) }}" method="POST" class="login-form">
                 @csrf
                 @if(!empty($redirectTo))
@@ -58,7 +60,7 @@
                     </label>
                     <div class="input-group">
                         <input type="password" name="password" id="password" class="form-input"
-                               placeholder="••••••••" required>
+                               placeholder="Password Anda" required>
                         <button type="button" class="input-addon" onclick="togglePassword()">
                             <i class="fas fa-eye" id="eyeIcon"></i>
                         </button>
@@ -67,17 +69,18 @@
                 <div class="form-group">
                     <label class="checkbox-label">
                         <input type="checkbox" name="remember">
-                        <span>Ingat saya</span>
+                        <span>Ingat sesi saya</span>
                     </label>
                 </div>
                 <button type="submit" class="btn btn-primary btn-block">
                     <i class="fas fa-sign-in-alt"></i> Masuk
                 </button>
             </form>
-
         </div>
     </div>
-    <script src="{{ asset('js/app.js') }}"></script>
+    @unless ($viteManifestExists)
+        <script src="{{ asset('js/core-application-runtime.js') }}"></script>
+    @endunless
     <script src="{{ asset('js/liquid-glass.js') }}" defer></script>
     <script>
     function togglePassword() {

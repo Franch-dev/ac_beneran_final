@@ -490,6 +490,7 @@
     .ops-table-shell__header { margin-bottom: 0; }
 }
 
+
 @media (max-width: 640px) {
     .ops-kpi-grid,
     .popup-section-grid,
@@ -502,3 +503,25 @@
         min-width: auto;
     }
 }
+
+/* Hapus button improvements */
+.btn-xs { 
+    padding: 0.2rem 0.4rem; 
+    font-size: 0.7rem; 
+}
+.btn-icon { 
+    padding: 0.3rem; 
+    width: 2rem; 
+    height: 2rem; 
+    border-radius: 0.5rem; 
+}
+.btn-delete-small { 
+    opacity: 0.6; 
+    transition: all 0.2s ease; 
+    font-size: 0.75rem !important;
+}
+.btn-delete-small:hover { 
+    opacity: 1; 
+    transform: scale(1.05);
+}
+

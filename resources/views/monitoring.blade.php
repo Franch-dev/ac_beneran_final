@@ -300,12 +300,24 @@
                             </button>
                             @endif
 
-                            {{-- Front desk generate invoice --}}
-                            @if((auth()->user()->isFrontdesk() || auth()->user()->isAdmin()) && $order->status === 'waiting_invoice' && ! $order->invoice)
+                            {{-- Manager/Frontdesk/Admin generate invoice --}}
+                            @if((auth()->user()->isFrontdesk() || auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_invoice' && ! $order->invoice)
                             <button class="btn btn-sm btn-primary" type="button" onclick="generateInvoice({{ $order->id }})">
-                                <i class="fas fa-file-invoice"></i> Buat Invoice
+                                <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
                             </button>
                             @endif
+
+
+
+
+                            {{-- Order Selesai button for 'completed' status --}}
+                            @if($order->status == 'completed' && (auth()->user()->isFrontdesk() || auth()->user()->isManager() || auth()->user()->isAdmin() || auth()->user()->isTechnician()))
+                            <button class="btn btn-sm btn-success" type="button" onclick="handleCompletedOrder({{ $order->id }})" title="Kelola order selesai">
+                                <i class="fas fa-check-double"></i> Order Selesai
+                            </button>
+                            @endif
+
+
 
                             {{-- Manager/Admin approve invoice --}}
                             @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_review')
@@ -313,6 +325,16 @@
                                 <i class="fas fa-check-circle"></i> Approve Invoice
                             </button>
                             @endif
+
+                            {{-- Frontdesk/Admin delete order --}}
+
+                            @if(auth()->user()->isFrontdesk() || auth()->user()->isAdmin())
+                            <button class="btn btn-xs btn-danger btn-icon btn-delete-small" type="button" onclick="deleteServiceOrder({{ $order->id }})" title="Hapus Order" aria-label="Hapus order">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            @endif
+
+
 
                             {{-- SPK / Invoice viewer --}}
                             @if(in_array($order->status, ['approved','in_progress','waiting_invoice','waiting_review','completed']))
@@ -327,10 +349,9 @@
                             @endif
 
                             {{-- Workflow timeline button (all manager/admin/frontdesk/tech) --}}
-                            <button class="btn btn-sm btn-info" type="button"
-                                onclick="showWorkflowTimeline({{ $order->id }}, @js($order->order_number), @js($order->masjid->name))">
-                                <i class="fas fa-stream"></i> Timeline
-                            </button>
+
+                            {{-- Timeline removed, merged to detail --}}
+
                         </div>
                     </td>
                 </tr>
@@ -415,15 +436,21 @@
                 </button>
                 @endif
 
-                @if((auth()->user()->isFrontdesk() || auth()->user()->isAdmin()) && $order->status === 'waiting_invoice' && ! $order->invoice)
+                @if((auth()->user()->isFrontdesk() || auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_invoice' && ! $order->invoice)
                 <button class="btn btn-sm btn-primary" type="button" onclick="generateInvoice({{ $order->id }})">
-                    <i class="fas fa-file-invoice"></i> Buat Invoice
+                    <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
                 </button>
                 @endif
 
                 @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_review')
                 <button class="btn btn-sm btn-success" type="button" onclick="approveInvoice({{ $order->id }})">
                     <i class="fas fa-check-circle"></i> Approve Invoice
+                </button>
+                @endif
+
+                @if(auth()->user()->isFrontdesk() || auth()->user()->isAdmin())
+                <button class="btn btn-sm btn-danger" type="button" onclick="deleteServiceOrder({{ $order->id }})">
+                    <i class="fas fa-trash"></i> Hapus
                 </button>
                 @endif
 

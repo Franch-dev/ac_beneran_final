@@ -64,6 +64,27 @@ function closePopup(id) {
     syncPopupState();
 }
 
+function openGuestOrderPopup(action, moduleLabel = 'AC Service') {
+    const popup = document.getElementById('guestOrderPopup');
+    const form = popup?.querySelector('form');
+    const hiddenAction = popup?.querySelector('#guest_order_action');
+    const title = popup?.querySelector('.guest-order-popup-title');
+
+    if (form && action) {
+        form.action = action;
+    }
+
+    if (hiddenAction && action) {
+        hiddenAction.value = action;
+    }
+
+    if (title) {
+        title.textContent = `Formulir Service Order – ${moduleLabel}`;
+    }
+
+    openPopup('guestOrderPopup');
+}
+
 function closeAllPopups() {
     document.querySelectorAll('.popup').forEach((popup) => {
         popup.classList.remove('active');

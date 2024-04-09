@@ -1,0 +1,96 @@
+A/* Cool Glass Pagination - UI Overhaul */
+.cool-pagination {
+  --p-active: #6E9F90;
+  --p-hover: rgba(110, 159, 144, 0.8);
+  --p-bg: rgba(255, 255, 255, 0.25);
+  --p-border: rgba(255, 255, 255, 0.4);
+  --p-shadow: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] .cool-pagination {
+  --p-bg: rgba(255, 255, 255, 0.08);
+  --p-border: rgba(255, 255, 255, 0.15);
+}
+
+.cool-pagination nav ul {
+  display: flex !important;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.cool-pagination nav ul li {
+  margin: 0;
+}
+
+.cool-pagination .pagination-link {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 42px;
+  min-width: 42px;
+  padding: 0.6rem 0.85rem;
+  border-radius: 16px;
+  background: var(--p-bg);
+  border: 1px solid var(--p-border);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 14px var(--p-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.cool-pagination .pagination-link::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.cool-pagination .pagination-link:hover {
+  transform: translateY(-2px);
+  background: var(--p-hover);
+  box-shadow: 0 8px 25px var(--p-shadow);
+  border-color: var(--p-hover);
+}
+
+.cool-pagination .pagination-link:hover::before {
+  opacity: 1;
+}
+
+.cool-pagination .page-item.active .pagination-link {
+  background: linear-gradient(135deg, var(--p-active), #4C7A6B);
+  border-color: var(--p-active);
+  color: white;
+  box-shadow: 0 6px 20px rgba(110, 159, 144, 0.3);
+  transform: scale(1.05);
+}
+
+.cool-pagination .page-item.disabled .pagination-link {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.cool-pagination .page-item.disabled .pagination-link:hover {
+  transform: none;
+}
+
+.cool-pagination .page-previous,
+.cool-pagination .page-next {
+  min-width: 68px;
+}
+
+.cool-pagination .page-dots {
+  padding: 0.6rem 0.9rem;
+}

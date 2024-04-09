@@ -22,19 +22,19 @@
             <span class="sidebar-icon"><i class="fas fa-layer-group"></i></span>
             <span class="sidebar-label">Katalog</span>
         </a>
-        <a href="{{ route('dashboard') }}" class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" role="menuitem">
-            <span class="sidebar-icon"><i class="fas fa-th-large"></i></span>
-            <span class="sidebar-label">Dashboard</span>
-        </a>
-        <a href="{{ route('monitoring') }}" class="sidebar-link monitoring-link {{ request()->routeIs('monitoring') ? 'active' : '' }}" role="menuitem">
-            <span class="sidebar-icon"><i class="fas fa-chart-line"></i></span>
-            <span class="sidebar-label">Monitoring</span>
+        @foreach(($modulePageRegistry['pages'] ?? []) as $page)
+        <a href="{{ $page['url'] }}" class="sidebar-link {{ $page['active'] ? 'active' : '' }} {{ str_contains($page['label'], 'Monitoring') ? 'monitoring-link' : '' }}" role="menuitem">
+            <span class="sidebar-icon"><i class="{{ $page['icon'] }}"></i></span>
+            <span class="sidebar-label">{{ $page['label'] }}</span>
+            @if(str_contains($page['label'], 'Monitoring'))
             <span class="sidebar-notification-stack" aria-label="Ringkasan antrean monitoring">
                 <span class="badge-lite badge-lite-pending" data-status-badge="pending" data-badge-label="Pending" hidden>0</span>
                 <span class="badge-lite badge-lite-invoice" data-status-badge="waiting_invoice" data-badge-label="Waiting Invoice" hidden>0</span>
                 <span class="badge-lite badge-lite-review" data-status-badge="waiting_review" data-badge-label="Waiting Review" hidden>0</span>
             </span>
+            @endif
         </a>
+        @endforeach
 
         {{-- Profile (all roles) --}}
         <a href="{{ route('profile.index') }}"
@@ -44,8 +44,24 @@
              <span class="sidebar-label">Profil Saya</span>
         </a>
 
+        {{-- Sitemap (all auth roles) - Disabled for debugging
+        <a href="{{ route('sitemap') }}"
+           class="sidebar-link {{ request()->routeIs('sitemap*') ? 'active' : '' }}"
+           role="menuitem" data-tooltip="Sitemap">
+             <span class="sidebar-icon"><i class="fas fa-sitemap"></i></span>
+             <span class="sidebar-label">Sitemap</span>
+        </a>
+        --}}
+@if(session('show_role_buttons', false))
+
+        {{-- Remove sidebar button, moved to table actions --}}
+
+
         {{-- Admin only --}}
-        @if(auth()->user()->isAdmin())
+        @if(session('show_role_buttons', false) && auth()->user()->isAdmin())
+
+
+
         <a href="{{ route('users.index') }}"
            class="sidebar-link {{ request()->routeIs('users.*') ? 'active' : '' }}"
            role="menuitem" data-tooltip="Manajemen User">
@@ -69,6 +85,7 @@
             <span class="sidebar-label">Laporan</span>
         </a>
         @endif
+@endif
 
         {{-- Technician --}}
         @if(auth()->user()->isTechnician())
@@ -205,7 +222,7 @@
             <span id="darkModeTextGuest">Mode Gelap</span>
         </button>
 
-        <a href="{{ route('login') }}" class="btn btn-primary btn-sm">
+        <a href="{{ \App\Support\PlatformNavigation::loginUrl() }}" class="btn btn-primary btn-sm">
             <i class="fas fa-sign-in-alt"></i> Login
         </a>
     </div>

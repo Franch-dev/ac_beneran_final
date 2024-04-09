@@ -8,6 +8,27 @@
     $compactCatalogClass = in_array($catalogCountValue, [1, 2], true)
         ? 'catalog-grid--compact catalog-grid--compact-' . $catalogCountValue
         : '';
+    $heroPrimaryUrl = auth()->check() ? '#katalog' : \App\Support\PlatformNavigation::loginUrl();
+    $heroPrimaryLabel = auth()->check() ? 'Jelajahi Katalog' : 'Mulai Sekarang';
+    $heroSecondaryUrl = '#katalog';
+    $heroSecondaryLabel = 'Lihat Katalog';
+
+    if (auth()->check()) {
+        $heroSecondaryUrl = route('profile.index');
+        $heroSecondaryLabel = 'Profil Saya';
+        $user = auth()->user();
+
+        if ($user->isTechnician()) {
+            $heroSecondaryUrl = route('technician.dashboard');
+            $heroSecondaryLabel = 'Dashboard Teknisi';
+        } elseif ($user->isViewer()) {
+            $heroSecondaryUrl = route('viewer.dashboard');
+            $heroSecondaryLabel = 'Dashboard Viewer';
+        } elseif ($user->isManager() || $user->isAdmin() || $user->isFrontdesk()) {
+            $heroSecondaryUrl = route('dashboard');
+            $heroSecondaryLabel = 'Dashboard Utama';
+        }
+    }
 @endphp
 
 
@@ -17,11 +38,11 @@
         <h1>Platform Modular<br><span class="gradient-text">Online Forkis</span></h1>
         <p>Satu pintu untuk mengakses mini-website internal Forkis. Saat ini ada <strong class="hero-inline-total">{{ $catalogCountValue }} website</strong> yang siap dijelajahi dari katalog utama dengan fondasi shared login dan jalur ekspansi ke subdomain.</p>
         <div class="hero-actions">
-            <a href="{{ route('login') }}" class="btn btn-primary btn-lg">
-                <i class="fas fa-sign-in-alt"></i> Mulai Sekarang
+            <a href="{{ $heroPrimaryUrl }}" class="btn btn-primary btn-lg">
+                <i class="fas {{ auth()->check() ? 'fa-compass' : 'fa-sign-in-alt' }}"></i> {{ $heroPrimaryLabel }}
             </a>
-            <a href="#katalog" class="btn btn-outline btn-lg">
-                <i class="fas fa-th-large"></i> Lihat Katalog
+            <a href="{{ $heroSecondaryUrl }}" class="btn btn-outline btn-lg">
+                <i class="fas {{ auth()->check() ? 'fa-th-large' : 'fa-layer-group' }}"></i> {{ $heroSecondaryLabel }}
             </a>
         </div>
     </div>
@@ -92,7 +113,8 @@
 
 <div class="catalog-grid {{ $compactCatalogClass }}" data-aos="fade-up" data-aos-delay="100">
             @forelse ($catalogModules as $module)
-                <a href="{{ $module['url'] }}" class="catalog-card glass-card" data-aos="fade-up" data-aos-delay="{{ $loop->index * 80 }}" aria-label="{{ $module['headline'] }} - {{ $module['description'] }}">
+                @php $hasGuestOrder = ! empty($module['guest_order_url']); @endphp
+                <div class="catalog-card glass-card" data-aos="fade-up" data-aos-delay="{{ $loop->index * 80 }}">
                     <div class="catalog-card-thumb" style="background: {{ $module['thumb_background'] }};">
                         <div class="catalog-thumb-icon" style="color: {{ $module['thumb_color'] }};">
                             <i class="{{ $module['icon'] }}"></i>
@@ -110,9 +132,23 @@
                         <p class="catalog-card-desc">{{ $module['description'] }}</p>
                     </div>
                     <div class="catalog-card-footer">
-                        <span class="catalog-visit">Buka Website <i class="fas fa-arrow-right"></i></span>
+                        <a href="{{ $module['url'] }}" class="catalog-card-link">
+                            {{ $module['cta_label'] }} <i class="fas fa-arrow-right"></i>
+                        </a>
+                        @if ($hasGuestOrder)
+                            <button
+                                type="button"
+                                class="btn btn-outline btn-sm guest-order-btn"
+                                style="margin-top:0.75rem; display:inline-flex; align-items:center; gap:0.5rem;"
+                                data-guest-order-action="{{ route($module['guest_order_store_route_name']) }}"
+                                data-guest-order-label="{{ $module['headline'] }}"
+                                onclick='window.openGuestOrderPopup?.(this.dataset.guestOrderAction, this.dataset.guestOrderLabel)'
+                            >
+                                <i class="fas fa-file-invoice"></i> Ajukan Service
+                            </button>
+                        @endif
                     </div>
-                </a>
+                </div>
             @empty
                 <div class="catalog-card glass-card">
                     <div class="catalog-card-body">
@@ -129,6 +165,13 @@
     </div>
 </section>
 
+@include('partials.guest-order-popup', [
+    'masjids' => $masjids,
+    'formActionRoute' => route('modules.ac-service.guest-order.store'),
+    'popupTitle' => 'Forkis Platform',
+    'entityLabel' => 'Masjid',
+])
+
 <section class="section section-alt" id="harga">
     <div class="container">
         <div class="section-header">
@@ -142,7 +185,7 @@
                     <h3>Standar</h3>
                 </div>
                 <div class="pricing-price">
-                    <span class="price">Rp 150.000</span>
+                    <span class="price">Rp 40.000</span>
                     <span class="price-unit">/ unit</span>
                 </div>
                 <ul class="pricing-features">
@@ -159,7 +202,7 @@
                     <h3>Premium</h3>
                 </div>
                 <div class="pricing-price">
-                    <span class="price">Rp 200.000</span>
+                    <span class="price">Rp 45.000</span>
                     <span class="price-unit">/ unit</span>
                 </div>
                 <ul class="pricing-features">
@@ -176,7 +219,7 @@
                     <h3>Enterprise</h3>
                 </div>
                 <div class="pricing-price">
-                    <span class="price">Rp 350.000</span>
+                    <span class="price">Rp 80.000</span>
                     <span class="price-unit">/ unit</span>
                 </div>
                 <ul class="pricing-features">
@@ -237,10 +280,10 @@
 
 <section class="cta-section">
     <div class="container text-center">
-        <h2>Siap Masuk ke Platform Forkis?</h2>
-        <p>Login sekali untuk mengakses katalog website internal dan modul operasional Forkis dari satu pintu.</p>
-        <a href="{{ route('login') }}" class="btn btn-white btn-lg">
-            <i class="fas fa-rocket"></i> Login Sekarang
+        <h2>{{ auth()->check() ? 'Platform Forkis Siap Dipakai' : 'Siap Masuk ke Platform Forkis?' }}</h2>
+        <p>{{ auth()->check() ? 'Masuk ke katalog utama lalu pilih hub kerja yang Anda butuhkan.' : 'Login sekali untuk mengakses katalog website internal dan modul operasional Forkis dari satu pintu.' }}</p>
+        <a href="{{ auth()->check() ? '#katalog' : \App\Support\PlatformNavigation::loginUrl() }}" class="btn btn-white btn-lg">
+            <i class="fas {{ auth()->check() ? 'fa-layer-group' : 'fa-rocket' }}"></i> {{ auth()->check() ? 'Buka Katalog' : 'Login Sekarang' }}
         </a>
     </div>
 </section>
