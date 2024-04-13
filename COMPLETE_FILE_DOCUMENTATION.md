@@ -7,11 +7,9 @@ Every file/folder explained with purpose. Updated from latest project scan.
 - **artisan**: Laravel CLI.
 - **composer.json/.lock**: PHP deps.
 - **package.json/.lock**: Node/Vite deps.
-- **phpunit.xml**: PHPUnit config.
 - **README.md**: Project intro.
 - **TODO.md**: Pending tasks.
 - **vite.config.js**: Vite bundler.
-- **vitest.config.js**: Vitest tests.
 - **usaha_masjid**: Unused note/data (ignored).
 
 ## app/ (Core Laravel)
@@ -83,7 +81,7 @@ Every file/folder explained with purpose. Updated from latest project scan.
 - app, framework (sessions/cache/views/logs).
 
 ## tests/
-- JS Vitest UI tests, PHP Feature/Unit (BackendWorkflowSmokeTest, ServiceOrderStatusTest).
+- No tests included.
 
 **Updated: Added new controllers (AcAnggotaPage, AdminLog, BackendOps, Sync), middleware (CSP/Security), models (SyncEvent), migrations (sync/skills/indexes), liquid-glass UI, services, api.php, ac-anggota views. Temps ignored. Total ~300 files.**
 

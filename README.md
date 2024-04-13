@@ -19,7 +19,6 @@ The frontend now uses a glass/material operations layer for:
 - Custom CSS in `public/css`
 - Page scripts in `public/js`
 - Vite for `resources/js` enhancements
-- Vitest for lightweight frontend contract tests
 
 ## Key UI Files
 

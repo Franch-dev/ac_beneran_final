@@ -66,6 +66,8 @@ useless/
 .paul/
 .cursor/
 Docs/
+project-docs/
+TODO.md
 
 # Dependencies venv
 venv/
@@ -74,5 +76,3 @@ venv/
 # Editors extra
 .phpactor.json
 .cursor/
-.phpunit.result.cache
-/.phpunit.cache
