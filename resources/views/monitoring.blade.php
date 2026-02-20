@@ -223,6 +223,7 @@
                      data-marbot="{{ $m->marbot_name }}"
                      data-phone="{{ json_encode($m->phone_numbers) }}"
                      data-ac="{{ json_encode($m->acUnits) }}"
+                     data-type="{{ $m->type }}"
                      onclick="selectMasjidForSO(this)">
                     <div class="msi-id">{{ $m->custom_id }}</div>
                     <div class="msi-name">{{ $m->name }}</div>
@@ -268,6 +269,15 @@
                 <div class="form-group">
                     <label class="form-label">Instruksi Tambahan</label>
                     <textarea id="soNotes" class="form-textarea" rows="2" placeholder="Catatan tambahan..."></textarea>
+                </div>
+
+                <!-- Info Harga -->
+                <div id="soHargaInfo" class="info-banner" style="display:none;margin-top:0.5rem;font-size:0.78rem"></div>
+
+                <!-- Total Estimasi -->
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0.875rem;background:var(--primary-soft);border:1px solid var(--primary-mid);border-radius:var(--radius-sm);margin-top:0.5rem;font-size:0.82rem;color:var(--primary);font-weight:600">
+                    <span><i class="fas fa-receipt" style="margin-right:0.4rem"></i> Estimasi Total</span>
+                    <span id="soTotalPreview">–</span>
                 </div>
 
                 <div class="popup-actions">

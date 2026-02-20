@@ -1,6 +1,23 @@
 /* ==========================================
    MONITORING.JS — Service Orders Management
    ========================================== */
+const HARGA_SERVIS = {
+
+    // ── Harga untuk MASJID ──────────────────
+    masjid: {
+        '1PK': 150000,   // Rp 150.000 per unit
+        '2PK': 200000,   // Rp 200.000 per unit
+        '5PK': 350000,   // Rp 350.000 per unit
+    },
+
+    // ── Harga untuk MUSHOLLA ────────────────
+    musholla: {
+        '1PK': 120000,   // Rp 120.000 per unit
+        '2PK': 170000,   // Rp 170.000 per unit
+        '5PK': 300000,   // Rp 300.000 per unit
+    },
+
+};
 
 let selectedMasjidData = null;
 let soAcData = [];
