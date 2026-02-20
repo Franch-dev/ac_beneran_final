@@ -318,6 +318,57 @@
     <div class="popup-body" id="historyBody"></div>
 </div>
 
+
+<!-- Popup Konfirmasi Ganti Order Lama -->
+<div class="popup" id="replaceConfirmPopup" style="max-width:480px;z-index:500">
+    <div class="popup-header">
+        <h3><i class="fas fa-exclamation-triangle" style="color:var(--warning)"></i> &nbsp;Order Aktif Sudah Ada!</h3>
+        <button class="popup-close" onclick="closePopup('replaceConfirmPopup')">&times;</button>
+    </div>
+    <div class="popup-body">
+
+        {{-- Info order lama --}}
+        <div style="background:var(--warning-soft);border:1.5px solid var(--warning);border-radius:var(--radius);padding:1rem;margin-bottom:1.1rem">
+            <div style="font-size:0.78rem;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.6rem">
+                <i class="fas fa-clipboard-list"></i> &nbsp;Order yang sudah ada:
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid rgba(0,0,0,0.06)">
+                <span style="font-size:0.82rem;color:#92400e">No. Order</span>
+                <strong class="order-num" id="rcOrderNumber" style="color:var(--primary)"></strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid rgba(0,0,0,0.06)">
+                <span style="font-size:0.82rem;color:#92400e">Status</span>
+                <strong id="rcStatus"></strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:0.3rem 0">
+                <span style="font-size:0.82rem;color:#92400e">Tgl. Servis</span>
+                <span style="font-size:0.82rem;font-weight:600" id="rcServiceDate"></span>
+            </div>
+        </div>
+
+        <p style="font-size:0.875rem;color:var(--text-muted);margin-bottom:1.35rem;line-height:1.6">
+            Masjid ini sudah punya service order aktif. Apakah ingin
+            <strong style="color:var(--danger)">menghapus order lama</strong>
+            dan menggantinya dengan order baru yang baru saja kamu buat?
+        </p>
+
+        {{-- Tombol --}}
+        <div style="display:flex;flex-direction:column;gap:0.6rem">
+            <button class="btn btn-danger"
+                    style="width:100%;justify-content:center;padding:0.75rem;font-size:0.95rem;font-weight:700"
+                    onclick="confirmReplaceOrder()">
+                <i class="fas fa-sync-alt"></i> &nbsp;Ya, Hapus Order Lama &amp; Buat Baru
+            </button>
+            <button class="btn btn-secondary"
+                    style="width:100%;justify-content:center;padding:0.65rem;font-size:0.875rem"
+                    onclick="cancelReplaceOrder()">
+                <i class="fas fa-arrow-left"></i> &nbsp;Tidak, Kembali &amp; Biarkan Order Lama
+            </button>
+        </div>
+
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')

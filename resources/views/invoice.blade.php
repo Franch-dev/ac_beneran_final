@@ -1,176 +1,382 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invoice - {{ $serviceOrder->invoice->invoice_number }}</title>
-    <link rel="stylesheet" href="{{ asset('css/print.css') }}">
-    <style>
-        @media print { body { margin: 0; } .no-print { display: none; } }
-    </style>
-</head>
-<body class="print-page">
-    <div class="no-print print-controls">
-        <button onclick="window.print()" class="btn-print">🖨️ Cetak Invoice</button>
-        <button onclick="window.close()" class="btn-back">← Kembali</button>
-    </div>
+@extends('layouts.app')
 
-    <div class="print-document a4">
-        <!-- Header -->
-        <div class="doc-header">
-            <div class="company-logo">
-                <div class="logo-icon">❄️</div>
-                <div class="company-info">
-                    <h1>AC SERVIS MASJID</h1>
-                    <p>Jl. Contoh No. 123, Jakarta | Telp: (021) 1234-5678</p>
-                    <p>Email: cs@acservismasjid.id | NPWP: 12.345.678.9-000.000</p>
-                </div>
-            </div>
-            <div class="doc-type">
-                <div class="doc-type-label">INVOICE</div>
-                <div class="doc-type-sub">Faktur Pembayaran</div>
-            </div>
+@section('title', 'Monitoring - AC Servis Masjid')
+
+@section('content')
+<div class="page-container">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title"><i class="fas fa-chart-line"></i> Monitoring</h1>
+            <p class="page-subtitle">Pantau status servis AC seluruh masjid</p>
         </div>
-
-        <div class="doc-divider"></div>
-
-        <!-- Invoice Meta -->
-        <div class="spk-meta">
-            <table class="meta-table">
-                <tr>
-                    <td width="30%"><strong>Nomor Invoice</strong></td>
-                    <td width="5%">:</td>
-                    <td><strong>{{ $serviceOrder->invoice->invoice_number }}</strong></td>
-                    <td width="30%"><strong>Tanggal Invoice</strong></td>
-                    <td width="5%">:</td>
-                    <td>{{ $serviceOrder->invoice->created_at->format('d F Y') }}</td>
-                </tr>
-                <tr>
-                    <td><strong>Nomor SPK</strong></td>
-                    <td>:</td>
-                    <td>{{ $serviceOrder->order_number }}</td>
-                    <td><strong>Tanggal Jatuh Tempo</strong></td>
-                    <td>:</td>
-                    <td><strong>{{ $serviceOrder->invoice->created_at->addDays(14)->format('d F Y') }}</strong></td>
-                </tr>
-            </table>
-        </div>
-
-        <!-- Billing To -->
-        <div class="billing-section">
-            <div class="billing-from">
-                <div class="billing-title">Dari:</div>
-                <strong>AC Servis Masjid</strong><br>
-                Jl. Contoh No. 123, Jakarta 12345<br>
-                Telp: (021) 1234-5678
-            </div>
-            <div class="billing-to">
-                <div class="billing-title">Kepada:</div>
-                <strong>{{ $serviceOrder->masjid->name }}</strong><br>
-                {{ $serviceOrder->masjid->address }}<br>
-                Telp: {{ $serviceOrder->phone }}<br>
-                a.n. {{ $serviceOrder->meeting_person === 'dkm' ? $serviceOrder->masjid->dkm_name : $serviceOrder->masjid->marbot_name }}
-            </div>
-        </div>
-
-        <!-- Items -->
-        <div class="section-block">
-            <div class="section-block-title">RINCIAN TAGIHAN</div>
-            <table class="work-table invoice-table">
-                <thead>
-                    <tr>
-                        <th width="5%">No</th>
-                        <th>Deskripsi Pekerjaan</th>
-                        <th width="12%">PK</th>
-                        <th width="10%">Qty</th>
-                        <th width="18%">Harga Satuan</th>
-                        <th width="18%">Subtotal</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($serviceOrder->serviceDetails as $i => $detail)
-                    <tr>
-                        <td>{{ $i + 1 }}</td>
-                        <td>Servis AC {{ $detail->brand }} - Cuci, Cek Freon, Pembersihan</td>
-                        <td>{{ $detail->pk_type }}</td>
-                        <td>{{ $detail->quantity }} unit</td>
-                        <td>Rp {{ number_format($detail->price_per_unit, 0, ',', '.') }}</td>
-                        <td>Rp {{ number_format($detail->subtotal, 0, ',', '.') }}</td>
-                    </tr>
-                    @endforeach
-                </tbody>
-                <tfoot>
-                    <tr class="subtotal-row">
-                        <td colspan="5">Subtotal</td>
-                        <td>Rp {{ number_format($serviceOrder->serviceDetails->sum('subtotal'), 0, ',', '.') }}</td>
-                    </tr>
-                    <tr class="subtotal-row">
-                        <td colspan="5">PPN (11%)</td>
-                        <td>Rp {{ number_format($serviceOrder->serviceDetails->sum('subtotal') * 0.11, 0, ',', '.') }}</td>
-                    </tr>
-                    <tr class="total-row">
-                        <td colspan="5"><strong>TOTAL</strong></td>
-                        <td><strong>Rp {{ number_format($serviceOrder->invoice->total_price, 0, ',', '.') }}</strong></td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-
-        <!-- Payment Info -->
-        <div class="payment-info">
-            <div class="payment-method">
-                <div class="section-block-title">INFORMASI PEMBAYARAN</div>
-                <table class="meta-table">
-                    <tr>
-                        <td width="40%">Bank</td>
-                        <td width="5%">:</td>
-                        <td>BCA / Mandiri / BRI</td>
-                    </tr>
-                    <tr>
-                        <td>No. Rekening</td>
-                        <td>:</td>
-                        <td>1234567890</td>
-                    </tr>
-                    <tr>
-                        <td>Atas Nama</td>
-                        <td>:</td>
-                        <td>PT. AC Servis Masjid</td>
-                    </tr>
-                </table>
-            </div>
-            <div class="total-highlight">
-                <div class="total-label">Total Tagihan</div>
-                <div class="total-amount">Rp {{ number_format($serviceOrder->invoice->total_price, 0, ',', '.') }}</div>
-                <div class="total-terbilang">
-                    @php
-                        // Simple terbilang (placeholder)
-                        $total = $serviceOrder->invoice->total_price;
-                    @endphp
-                    Terbilang: <em>{{ ucfirst(terbilang($total)) }} Rupiah</em>
-                </div>
-            </div>
-        </div>
-
-        <!-- Signature -->
-        <div class="signature-section">
-            <div class="sig-box">
-                <div class="sig-title">Hormat kami,</div>
-                <div class="sig-role">AC Servis Masjid</div>
-                <div class="sig-line" style="margin-top: 3rem"></div>
-                <div class="sig-name">(...........................)</div>
-                <div class="sig-date">Manager</div>
-            </div>
-            <div class="sig-box" style="text-align: center; align-self: flex-end">
-                <div class="payment-stamp">
-                    <div>LUNAS</div>
-                </div>
-                <div class="sig-date" style="margin-top: 0.5rem">Tanggal: _______________</div>
-            </div>
-        </div>
-
-        <div class="doc-footer">
-            <p>Terima kasih atas kepercayaan Anda. Invoice ini sah secara hukum. Pembayaran lewat jatuh tempo dikenakan denda 2% per bulan.</p>
+        <div class="page-actions">
+            @if(auth()->user()->isFrontdesk())
+            <button class="btn btn-primary" onclick="openPopup('serviceOrderPopup')">
+                <i class="fas fa-plus"></i> Buat Service Order
+            </button>
+            @endif
         </div>
     </div>
-</body>
-</html>
+
+    <!-- Summary Cards -->
+    <div class="summary-grid">
+        <div class="summary-card">
+            <div class="summary-icon bg-primary">
+                <i class="fas fa-mosque"></i>
+            </div>
+            <div class="summary-content">
+                <div class="summary-num">{{ $totalLokasi }}</div>
+                <div class="summary-label">Total Lokasi</div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon bg-info">
+                <i class="fas fa-snowflake"></i>
+            </div>
+            <div class="summary-content">
+                <div class="summary-num">{{ $totalUnit }}</div>
+                <div class="summary-label">Total Unit AC</div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon bg-danger">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div class="summary-content">
+                <div class="summary-num">{{ $overdue }}</div>
+                <div class="summary-label">Overdue (>120 hari)</div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon bg-warning">
+                <i class="fas fa-clipboard-list"></i>
+            </div>
+            <div class="summary-content">
+                <div class="summary-num">{{ $orders->where('status', 'pending')->count() }}</div>
+                <div class="summary-label">Order Pending</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Urgency Legend -->
+    <div class="legend-bar">
+        <span class="legend-item"><span class="legend-dot urgency-aman"></span> Aman (&lt;90 hari)</span>
+        <span class="legend-item"><span class="legend-dot urgency-harus_servis"></span> Harus Servis (90–120 hari)</span>
+        <span class="legend-item"><span class="legend-dot urgency-overdue"></span> Overdue (&gt;120 hari)</span>
+    </div>
+
+    <!-- Search & Filter -->
+    <div class="search-bar">
+        <form action="{{ route('monitoring') }}" method="GET" class="search-form">
+            <div class="search-input-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" name="search" placeholder="Cari order / masjid..." 
+                       value="{{ request('search') }}" class="search-input">
+            </div>
+            <select name="status" class="form-select" style="width:auto">
+                <option value="">Semua Status</option>
+                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Approved</option>
+            </select>
+            <button type="submit" class="btn btn-primary">Filter</button>
+            @if(request()->anyFilled(['search', 'status']))
+                <a href="{{ route('monitoring') }}" class="btn btn-secondary">Reset</a>
+            @endif
+        </form>
+    </div>
+
+    <!-- Orders Table -->
+    @if($orders->count() > 0)
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>No. Order</th>
+                    <th>Masjid</th>
+                    <th>Tgl Servis</th>
+                    <th>Detail Unit</th>
+                    <th>Status</th>
+                    <th>Urgensi</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($orders as $order)
+                <tr>
+                    <td>
+                        <div class="order-num">{{ $order->order_number }}</div>
+                        <div class="text-sm text-muted">{{ $order->created_at->format('d M Y') }}</div>
+                    </td>
+                    <td>
+                        <div class="fw-bold">{{ $order->masjid->name }}</div>
+                        <div class="text-sm text-muted">{{ $order->masjid->custom_id }}</div>
+                    </td>
+                    <td>
+                        <div>{{ $order->service_date->format('d M Y') }}</div>
+                        <div class="text-sm {{ $order->service_date < now() ? 'text-danger' : 'text-success' }}">
+                            {{ $order->service_date < now() ? 'Lewat' : 'Mendatang' }}
+                        </div>
+                    </td>
+                    <td>
+                        @foreach($order->serviceDetails as $detail)
+                        <div class="detail-chip">{{ $detail->pk_type }} {{ $detail->brand }} × {{ $detail->quantity }}</div>
+                        @endforeach
+                    </td>
+                    <td>
+                        <span class="status-badge status-{{ $order->status }}">
+                            {{ ucfirst($order->status) }}
+                        </span>
+                    </td>
+                    <td>
+                        @php $urgency = $order->masjid->urgency_status; @endphp
+                        <span class="urgency-badge urgency-text-{{ $urgency }}">
+                            {{ $urgency === 'aman' ? 'Aman' : ($urgency === 'harus_servis' ? 'Harus Servis' : 'Overdue') }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn btn-sm btn-info" onclick="showOrderDetail({{ $order->id }})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+
+                            @if(auth()->user()->isManager())
+                                @if($order->status === 'pending')
+                                <button class="btn btn-sm btn-success" onclick="approveOrder({{ $order->id }})">
+                                    <i class="fas fa-check"></i> Approve
+                                </button>
+                                @elseif($order->status === 'approved')
+                                <button class="btn btn-sm btn-warning" onclick="cancelApprove({{ $order->id }})">
+                                    <i class="fas fa-undo"></i> Batal
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteOrder({{ $order->id }})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                @endif
+                            @endif
+
+                            @if($order->status === 'approved')
+                            <a href="{{ route('spk.print', $order->id) }}" target="_blank" class="btn btn-sm btn-secondary">
+                                <i class="fas fa-print"></i> SPK
+                            </a>
+                            <a href="{{ route('invoice.print', $order->id) }}" target="_blank" class="btn btn-sm btn-primary">
+                                <i class="fas fa-file-invoice"></i> Invoice
+                            </a>
+                            @endif
+                        </div>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    @else
+    <div class="empty-state">
+        <i class="fas fa-clipboard-list"></i>
+        <h3>Tidak Ada Service Order</h3>
+        <p>{{ request()->anyFilled(['search', 'status']) ? 'Tidak ada hasil untuk filter tersebut.' : 'Belum ada service order yang dibuat.' }}</p>
+    </div>
+    @endif
+
+    <!-- Masjid Urgency Overview -->
+    <div class="section-title" style="margin-top: 2rem">
+        <h2>Status Urgensi Seluruh Masjid</h2>
+    </div>
+    <div class="urgency-grid">
+        @foreach($masjids as $masjid)
+        <div class="urgency-card urgency-card-{{ $masjid->urgency_status }}">
+            <div class="urgency-card-header">
+                <span class="urgency-card-id">{{ $masjid->custom_id }}</span>
+                <span class="urgency-dot urgency-{{ $masjid->urgency_status }}"></span>
+            </div>
+            <div class="urgency-card-name">{{ Str::limit($masjid->name, 30) }}</div>
+            <div class="urgency-card-info">
+                <span>{{ $masjid->acUnits->sum('quantity') }} unit</span>
+                <span>{{ $masjid->max_days_since_service }} hari</span>
+            </div>
+        </div>
+        @endforeach
+    </div>
+</div>
+
+<!-- Service Order Popup -->
+@if(auth()->user()->isFrontdesk())
+<div class="popup popup-xl" id="serviceOrderPopup">
+    <div class="popup-header">
+        <h3><i class="fas fa-clipboard-plus"></i> Buat Service Order</h3>
+        <button class="popup-close" onclick="closePopup('serviceOrderPopup')">&times;</button>
+    </div>
+    <div class="popup-body popup-two-col">
+        <!-- Left: Masjid List -->
+        <div class="popup-col-left">
+            <h4>Pilih Masjid</h4>
+            <div class="search-input-wrap" style="margin-bottom: 0.75rem">
+                <i class="fas fa-search"></i>
+                <input type="text" id="soMasjidSearch" class="search-input" placeholder="Cari masjid...">
+            </div>
+            <div class="masjid-select-list" id="masjidSelectList">
+                @foreach($masjids as $m)
+                <div class="masjid-select-item" 
+                     data-id="{{ $m->id }}"
+                     data-name="{{ $m->name }}"
+                     data-address="{{ $m->address }}"
+                     data-dkm="{{ $m->dkm_name }}"
+                     data-marbot="{{ $m->marbot_name }}"
+                     data-phone="{{ json_encode($m->phone_numbers) }}"
+                     data-ac="{{ json_encode($m->acUnits) }}"
+                     data-type="{{ $m->type }}"
+                     onclick="selectMasjidForSO(this)">
+                    <div class="msi-id">{{ $m->custom_id }}</div>
+                    <div class="msi-name">{{ $m->name }}</div>
+                    <div class="msi-units">{{ $m->acUnits->sum('quantity') }} unit AC</div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+
+        <!-- Right: Order Form -->
+        <div class="popup-col-right">
+            <div id="soFormContent" style="display:none">
+                <h4 id="soMasjidName"></h4>
+                <p id="soMasjidAddress" class="text-muted text-sm"></p>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Ditemui oleh</label>
+                        <select id="soMeetingPerson" class="form-select">
+                            <option value="dkm">DKM (<span id="soDkmName"></span>)</option>
+                            <option value="marbot">Marbot (<span id="soMarbotName"></span>)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nomor HP</label>
+                        <input type="text" id="soPhone" class="form-input" placeholder="Nomor HP...">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Rincian Unit Servis</label>
+                    <div id="soDetailsList"></div>
+                    <button type="button" class="btn btn-sm btn-outline" onclick="addSODetail()">
+                        <i class="fas fa-plus"></i> Tambah Unit
+                    </button>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Tanggal Rencana Servis</label>
+                    <input type="date" id="soServiceDate" class="form-input" min="{{ date('Y-m-d') }}">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Instruksi Tambahan</label>
+                    <textarea id="soNotes" class="form-textarea" rows="2" placeholder="Catatan tambahan..."></textarea>
+                </div>
+
+                <!-- Info Harga -->
+                <div id="soHargaInfo" class="info-banner" style="display:none;margin-top:0.5rem;font-size:0.78rem"></div>
+
+                <!-- Total Estimasi -->
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0.875rem;background:var(--primary-soft);border:1px solid var(--primary-mid);border-radius:var(--radius-sm);margin-top:0.5rem;font-size:0.82rem;color:var(--primary);font-weight:600">
+                    <span><i class="fas fa-receipt" style="margin-right:0.4rem"></i> Estimasi Total</span>
+                    <span id="soTotalPreview">–</span>
+                </div>
+
+                <div class="popup-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="showOrderHistory()">
+                        <i class="fas fa-history"></i> History
+                    </button>
+                    <button class="btn btn-primary" onclick="submitServiceOrder()">
+                        <i class="fas fa-paper-plane"></i> Kirim Order
+                    </button>
+                </div>
+            </div>
+            <div id="soEmptyState" class="empty-state">
+                <i class="fas fa-hand-pointer"></i>
+                <p>Pilih masjid dari daftar kiri</p>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
+<!-- Order Detail Popup -->
+<div class="popup popup-lg" id="orderDetailPopup">
+    <div class="popup-header">
+        <h3><i class="fas fa-clipboard-list"></i> Detail Service Order</h3>
+        <button class="popup-close" onclick="closePopup('orderDetailPopup')">&times;</button>
+    </div>
+    <div class="popup-body" id="orderDetailBody">
+        <!-- Dynamic -->
+    </div>
+</div>
+
+<!-- History Popup -->
+<div class="popup popup-lg" id="historyPopup">
+    <div class="popup-header">
+        <h3><i class="fas fa-history"></i> Riwayat Service Order</h3>
+        <button class="popup-close" onclick="closePopup('historyPopup')">&times;</button>
+    </div>
+    <div class="popup-body" id="historyBody"></div>
+</div>
+
+
+<!-- Popup Konfirmasi Ganti Order Lama -->
+<div class="popup" id="replaceConfirmPopup" style="max-width:460px">
+    <div class="popup-header">
+        <h3><i class="fas fa-exclamation-triangle" style="color:var(--warning)"></i> Order Aktif Sudah Ada</h3>
+        <button class="popup-close" onclick="closePopup('replaceConfirmPopup')">&times;</button>
+    </div>
+    <div class="popup-body">
+        <div class="alert alert-info" style="margin-bottom:1.25rem">
+            <i class="fas fa-info-circle"></i>
+            Masjid ini sudah memiliki service order yang masih aktif:
+        </div>
+
+        <div style="background:var(--gray-50);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:1.25rem">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+                <span class="text-muted text-sm">No. Order</span>
+                <span class="order-num" id="rcOrderNumber"></span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+                <span class="text-muted text-sm">Status</span>
+                <strong id="rcStatus"></strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <span class="text-muted text-sm">Tgl. Servis</span>
+                <span id="rcServiceDate"></span>
+            </div>
+        </div>
+
+        <p style="font-size:0.875rem;color:var(--text-muted);margin-bottom:1.25rem">
+            Apakah kamu ingin <strong style="color:var(--danger)">menghapus order lama</strong> dan menggantinya dengan order baru yang baru saja diisi?
+        </p>
+
+        <div style="display:flex;gap:0.75rem">
+            <button class="btn btn-danger btn-block" onclick="confirmReplaceOrder()">
+                <i class="fas fa-check"></i> Ya, Ganti dengan Order Baru
+            </button>
+            <button class="btn btn-secondary btn-block" onclick="cancelReplaceOrder()">
+                <i class="fas fa-times"></i> Tidak, Batalkan
+            </button>
+        </div>
+    </div>
+</div>
+
+@endsection
+
+@push('scripts')
+<script>
+const ROUTES_MON = {
+    soStore: '{{ route("service-order.store") }}',
+    soApprove: (id) => `/service-order/${id}/approve`,
+    soCancel: (id) => `/service-order/${id}/cancel-approve`,
+    soDelete: (id) => `/service-order/${id}`,
+    soDeleteMgr: (id) => `/service-order/${id}/manager`,
+    soHistory: (id) => `/masjid/${id}/history`,
+    spk: (id) => `/service-order/${id}/spk`,
+    invoice: (id) => `/service-order/${id}/invoice`,
+};
+const isManager = {{ auth()->user()->isManager() ? 'true' : 'false' }};
+const isFrontdesk2 = {{ auth()->user()->isFrontdesk() ? 'true' : 'false' }};
+</script>
+<script src="{{ asset('js/monitoring.js') }}"></script>
+@endpush
