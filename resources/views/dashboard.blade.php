@@ -53,6 +53,15 @@
     <!-- Masjid Cards -->
     <div class="cards-grid" id="masjidGrid">
         @forelse($masjids as $masjid)
+        @php
+            $urgency = $masjid->urgency_status;
+            $urgencyLabel = match($urgency) {
+                'aman' => 'Aman',
+                'harus_servis' => 'Harus Servis',
+                'overdue' => 'Overdue',
+                default => 'Belum Ada Data',
+            };
+        @endphp
         <div class="masjid-card urgency-{{ $masjid->urgency_status }}" data-id="{{ $masjid->id }}">
             <div class="card-accent-bar"></div>
             <div class="card-top">
@@ -61,7 +70,7 @@
                 </span>
                 <span class="urgency-pill urgency-{{ $masjid->urgency_status }}">
                     <span class="urgency-pulse"></span>
-                    {{ $masjid->urgency_status === 'aman' ? 'Aman' : ($masjid->urgency_status === 'harus_servis' ? 'Harus Servis' : 'Overdue') }}
+                    {{ $urgencyLabel }}
                 </span>
             </div>
             <div class="card-body">

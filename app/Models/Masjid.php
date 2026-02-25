@@ -11,12 +11,22 @@ class Masjid extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'custom_id', 'type', 'name', 'address',
-        'dkm_name', 'marbot_name', 'phone_numbers'
+        'custom_id',
+        'type',
+        'name',
+        'address',
+        'dkm_name',
+        'marbot_name',
+        'phone_numbers',
     ];
 
     protected $casts = [
         'phone_numbers' => 'array',
+    ];
+
+    protected $appends = [
+        'urgency_status',
+        'max_days_since_service',
     ];
 
     public function acUnits()
@@ -29,53 +39,50 @@ class Masjid extends Model
         return $this->hasMany(ServiceOrder::class);
     }
 
-    public function getUrgencyStatusAttribute(): string
-    {
-        $minDays = $this->acUnits->min(function ($unit) {
-            if (!$unit->last_service_date) return 0;
-            return Carbon::parse($unit->last_service_date)->diffInDays(now(), false);
-        });
-
-        if ($minDays === null) return 'unknown';
-        if ($minDays < 90) return 'aman';
-        if ($minDays <= 120) return 'harus_servis';
-        return 'overdue';
-    }
-
-    public function getMaxDaysSinceServiceAttribute(): int
-    {
-        return $this->acUnits->max(function ($unit) {
-            if (!$unit->last_service_date) return 0;
-            return Carbon::parse($unit->last_service_date)->diffInDays(now(), false);
-        }) ?? 0;
-    }
-
     public static function generateCustomId(string $type): string
     {
-        $prefix = $type === 'masjid' ? '001' : '002';
-        $year = date('Y');
+        // Prefix 001 for Masjid, 002 for Musholla (as requested).
+        $prefix = $type === 'musholla' ? '002' : '001';
 
-        // Find used numbers this year
-        $existing = self::withTrashed()
-            ->where('custom_id', 'like', $prefix . '%' . $year)
-            ->pluck('custom_id')
-            ->map(function ($id) use ($prefix, $year) {
-                $middle = substr($id, strlen($prefix), -strlen($year));
-                return (int) $middle;
-            })
-            ->sort()
-            ->values();
+        $last = self::where('custom_id', 'like', "{$prefix}-%")
+            ->orderByDesc('id')
+            ->first();
 
-        // Find smallest available number
-        $next = 1;
-        foreach ($existing as $num) {
-            if ($num == $next) {
-                $next++;
-            } else {
-                break;
-            }
+        $next = $last
+            ? ((int) substr($last->custom_id, strlen($prefix) + 1)) + 1
+            : 1;
+
+        return sprintf('%s-%04d', $prefix, $next);
+    }
+
+    public function getMaxDaysSinceServiceAttribute(): ?int
+    {
+        // If there are no AC units, we can't compute urgency.
+        if ($this->acUnits->isEmpty()) {
+            return null;
         }
 
-        return $prefix . str_pad($next, 2, '0', STR_PAD_LEFT) . $year;
+        $dates = $this->acUnits
+            ->pluck('last_service_date')
+            ->filter(); // drop nulls
+
+        if ($dates->isEmpty()) {
+            return null;
+        }
+
+        return $dates
+            ->map(fn($d) => Carbon::parse($d)->diffInDays(now()))
+            ->max();
+    }
+
+    public function getUrgencyStatusAttribute(): string
+    {
+        $days = $this->max_days_since_service;
+        // No units => unknown. Units without service date => treat as overdue (needs attention).
+        if ($this->acUnits->isEmpty()) return 'unknown';
+        if ($days === null) return 'overdue';
+        if ($days < 90) return 'aman';
+        if ($days <= 120) return 'harus_servis';
+        return 'overdue';
     }
 }

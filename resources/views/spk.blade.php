@@ -4,13 +4,79 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SPK - {{ $serviceOrder->order_number }}</title>
+    <!-- Dedicated print stylesheet -->
     <link rel="stylesheet" href="{{ asset('css/print.css') }}">
     <style>
-        @media print { body { margin: 0; } .no-print { display: none; } }
+        /* Page setup */
+        @page {
+            size: A4;
+            margin: 12mm;
+        }
+        /* Screen helpers */
+        body { font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif; background: #f5f7fa; }
+        .print-page { padding: 16px; }
+        .print-document {
+            background: #fff;
+            width: 190mm;
+            margin: 0 auto;
+            padding: 18mm 16mm;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        }
+        .print-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .btn-print, .btn-back {
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-print { background: #2563eb; color: #fff; }
+        .btn-back { background: #e5e7eb; color: #111827; }
+
+        /* Layout + typography */
+        .doc-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+        .company-info h1 { margin: 0; font-size: 18px; letter-spacing: .3px; }
+        .company-info p { margin: 2px 0; font-size: 12px; color: #4b5563; }
+        .logo-icon { width: 34px; height: 34px; border-radius: 8px; background:#e0f2fe; display:flex; align-items:center; justify-content:center; font-size:16px; }
+        .doc-type { text-align: right; }
+        .doc-type-label { font-weight: 700; font-size: 15px; }
+        .doc-type-sub { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: .4px; }
+        .doc-divider { border-top: 2px solid #e5e7eb; margin: 12px 0 16px; }
+
+        .meta-table, .info-table { width: 100%; border-collapse: collapse; }
+        .meta-table td, .info-table td { padding: 4px 6px; font-size: 12px; vertical-align: top; }
+
+        .section-block { margin-top: 14px; page-break-inside: avoid; }
+        .section-block-title { font-weight: 700; font-size: 13px; letter-spacing: .3px; margin-bottom: 6px; text-transform: uppercase; }
+        .work-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .work-table th, .work-table td { border: 1px solid #e5e7eb; padding: 8px; }
+        .work-table th { background: #f3f4f6; text-align: left; }
+        .work-table tbody tr { page-break-inside: avoid; }
+        .notes-box { border: 1px dashed #cbd5e1; padding: 10px; font-size: 12px; color: #111827; min-height: 40px; }
+        .signature-section { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+        .sig-box { border: 1px solid #e5e7eb; padding: 10px; min-height: 110px; page-break-inside: avoid; }
+        .sig-title { font-weight: 700; font-size: 12px; }
+        .sig-role { font-size: 11px; color: #6b7280; margin-bottom: 12px; }
+        .sig-line { border-bottom: 1px solid #cbd5e1; margin: 20px 0 6px; }
+        .sig-name, .sig-date { font-size: 11px; color: #111827; }
+        .doc-footer { margin-top: 12px; font-size: 11px; color: #6b7280; page-break-inside: avoid; }
+
+        /* Print rules */
+        @media print {
+            body { background: #fff; }
+            .no-print { display: none !important; }
+            .print-document { box-shadow: none; width: auto; padding: 0; margin: 0; }
+            .work-table tbody tr { page-break-inside: avoid; }
+            .signature-section, .section-block, .doc-footer { page-break-inside: avoid; }
+        }
     </style>
 </head>
 <body class="print-page">
-    <!-- Print Button -->
+    <!-- Print Button (hidden on print) -->
     <div class="no-print print-controls">
         <button onclick="window.print()" class="btn-print">
             <i>🖨️</i> Cetak SPK

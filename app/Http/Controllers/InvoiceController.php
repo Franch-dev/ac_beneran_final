@@ -9,7 +9,7 @@ class InvoiceController extends Controller
 {
     public function print(ServiceOrder $serviceOrder)
     {
-        $serviceOrder->load('masjid', 'serviceDetails', 'invoice');
+        $serviceOrder->load('masjid.acUnits', 'serviceDetails', 'invoice');
         if (!$serviceOrder->invoice) {
             abort(404, 'Invoice tidak ditemukan');
         }

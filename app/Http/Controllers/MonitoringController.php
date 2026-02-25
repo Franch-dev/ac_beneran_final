@@ -16,7 +16,7 @@ class MonitoringController extends Controller
             ->where('service_date', '<', now()->toDateString())
             ->delete();
 
-        $query = ServiceOrder::with('masjid', 'serviceDetails', 'invoice');
+        $query = ServiceOrder::with('masjid.acUnits', 'serviceDetails', 'invoice');
 
         if ($request->search) {
             $search = $request->search;

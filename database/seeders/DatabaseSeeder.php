@@ -38,5 +38,9 @@ class DatabaseSeeder extends Seeder
             'role' => 'admin',
         ]);
         // Tidak ada dummy masjid / AC — data real diisi melalui aplikasi
+        $this->call([
+        MasjidSeeder::class,
+        AcUnitSeeder::class,
+        ]);
     }
 }

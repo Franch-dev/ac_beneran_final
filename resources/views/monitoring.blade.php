@@ -128,9 +128,17 @@
                         </span>
                     </td>
                     <td>
-                        @php $urgency = $order->masjid->urgency_status; @endphp
+                        @php
+                            $urgency = $order->masjid->urgency_status;
+                            $urgencyLabel = match($urgency) {
+                                'aman' => 'Aman',
+                                'harus_servis' => 'Harus Servis',
+                                'overdue' => 'Overdue',
+                                default => 'Belum Ada Data',
+                            };
+                        @endphp
                         <span class="urgency-badge urgency-text-{{ $urgency }}">
-                            {{ $urgency === 'aman' ? 'Aman' : ($urgency === 'harus_servis' ? 'Harus Servis' : 'Overdue') }}
+                            {{ $urgencyLabel }}
                         </span>
                     </td>
                     <td>
@@ -154,13 +162,19 @@
                                 @endif
                             @endif
 
-                            @if($order->status === 'approved')
-                            <a href="{{ route('spk.print', $order->id) }}" target="_blank" class="btn btn-sm btn-secondary">
-                                <i class="fas fa-print"></i> SPK
-                            </a>
-                            <a href="{{ route('invoice.print', $order->id) }}" target="_blank" class="btn btn-sm btn-primary">
-                                <i class="fas fa-file-invoice"></i> Invoice
-                            </a>
+                            @if($order->status === 'approved' && (auth()->user()->isFrontdesk() || auth()->user()->isManager()))
+                                <a href="{{ route('spk.print', $order->id) }}" target="_blank" class="btn btn-sm btn-secondary">
+                                    <i class="fas fa-print"></i> SPK
+                                </a>
+                                @if($order->invoice)
+                                <a href="{{ route('invoice.print', $order->id) }}" target="_blank" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-file-invoice"></i> Invoice
+                                </a>
+                                @else
+                                <button class="btn btn-sm btn-primary" disabled title="Invoice belum dibuat">
+                                    <i class="fas fa-file-invoice"></i> Invoice
+                                </button>
+                                @endif
                             @endif
                         </div>
                     </td>
@@ -191,7 +205,7 @@
             <div class="urgency-card-name">{{ Str::limit($masjid->name, 30) }}</div>
             <div class="urgency-card-info">
                 <span>{{ $masjid->acUnits->sum('quantity') }} unit</span>
-                <span>{{ $masjid->max_days_since_service }} hari</span>
+                <span>{{ $masjid->max_days_since_service ? $masjid->max_days_since_service . ' hari' : '–' }}</span>
             </div>
         </div>
         @endforeach
