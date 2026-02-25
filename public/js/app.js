@@ -46,11 +46,150 @@ function toggleDarkMode() {
     }
 })();
 
-// === NAVBAR TOGGLE ===
+// === NAVBAR / MOBILE MENU MANAGEMENT ===
+const NavbarManager = {
+    menu: null,
+    toggleBtn: null,
+    overlay: null,
+    focusableElements: 'a[href], button, input, textarea, select, details, [tabindex]:not([tabindex="-1"])',
+    firstFocusable: null,
+    lastFocusable: null,
+
+    init() {
+        this.menu = document.querySelector('.navbar-menu');
+        this.toggleBtn = document.querySelector('.navbar-toggle');
+        this.overlay = document.querySelector('.mobile-menu-overlay');
+
+        if (!this.menu || !this.toggleBtn) {
+            console.warn('NavbarManager: Required elements not found', {
+                menu: !!this.menu,
+                toggleBtn: !!this.toggleBtn,
+                overlay: !!this.overlay
+            });
+            return;
+        }
+
+        console.log('NavbarManager: Initialized successfully');
+
+        // Bind events
+        this.toggleBtn.addEventListener('click', () => this.toggle());
+
+        // Close on overlay click
+        if (this.overlay) {
+            this.overlay.addEventListener('click', () => this.close());
+        }
+
+        // Close on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.isOpen()) {
+                this.close();
+            }
+        });
+
+        // Handle focus within menu
+        this.menu.addEventListener('keydown', (e) => this.handleFocusTrap(e));
+
+        // Close on resize to desktop
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 1024 && this.isOpen()) {
+                this.close();
+            }
+        });
+    },
+
+    toggle() {
+        console.log('NavbarManager: Toggle called, current state:', this.isOpen() ? 'open' : 'closed');
+        if (this.isOpen()) {
+            this.close();
+        } else {
+            this.open();
+        }
+    },
+
+    open() {
+        if (!this.menu) return;
+
+        console.log('NavbarManager: Opening menu');
+        this.menu.classList.add('open');
+        document.body.classList.add('menu-open');
+
+        // Update ARIA attributes
+        this.toggleBtn.setAttribute('aria-expanded', 'true');
+        this.toggleBtn.setAttribute('aria-label', 'Tutup menu navigasi');
+
+        // Show overlay
+        if (this.overlay) {
+            this.overlay.classList.add('active');
+        }
+
+        // Store focus and move to first focusable element
+        this.storeFocusableElements();
+        setTimeout(() => {
+            if (this.firstFocusable) {
+                this.firstFocusable.focus();
+            }
+        }, 100);
+    },
+
+    close() {
+        if (!this.menu) return;
+
+        console.log('NavbarManager: Closing menu');
+        this.menu.classList.remove('open');
+        document.body.classList.remove('menu-open');
+
+        // Update ARIA attributes
+        this.toggleBtn.setAttribute('aria-expanded', 'false');
+        this.toggleBtn.setAttribute('aria-label', 'Buka menu navigasi');
+
+        // Hide overlay
+        if (this.overlay) {
+            this.overlay.classList.remove('active');
+        }
+
+        // Return focus to toggle button
+        this.toggleBtn.focus();
+    },
+
+    isOpen() {
+        return this.menu && this.menu.classList.contains('open');
+    },
+
+    storeFocusableElements() {
+        const focusable = this.menu.querySelectorAll(this.focusableElements);
+        this.firstFocusable = focusable[0];
+        this.lastFocusable = focusable[focusable.length - 1];
+    },
+
+    handleFocusTrap(e) {
+        if (e.key !== 'Tab') return;
+
+        if (!this.firstFocusable || !this.lastFocusable) {
+            this.storeFocusableElements();
+        }
+
+        // If shift+tab on first element, move to last
+        if (e.shiftKey && document.activeElement === this.firstFocusable) {
+            e.preventDefault();
+            this.lastFocusable.focus();
+        }
+        // If tab on last element, move to first
+        else if (!e.shiftKey && document.activeElement === this.lastFocusable) {
+            e.preventDefault();
+            this.firstFocusable.focus();
+        }
+    }
+};
+
+// Legacy function for backward compatibility
 function toggleNavbar() {
-    const menu = document.querySelector('.navbar-menu');
-    if (menu) menu.classList.toggle('open');
+    NavbarManager.toggle();
 }
+
+// Initialize on DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+    NavbarManager.init();
+});
 
 // === FETCH HELPER ===
 async function apiFetch(url, method = 'GET', data = null) {

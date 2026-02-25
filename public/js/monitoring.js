@@ -340,8 +340,9 @@ function cancelReplaceOrder() {
 }
 
 // === APPROVE ===
+// Note: This function is overridden at the bottom of the file to use confirmation modal
 async function approveOrder(id) {
-    if (!confirm('Setujui service order ini?')) return;
+    // Original implementation - confirmation modal handles the prompt
     try {
         await apiFetch(ROUTES_MON.soApprove(id), 'POST');
         showToast('Order berhasil diapprove!');
@@ -352,8 +353,9 @@ async function approveOrder(id) {
 }
 
 // === BATALKAN APPROVE ===
+// Note: This function is overridden at the bottom of the file to use confirmation modal
 async function cancelApprove(id) {
-    if (!confirm('Batalkan approve order ini? Status akan kembali ke Pending.')) return;
+    // Original implementation - confirmation modal handles the prompt
     try {
         await apiFetch(ROUTES_MON.soCancel(id), 'POST');
         showToast('Approve dibatalkan, status kembali ke Pending');
@@ -364,8 +366,9 @@ async function cancelApprove(id) {
 }
 
 // === HAPUS ORDER ===
+// Note: This function is overridden at the bottom of the file to use confirmation modal
 async function deleteOrder(id) {
-    if (!confirm('Hapus service order ini?')) return;
+    // Original implementation - confirmation modal handles the prompt
     try {
         await apiFetch(ROUTES_MON.soDeleteMgr(id), 'DELETE');
         showToast('Service order dihapus');
@@ -447,3 +450,252 @@ async function showOrderHistory() {
         showToast(err.message, 'error');
     }
 }
+
+/* ==========================================
+   ACCOUNT MANAGER CONFIRMATION MODAL
+   ========================================== */
+
+// Store pending action for confirmation modal
+let _confirmCallback = null;
+let _confirmOrderData = null;
+
+/**
+ * Open confirmation modal with custom configuration
+ * @param {Object} config - Configuration object
+ * @param {string} config.type - 'success', 'warning', 'danger'
+ * @param {string} config.heading - Modal heading text
+ * @param {string} config.message - Main message text
+ * @param {string} config.confirmText - Confirm button text
+ * @param {string} config.cancelText - Cancel button text
+ * @param {Function} config.onConfirm - Callback when confirmed
+ * @param {Object} config.orderData - Optional order data to display
+ */
+function openConfirmModal(config) {
+    const modal = document.getElementById('confirmModal');
+    if (!modal) return;
+
+    // Set icon based on type
+    const iconEl = document.getElementById('confirmModalIcon');
+    const iconMap = {
+        success: { class: 'success', icon: 'fa-check-circle' },
+        warning: { class: 'warning', icon: 'fa-exclamation-triangle' },
+        danger:  { class: 'danger',  icon: 'fa-exclamation-circle' }
+    };
+    const iconConfig = iconMap[config.type] || iconMap.success;
+    iconEl.className = 'confirm-icon ' + iconConfig.class;
+    iconEl.innerHTML = '<i class="fas ' + iconConfig.icon + '"></i>';
+
+    // Set text content
+    document.getElementById('confirmModalHeading').textContent = config.heading || 'Konfirmasi Aksi';
+    document.getElementById('confirmModalMessage').textContent = config.message || 'Apakah Anda yakin?';
+
+    // Set button text
+    const confirmBtn = document.getElementById('confirmModalConfirmBtn');
+    confirmBtn.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i> ' + (config.confirmText || 'Ya, Lanjutkan');
+
+    // Update button class based on type
+    confirmBtn.className = 'btn btn-' + (config.type === 'success' ? 'success' : config.type === 'warning' ? 'warning' : 'danger');
+
+    // Show/hide details section
+    const detailsEl = document.getElementById('confirmModalDetails');
+    if (config.orderData) {
+        _confirmOrderData = config.orderData;
+        document.getElementById('confirmDetailOrder').textContent = config.orderData.orderNumber || '-';
+        document.getElementById('confirmDetailMasjid').textContent = config.orderData.masjidName || '-';
+        document.getElementById('confirmDetailDate').textContent = config.orderData.serviceDate || '-';
+        detailsEl.style.display = 'block';
+    } else {
+        detailsEl.style.display = 'none';
+    }
+
+    // Store callback
+    _confirmCallback = config.onConfirm;
+
+    // Show modal using existing popup system
+    modal.classList.add('active');
+    document.getElementById('overlay').classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    // Focus management for accessibility
+    setTimeout(() => {
+        confirmBtn.focus();
+    }, 100);
+}
+
+/**
+ * Close confirmation modal
+ */
+function closeConfirmModal() {
+    const modal = document.getElementById('confirmModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+
+    // Only remove overlay if no other popups are open
+    const anyOpen = document.querySelectorAll('.popup.active').length > 0;
+    if (!anyOpen) {
+        document.getElementById('overlay').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // Clear callback
+    _confirmCallback = null;
+    _confirmOrderData = null;
+}
+
+/**
+ * Execute the confirmed action
+ */
+function executeConfirmAction() {
+    if (typeof _confirmCallback === 'function') {
+        _confirmCallback();
+    }
+    closeConfirmModal();
+}
+
+// Override existing manager functions to use confirmation modal
+
+// Override approveOrder to use confirmation modal
+const _originalApproveOrder = approveOrder;
+approveOrder = function(id) {
+    // Find order data from the table
+    const rowBtn = document.querySelector('tr [onclick="approveOrder(' + id + ')"]');
+    const row = rowBtn ? rowBtn.closest('tr') : null;
+    const cells = row ? row.querySelectorAll('td') : [];
+
+    // Helper to safely get text content
+    const getText = function(cell, selector) {
+        if (!cell) return '-';
+        const el = cell.querySelector(selector);
+        return el ? el.textContent : '-';
+    };
+
+    openConfirmModal({
+        type: 'success',
+        heading: 'Konfirmasi Approval',
+        message: 'Anda akan menyetujui service order ini. Order akan diproses dan invoice akan dibuat.',
+        confirmText: 'Ya, Setujui',
+        cancelText: 'Batal',
+        orderData: {
+            orderNumber: getText(cells[0], '.order-num'),
+            masjidName: getText(cells[1], '.fw-bold'),
+            serviceDate: cells[2] ? (cells[2].querySelector('div') ? cells[2].querySelector('div').textContent : '-') : '-'
+        },
+        onConfirm: function() {
+            // Execute original approve logic
+            _executeApprove(id);
+        }
+    });
+};
+
+
+// Internal approve execution
+async function _executeApprove(id) {
+    try {
+        await apiFetch(ROUTES_MON.soApprove(id), 'POST');
+        showToast('Order berhasil diapprove!');
+        setTimeout(function() { location.reload(); }, 1500);
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+// Override cancelApprove to use confirmation modal
+const _originalCancelApprove = cancelApprove;
+cancelApprove = function(id) {
+    // Find order data from the table
+    const rowBtn = document.querySelector('tr [onclick="cancelApprove(' + id + ')"]');
+    const row = rowBtn ? rowBtn.closest('tr') : null;
+    const cells = row ? row.querySelectorAll('td') : [];
+
+    // Helper to safely get text content
+    const getText = function(cell, selector) {
+        if (!cell) return '-';
+        const el = cell.querySelector(selector);
+        return el ? el.textContent : '-';
+    };
+
+    openConfirmModal({
+        type: 'warning',
+        heading: 'Batalkan Approval?',
+        message: 'Status order akan kembali ke Pending. SPK dan Invoice yang sudah dibuat akan tetap tersimpan.',
+        confirmText: 'Ya, Batalkan',
+        cancelText: 'Tidak',
+        orderData: {
+            orderNumber: getText(cells[0], '.order-num'),
+            masjidName: getText(cells[1], '.fw-bold'),
+            serviceDate: cells[2] ? (cells[2].querySelector('div') ? cells[2].querySelector('div').textContent : '-') : '-'
+        },
+        onConfirm: function() {
+            // Execute original cancel logic
+            _executeCancelApprove(id);
+        }
+    });
+};
+
+
+// Internal cancel approve execution
+async function _executeCancelApprove(id) {
+    try {
+        await apiFetch(ROUTES_MON.soCancel(id), 'POST');
+        showToast('Approve dibatalkan, status kembali ke Pending');
+        setTimeout(function() { location.reload(); }, 1500);
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+// Override deleteOrder to use confirmation modal
+const _originalDeleteOrder = deleteOrder;
+deleteOrder = function(id) {
+    // Find order data from the table
+    const rowBtn = document.querySelector('tr [onclick="deleteOrder(' + id + ')"]');
+    const row = rowBtn ? rowBtn.closest('tr') : null;
+    const cells = row ? row.querySelectorAll('td') : [];
+
+    // Helper to safely get text content
+    const getText = function(cell, selector) {
+        if (!cell) return '-';
+        const el = cell.querySelector(selector);
+        return el ? el.textContent : '-';
+    };
+
+    openConfirmModal({
+        type: 'danger',
+        heading: 'Hapus Service Order?',
+        message: 'Tindakan ini tidak dapat dibatalkan. Semua data order, SPK, dan Invoice akan dihapus secara permanen.',
+        confirmText: 'Ya, Hapus Permanen',
+        cancelText: 'Batal',
+        orderData: {
+            orderNumber: getText(cells[0], '.order-num'),
+            masjidName: getText(cells[1], '.fw-bold'),
+            serviceDate: cells[2] ? (cells[2].querySelector('div') ? cells[2].querySelector('div').textContent : '-') : '-'
+        },
+        onConfirm: function() {
+            // Execute original delete logic
+            _executeDelete(id);
+        }
+    });
+};
+
+
+// Internal delete execution
+async function _executeDelete(id) {
+    try {
+        await apiFetch(ROUTES_MON.soDeleteMgr(id), 'DELETE');
+        showToast('Service order dihapus');
+        setTimeout(function() { location.reload(); }, 1500);
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+// Keyboard accessibility for confirmation modal
+document.addEventListener('keydown', function(e) {
+    const modal = document.getElementById('confirmModal');
+    if (!modal || !modal.classList.contains('active')) return;
+
+    if (e.key === 'Escape') {
+        closeConfirmModal();
+    }
+});

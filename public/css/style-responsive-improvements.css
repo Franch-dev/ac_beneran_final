@@ -1,0 +1,423 @@
+/* ==========================================
+   RESPONSIVE IMPROVEMENTS & FIXES
+   Additional responsive styles for better mobile experience
+   ========================================== */
+
+/* === TABLET IMPROVEMENTS (max-width: 900px) === */
+@media (max-width: 900px) {
+    /* Better card grid breakpoint */
+    .cards-grid {
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    }
+
+    /* Improve summary cards */
+    .summary-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    }
+
+    /* Better urgency grid */
+    .urgency-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+}
+
+/* === MOBILE IMPROVEMENTS (max-width: 768px) === */
+@media (max-width: 768px) {
+    /* Table scroll indicator */
+    .table-container {
+        position: relative;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table-container::after {
+        content: '← Geser untuk melihat lebih →';
+        position: sticky;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        padding: 0.5rem;
+        background: var(--primary-soft);
+        color: var(--primary);
+        text-align: center;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-top: 1px solid var(--primary-mid);
+        display: block;
+    }
+
+    /* Improve action buttons in tables */
+    .action-btns {
+        flex-direction: column;
+        min-width: 120px;
+    }
+
+    .action-btns .btn {
+        width: 100%;
+        justify-content: center;
+        white-space: nowrap;
+    }
+
+    /* Better card layout */
+    .masjid-card {
+        max-width: 100%;
+    }
+
+    /* Improve popup header */
+    .popup-header {
+        padding: 0.875rem 1rem;
+    }
+
+    .popup-header h3 {
+        font-size: 0.875rem;
+    }
+
+    /* Better form groups */
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    /* Improve phone input rows */
+    .phone-input-row {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .phone-input-row .btn {
+        width: 100%;
+    }
+
+    /* Better AC unit rows */
+    .ac-unit-row {
+        padding: 1rem;
+    }
+
+    /* Improve SO detail rows */
+    .so-detail-row {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    .so-detail-row .btn {
+        width: 100%;
+    }
+
+    /* CTA section improvements */
+    .cta-section {
+        padding: 3rem 1rem;
+    }
+}
+
+/* === SMALL MOBILE IMPROVEMENTS (max-width: 480px) === */
+@media (max-width: 480px) {
+    /* Improve button touch targets */
+    .btn {
+        min-height: 44px;
+        padding: 0.625rem 1rem;
+    }
+
+    .btn-sm {
+        min-height: 40px;
+        padding: 0.5rem 0.75rem;
+    }
+
+    /* Better card footer layout */
+    .card-footer {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .card-footer .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Improve action buttons */
+    .action-btns {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .action-btns .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Better form inputs */
+    .form-input,
+    .form-select,
+    .form-textarea {
+        font-size: 16px; /* Prevents zoom on iOS */
+        min-height: 44px;
+    }
+
+    /* Improve page header */
+    .page-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .page-actions {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .page-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Better urgency grid */
+    .urgency-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Footer improvements */
+    .footer-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+
+    /* Improve search bar */
+    .search-form {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .search-input-wrap {
+        width: 100%;
+        min-width: 100%;
+    }
+
+    .search-form .form-select,
+    .search-form .btn {
+        width: 100%;
+    }
+
+    /* Better role info bar */
+    .role-info-bar {
+        flex-wrap: wrap;
+        text-align: center;
+        justify-content: center;
+    }
+
+    /* Improve legend bar */
+    .legend-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    /* Better popup actions */
+    .popup-actions {
+        flex-direction: column;
+    }
+
+    .popup-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Improve confirm modal */
+    .confirm-actions {
+        flex-direction: column;
+    }
+
+    .confirm-actions .btn {
+        width: 100%;
+    }
+
+    /* Better detail chips */
+    .detail-chip {
+        font-size: 0.65rem;
+        padding: 0.15rem 0.4rem;
+    }
+
+    /* Improve status badges */
+    .status-badge,
+    .urgency-pill {
+        font-size: 0.65rem;
+        padding: 0.15rem 0.45rem;
+    }
+}
+
+/* === EXTRA SMALL DEVICES (max-width: 375px) === */
+@media (max-width: 375px) {
+    /* Further reduce font sizes */
+    .page-title {
+        font-size: 1.1rem;
+    }
+
+    .page-subtitle {
+        font-size: 0.75rem;
+    }
+
+    /* Smaller buttons */
+    .btn {
+        font-size: 0.8rem;
+        padding: 0.5rem 0.875rem;
+    }
+
+    .btn-sm {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.65rem;
+    }
+
+    /* Compact cards */
+    .card-body {
+        padding: 0.6rem 0.875rem;
+    }
+
+    .card-footer {
+        padding: 0.5rem 0.875rem;
+    }
+
+    /* Smaller summary cards */
+    .summary-num {
+        font-size: 1.4rem;
+    }
+
+    .summary-label {
+        font-size: 0.7rem;
+    }
+
+    /* Compact table */
+    .data-table {
+        font-size: 0.7rem;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 0.4rem 0.5rem;
+    }
+}
+
+/* === LANDSCAPE MOBILE (max-height: 500px) === */
+@media (max-height: 500px) and (orientation: landscape) {
+    /* Reduce vertical spacing */
+    .page-container {
+        padding: 1rem 1.5rem;
+    }
+
+    .page-header {
+        margin-bottom: 1rem;
+    }
+
+    .section {
+        padding: 2rem 1.5rem;
+    }
+
+    /* Compact popups */
+    .popup {
+        max-height: 85vh;
+    }
+
+    .popup-body {
+        padding: 1rem;
+    }
+
+    /* Reduce hero padding */
+    .hero {
+        padding: 2rem 1.5rem;
+        min-height: auto;
+    }
+}
+
+/* === TOUCH DEVICE IMPROVEMENTS === */
+@media (hover: none) and (pointer: coarse) {
+    /* Larger touch targets */
+    .btn,
+    .nav-link,
+    .btn-icon {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* Remove hover effects on touch devices */
+    .btn:hover,
+    .nav-link:hover,
+    .masjid-card:hover,
+    .feature-card:hover {
+        transform: none;
+    }
+
+    /* Better tap feedback */
+    .btn:active,
+    .nav-link:active {
+        transform: scale(0.98);
+        opacity: 0.9;
+    }
+
+    /* Improve scrollable areas */
+    .table-container,
+    .masjid-select-list,
+    .popup-col-left,
+    .popup-col-right {
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+    }
+}
+
+/* === PRINT IMPROVEMENTS === */
+@media print {
+    /* Hide interactive elements */
+    .navbar,
+    .footer,
+    .btn,
+    .popup,
+    .overlay,
+    .mobile-menu-overlay,
+    .navbar-toggle {
+        display: none !important;
+    }
+
+    /* Optimize for print */
+    body {
+        background: #fff;
+        color: #000;
+    }
+
+    .page-container {
+        max-width: 100%;
+        padding: 0;
+    }
+
+    /* Prevent page breaks inside cards */
+    .masjid-card,
+    .summary-card,
+    .feature-card {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+}
+
+/* === ACCESSIBILITY IMPROVEMENTS === */
+@media (prefers-contrast: high) {
+    /* Increase contrast for better readability */
+    :root {
+        --border: #000;
+        --text-muted: #333;
+    }
+
+    .btn {
+        border: 2px solid currentColor;
+    }
+
+    .nav-link.active {
+        border: 2px solid var(--primary);
+    }
+}
+
+/* === DARK MODE RESPONSIVE ADJUSTMENTS === */
+@media (max-width: 768px) {
+    [data-theme="dark"] .table-container::after {
+        background: var(--primary-soft);
+        color: var(--primary);
+    }
+
+    [data-theme="dark"] .navbar-menu {
+        background: var(--bg-card);
+        box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+    }
+}

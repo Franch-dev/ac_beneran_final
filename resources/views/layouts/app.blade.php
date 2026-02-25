@@ -2,16 +2,22 @@
 <html lang="id" data-theme="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="description" content="Sistem Manajemen Servis AC untuk Masjid dan Musholla">
     <title>@yield('title', 'AC Servis Masjid')</title>
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/style-responsive-improvements.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/visual-enhancements.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 <body>
     @include('layouts.header')
 
-    <main class="main-content">
+    <main id="main-content" class="main-content">
         @if(session('success'))
             <div class="alert alert-success">{{ session('success') }}</div>
         @endif

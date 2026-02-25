@@ -60,9 +60,9 @@
 
     <!-- Urgency Legend -->
     <div class="legend-bar">
-        <span class="legend-item"><span class="legend-dot urgency-aman"></span> Aman (&lt;90 hari)</span>
+        <span class="legend-item"><span class="legend-dot urgency-aman"></span> Aman (<90 hari)</span>
         <span class="legend-item"><span class="legend-dot urgency-harus_servis"></span> Harus Servis (90–120 hari)</span>
-        <span class="legend-item"><span class="legend-dot urgency-overdue"></span> Overdue (&gt;120 hari)</span>
+        <span class="legend-item"><span class="legend-dot urgency-overdue"></span> Overdue (>120 hari)</span>
     </div>
 
     <!-- Search & Filter -->
@@ -70,7 +70,7 @@
         <form action="{{ route('monitoring') }}" method="GET" class="search-form">
             <div class="search-input-wrap">
                 <i class="fas fa-search"></i>
-                <input type="text" name="search" placeholder="Cari order / masjid..." 
+                <input type="text" name="search" placeholder="Cari order / masjid..."
                        value="{{ request('search') }}" class="search-input">
             </div>
             <select name="status" class="form-select" style="width:auto">
@@ -215,7 +215,7 @@
             </div>
             <div class="masjid-select-list" id="masjidSelectList">
                 @foreach($masjids as $m)
-                <div class="masjid-select-item" 
+                <div class="masjid-select-item"
                      data-id="{{ $m->id }}"
                      data-name="{{ $m->name }}"
                      data-address="{{ $m->address }}"
@@ -366,6 +366,48 @@
             </button>
         </div>
 
+    </div>
+</div>
+
+<!-- Account Manager Confirmation Modal -->
+<div class="popup confirm-modal" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+    <div class="popup-header">
+        <h3 id="confirmModalTitle">
+            <span class="confirm-icon" id="confirmModalIcon" aria-hidden="true">
+                <i class="fas fa-check-circle"></i>
+            </span>
+            <span id="confirmModalHeading">Konfirmasi Aksi</span>
+        </h3>
+        <button class="popup-close" onclick="closeConfirmModal()" aria-label="Tutup modal">
+            <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+    </div>
+    <div class="popup-body">
+        <p class="confirm-message" id="confirmModalMessage">
+            Apakah Anda yakin ingin melakukan aksi ini?
+        </p>
+        <div class="confirm-details" id="confirmModalDetails" style="display: none;">
+            <div class="confirm-details-row">
+                <span class="confirm-details-label">No. Order</span>
+                <span class="confirm-details-value" id="confirmDetailOrder">-</span>
+            </div>
+            <div class="confirm-details-row">
+                <span class="confirm-details-label">Masjid</span>
+                <span class="confirm-details-value" id="confirmDetailMasjid">-</span>
+            </div>
+            <div class="confirm-details-row">
+                <span class="confirm-details-label">Tanggal Servis</span>
+                <span class="confirm-details-value" id="confirmDetailDate">-</span>
+            </div>
+        </div>
+        <div class="confirm-actions">
+            <button class="btn btn-success" id="confirmModalConfirmBtn" onclick="executeConfirmAction()">
+                <i class="fas fa-check" aria-hidden="true"></i> Ya, Lanjutkan
+            </button>
+            <button class="btn btn-secondary" onclick="closeConfirmModal()">
+                <i class="fas fa-times" aria-hidden="true"></i> Batal
+            </button>
+        </div>
     </div>
 </div>
 
