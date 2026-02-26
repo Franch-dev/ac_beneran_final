@@ -26,9 +26,11 @@
             </div>
             <button class="btn-icon" onclick="toggleDarkMode()" title="Toggle Dark Mode" aria-label="Ganti mode gelap/terang" role="menuitem">
                 <i class="fas fa-moon" id="darkModeIcon" aria-hidden="true"></i>
+                <span class="d-inline d-md-none ms-2">Mode</span>
             </button>
             <button class="btn-icon text-danger" onclick="openPopup('logoutPopup')" title="Logout" aria-label="Logout" role="menuitem">
                 <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+                <span class="d-inline d-md-none ms-2">Logout</span>
             </button>
         @else
             <a href="{{ route('login') }}" class="btn btn-primary btn-sm" role="menuitem">

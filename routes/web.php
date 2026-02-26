@@ -9,7 +9,8 @@ use App\Http\Controllers\InvoiceController;
 use Illuminate\Support\Facades\Route;
 
 // Public
-Route::get('/', fn() => view('home'))->name('home');
+use App\Http\Controllers\HomeController;
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
 // Auth
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login')->middleware('guest');

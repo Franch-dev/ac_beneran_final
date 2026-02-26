@@ -49,6 +49,16 @@
     --t: 0.18s ease;
 }
 
+/* Utility: hanya tampil di mobile */
+.d-md-none {
+    display: inline !important;
+}
+@media (min-width: 768px) {
+    .d-md-none {
+        display: none !important;
+    }
+}
+
 [data-theme="dark"] {
     --primary: #6366f1;
     --primary-hover: #818cf8;
@@ -217,14 +227,14 @@ a { text-decoration: none; }
 
 /* Hamburger Animation - Open State */
 .navbar-toggle[aria-expanded="true"] .hamburger-icon span:nth-child(1) {
-    transform: translateY(7px) rotate(45deg);
+    transform: translateY(5px) rotate(45deg);
 }
 .navbar-toggle[aria-expanded="true"] .hamburger-icon span:nth-child(2) {
     opacity: 0;
     transform: scaleX(0);
 }
 .navbar-toggle[aria-expanded="true"] .hamburger-icon span:nth-child(3) {
-    transform: translateY(-7px) rotate(-45deg);
+    transform: translateY(-9px) rotate(-45deg);
 }
 
 /* Mobile Menu Overlay */
@@ -398,6 +408,11 @@ a { text-decoration: none; }
 .popup-lg { max-width: 720px; }
 .popup-xl { max-width: 1040px; }
 
+/* Pastikan popup logout selalu di atas sidebar */
+#logoutPopup {
+    z-index: 2001 !important;
+}
+
 /* === CONFIRMATION MODAL (Account Manager) === */
 .confirm-modal {
     max-width: 420px;
@@ -515,6 +530,12 @@ a { text-decoration: none; }
 /* === SUMMARY CARDS === */
 .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(195px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
 .summary-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.2rem 1.3rem; display: flex; align-items: center; gap: 1rem; transition: box-shadow var(--t), transform var(--t); }
+
+@media (min-width: 1024px) {
+    .summary-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
 .summary-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
 .summary-icon { width: 46px; height: 46px; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #fff; flex-shrink: 0; }
 .bg-primary { background: var(--primary); }
