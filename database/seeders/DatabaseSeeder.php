@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
         \Illuminate\Support\Facades\DB::table('service_details')->delete();
         \Illuminate\Support\Facades\DB::table('service_orders')->delete();
         \Illuminate\Support\Facades\DB::table('invoices')->delete();
-        Masjid::withTrashed()->forceDelete();
+        Masjid::query()->delete();
 
         // Buat user (gunakan firstOrCreate agar tidak duplikat)
         User::firstOrCreate(['email' => 'frontdesk@example.com'], [

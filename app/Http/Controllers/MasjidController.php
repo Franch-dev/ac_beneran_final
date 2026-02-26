@@ -68,7 +68,8 @@ class MasjidController extends Controller
 
     public function destroy(Masjid $masjid)
     {
-        $masjid->delete();
+        // Hard delete so FK cascade cleans up service orders, AC units, etc.
+        $masjid->forceDelete();
         return response()->json(['success' => true]);
     }
 
