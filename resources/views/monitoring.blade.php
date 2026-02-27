@@ -192,7 +192,7 @@
         <span class="legend-item"><span class="legend-dot urgency-harus_servis"></span> Harus Servis (90–120 hari)</span>
         <span class="legend-item"><span class="legend-dot urgency-overdue"></span> Overdue (>120 hari)</span>
     </div>
-    
+
     <!-- Masjid Urgency Overview -->
     <div class="section-title" style="margin-top: 2rem">
         <h2>Status Urgensi Seluruh Masjid</h2>
@@ -452,5 +452,5 @@ const ROUTES_MON = {
 const isManager = {{ auth()->user()->isManager() ? 'true' : 'false' }};
 const isFrontdesk2 = {{ auth()->user()->isFrontdesk() ? 'true' : 'false' }};
 </script>
-<script src="{{ asset('js/monitoring.js') }}"></script>status urgensi
+<script src="{{ asset('js/monitoring.js') }}"></script>
 @endpush
