@@ -102,6 +102,13 @@
         <div class="totals">
             <div><strong>Total: Rp {{ number_format($serviceOrder->invoice->total_price, 0, ',', '.') }}</strong></div>
         </div>
+
+        @if($serviceOrder->notes)
+        <div class="section-title" style="margin-top:18px">Instruksi Tambahan</div>
+        <div style="border:1px dashed #cbd5e1;padding:10px;font-size:13px;color:#2563eb;min-height:40px;margin-bottom:18px">
+            {{ $serviceOrder->notes }}
+        </div>
+        @endif
     </div>
 </body>
 </html>

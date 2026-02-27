@@ -77,6 +77,17 @@
                 <div><span class="card-id">{{ $masjid->custom_id }}</span></div>
                 <div class="card-name">{{ $masjid->name }}</div>
                 <div class="card-address"><i class="fas fa-map-marker-alt"></i> {{ Str::limit($masjid->address, 65) }}</div>
+                <div class="card-phone"><i class="fas fa-phone"></i>
+                    @if(is_array($masjid->phone_numbers))
+                        @foreach($masjid->phone_numbers as $phone)
+                            <span class="phone-number">{{ $phone }}</span>@if(!$loop->last), @endif
+                        @endforeach
+                    @elseif(!empty($masjid->phone_numbers))
+                        <span class="phone-number">{{ $masjid->phone_numbers }}</span>
+                    @else
+                        <span class="phone-number text-muted">Tidak ada nomor telepon</span>
+                    @endif
+                </div>
                 <div class="card-stats">
                     <span class="card-stat"><i class="fas fa-user"></i> {{ $masjid->dkm_name }}</span>
                     <span class="card-stat"><i class="fas fa-snowflake"></i> {{ $masjid->acUnits->sum('quantity') }} unit AC</span>

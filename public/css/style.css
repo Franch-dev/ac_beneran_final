@@ -382,8 +382,11 @@ a { text-decoration: none; }
 .card-body { padding: 0.7rem 1rem; }
 .card-id { display: inline-block; font-family: monospace; font-size: 0.68rem; color: var(--text-muted); background: var(--gray-100); padding: 0.08rem 0.4rem; border-radius: 4px; margin-bottom: 0.35rem; }
 .card-name { font-size: 0.975rem; font-weight: 700; color: var(--text); margin-bottom: 0.3rem; letter-spacing: -0.01em; line-height: 1.3; }
-.card-address { font-size: 0.77rem; color: var(--text-muted); margin-bottom: 0.65rem; display: flex; align-items: flex-start; gap: 0.3rem; line-height: 1.4; }
+.card-address { font-size: 0.77rem; color: var(--text-muted); margin-bottom: 0.35rem; display: flex; align-items: flex-start; gap: 0.3rem; line-height: 1.4; }
 .card-address i { margin-top: 2px; font-size: 0.68rem; color: var(--gray-400); flex-shrink: 0; }
+.card-phone { font-size: 0.77rem; color: var(--text-muted); margin-bottom: 0.65rem; display: flex; align-items: flex-start; gap: 0.3rem; line-height: 1.4; }
+.card-phone i { margin-top: 2px; font-size: 0.68rem; color: var(--gray-400); flex-shrink: 0; }
+.phone-number { font-weight: 400; }
 .card-stats { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
 .card-stat { display: flex; align-items: center; gap: 0.3rem; font-size: 0.73rem; color: var(--text-muted); background: var(--gray-50); padding: 0.18rem 0.5rem; border-radius: var(--radius-full); border: 1px solid var(--border); }
 .card-stat i { font-size: 0.63rem; color: var(--gray-400); }

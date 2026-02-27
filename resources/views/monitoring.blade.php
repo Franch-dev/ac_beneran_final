@@ -316,10 +316,15 @@
 <div class="popup popup-lg" id="orderDetailPopup">
     <div class="popup-header">
         <h3><i class="fas fa-clipboard-list"></i> Detail Service Order</h3>
-        <button class="popup-close" onclick="closePopup('orderDetailPopup')">&times;</button>
     </div>
     <div class="popup-body" id="orderDetailBody">
         <!-- Dynamic -->
+        @if(isset($order) && !empty($order->notes))
+            <div class="order-notes" style="margin-bottom:0.8rem;padding:0.7rem 1rem;background:var(--info-soft);border-radius:var(--radius);border:1px solid var(--info);font-size:0.82rem;color:var(--info);">
+                <i class="fas fa-info-circle"></i> <strong>Instruksi Tambahan:</strong><br>
+                {{ $order->notes }}
+            </div>
+        @endif
     </div>
 </div>
 
@@ -392,9 +397,12 @@
             </span>
             <span id="confirmModalHeading">Konfirmasi Aksi</span>
         </h3>
+        {{-- Tombol close dihapus untuk manager --}}
+        @if(!auth()->user()->isManager())
         <button class="popup-close" onclick="closeConfirmModal()" aria-label="Tutup modal">
             <i class="fas fa-times" aria-hidden="true"></i>
         </button>
+        @endif
     </div>
     <div class="popup-body">
         <p class="confirm-message" id="confirmModalMessage">
