@@ -25,6 +25,7 @@ const HARGA_SERVIS = {
         '1PK': 120000,   // Rp 120.000 per unit
         '2PK': 170000,   // Rp 170.000 per unit
         '5PK': 300000,   // Rp 300.000 per unit
+        
     },
 
 };
