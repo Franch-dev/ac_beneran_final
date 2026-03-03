@@ -1,1 +1,0 @@
-        hello<?php /**PATH C:\xampp\htdocs\ac_beneran_final\resources\views\welcome.blade.php ENDPATH**/ ?>

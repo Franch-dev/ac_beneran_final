@@ -289,9 +289,9 @@ const SidebarManager = {
             this.collapseBtn.addEventListener('click', () => this.toggleCollapse());
         }
 
-        // Mobile open
+        // Mobile toggle
         if (this.mobileMenuBtn) {
-            this.mobileMenuBtn.addEventListener('click', () => this.openMobile());
+            this.mobileMenuBtn.addEventListener('click', () => this.toggleMobile());
         }
 
         // Overlay click close
@@ -328,7 +328,17 @@ const SidebarManager = {
         this.sidebar?.classList.remove('mobile-open');
         this.overlay?.classList.remove('active');
         document.body.style.overflow = '';
+    },
+
+    toggleMobile() {
+    const isOpen = this.sidebar?.classList.contains('mobile-open');
+
+    if (isOpen) {
+        this.closeMobile();
+    } else {
+        this.openMobile();
     }
+}
 };
 
 // Initialize sidebar
