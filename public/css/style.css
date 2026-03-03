@@ -955,9 +955,10 @@ body.sidebar-collapsed .sidebar-brand-text { opacity: 0; width: 0; }
     font-size: 0.75rem;
     transition: all var(--sidebar-transition);
     flex-shrink: 0;
+    transform: rotate(360deg);
 }
-.sidebar-collapse-btn:hover { background: var(--gray-100); color: var(--primary); border-color: var(--primary); }
-body.sidebar-collapsed .sidebar-collapse-btn { transform: rotate(180deg); }
+.sidebar-collapse-btn:hover { background: var(--gray-100); color: var(--primary); border-color: var(--primary); cursor:pointer; }
+body.sidebar-collapsed .sidebar-collapse-btn { transform: rotate(360deg); }
 
 /* Nav */
 .sidebar-nav {
@@ -982,7 +983,7 @@ body.sidebar-collapsed .sidebar-collapse-btn { transform: rotate(180deg); }
     position: relative;
     overflow: hidden;
 }
-.sidebar-link:hover { background: var(--gray-100); color: var(--text); }
+.sidebar-link:hover { background: var(--gray-100); color: var(--text); cursor: pointer; }
 .sidebar-link.active {
     background: var(--primary-soft);
     color: var(--primary);
@@ -1094,9 +1095,9 @@ body.sidebar-collapsed .sidebar-user-info { opacity: 0; width: 0; overflow: hidd
     transition: all var(--sidebar-transition);
     font-family: var(--font);
 }
-.sidebar-action-btn:hover { background: var(--gray-100); color: var(--text); }
-.sidebar-action-btn.danger:hover { background: var(--danger-bg); color: var(--danger); }
-.sidebar-action-btn i { width: 20px; text-align: center; flex-shrink: 0; }
+.sidebar-action-btn:hover { background: var(--gray-100); color: var(--text); cursor: pointer; }
+.sidebar-action-btn.danger:hover { background: var(--danger-bg); color: var(--danger); cursor: pointer; }
+.sidebar-action-btn i { width: 20px; text-align: center; flex-shrink: 0; cursor: pointer; }
 body.sidebar-collapsed .sidebar-action-btn .sidebar-label { opacity: 0; width: 0; overflow: hidden; }
 body.sidebar-collapsed .sidebar-action-btn { justify-content: center; padding: 8px; gap: 0; }
 
