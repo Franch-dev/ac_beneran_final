@@ -27,24 +27,7 @@ function closeAllPopups() {
     document.body.style.overflow = '';
 }
 
-// === DARK MODE ===
-function toggleDarkMode() {
-    const html  = document.documentElement;
-    const isDark = html.getAttribute('data-theme') === 'dark';
-    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    const icon = document.getElementById('darkModeIcon');
-    if (icon) icon.className = isDark ? 'fas fa-moon' : 'fas fa-sun';
-    localStorage.setItem('theme', isDark ? 'light' : 'dark');
-}
 
-(function () {
-    const saved = localStorage.getItem('theme');
-    if (saved) {
-        document.documentElement.setAttribute('data-theme', saved);
-        const icon = document.getElementById('darkModeIcon');
-        if (icon) icon.className = saved === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
-    }
-})();
 
 // === NAVBAR / MOBILE MENU MANAGEMENT ===
 const NavbarManager = {
@@ -186,10 +169,6 @@ function toggleNavbar() {
     NavbarManager.toggle();
 }
 
-// Initialize on DOM ready
-document.addEventListener('DOMContentLoaded', () => {
-    NavbarManager.init();
-});
 
 // === FETCH HELPER ===
 async function apiFetch(url, method = 'GET', data = null) {
@@ -322,12 +301,20 @@ const SidebarManager = {
         this.sidebar?.classList.add('mobile-open');
         this.overlay?.classList.add('active');
         document.body.style.overflow = 'hidden';
-    },
+
+        // 🔥 Sembunyikan dark mode header
+        const headerBtn = document.getElementById('headerDarkModeBtn');
+        if (headerBtn) headerBtn.style.display = 'none';
+    },  
 
     closeMobile() {
         this.sidebar?.classList.remove('mobile-open');
         this.overlay?.classList.remove('active');
         document.body.style.overflow = '';
+
+        // 🔥 Tampilkan kembali dark mode header
+        const headerBtn = document.getElementById('headerDarkModeBtn');
+        if (headerBtn) headerBtn.style.display = '';
     },
 
     toggleMobile() {
@@ -341,20 +328,94 @@ const SidebarManager = {
 }
 };
 
-// Initialize sidebar
 document.addEventListener('DOMContentLoaded', () => {
+    NavbarManager.init();
     SidebarManager.init();
+
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    // 🔥 Sync text
+    ['darkModeText', 'darkModeTextGuest'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = savedTheme === 'dark'
+                ? 'Mode Terang'
+                : 'Mode Gelap';
+        }
+    });
+
+    // 🔥 Sync icon
+    document.querySelectorAll(
+        '#darkModeIcon, #darkModeIconMobile, #darkModeIconGuest'
+    ).forEach(icon => {
+        icon.className = savedTheme === 'dark'
+            ? 'fas fa-sun'
+            : 'fas fa-moon';
+    });
 });
 
+
+
 // Dark mode icon sync for mobile topbar
-const origToggleDarkMode = window.toggleDarkMode;
+// Dark mode icon + text sync
 window.toggleDarkMode = function() {
     const html = document.documentElement;
     const isDark = html.getAttribute('data-theme') === 'dark';
-    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    localStorage.setItem('theme', isDark ? 'light' : 'dark');
-    // Sync all dark mode icons
-    document.querySelectorAll('#darkModeIcon, #darkModeIconMobile').forEach(icon => {
-        icon.className = isDark ? 'fas fa-moon' : 'fas fa-sun';
+
+    const newTheme = isDark ? 'light' : 'dark';
+    html.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+
+    // 🔥 Sync semua icon
+    document.querySelectorAll(
+        '#darkModeIcon, #darkModeIconMobile, #darkModeIconGuest'
+    ).forEach(icon => {
+        icon.className = newTheme === 'dark'
+            ? 'fas fa-sun'
+            : 'fas fa-moon';
+    });
+
+    // 🔥 Sync semua text
+    const textMap = [
+        'darkModeText',
+        'darkModeTextGuest'
+    ];
+
+    textMap.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = newTheme === 'dark'
+                ? 'Mode Terang'
+                : 'Mode Gelap';
+        }
     });
 };
+
+document.addEventListener("DOMContentLoaded", function () {
+    const links = document.querySelectorAll(".nav-link");
+
+    links.forEach(link => {
+        link.addEventListener("click", function () {
+
+            // Hapus semua active
+            links.forEach(l => l.classList.remove("active"));
+
+            // Tambah active ke yang diklik
+            this.classList.add("active");
+        });
+    });
+});
+
+
+const mobileBtn = document.getElementById("mobileMenuBtn");
+const sidebar = document.getElementById("sidebar");
+const overlay = document.getElementById("sidebarOverlay");
+
+mobileBtn.addEventListener("click", function () {
+    const isOpen = this.getAttribute("aria-expanded") === "true";
+
+    this.setAttribute("aria-expanded", !isOpen);
+    sidebar.classList.toggle("active");
+    overlay.classList.toggle("active");
+});

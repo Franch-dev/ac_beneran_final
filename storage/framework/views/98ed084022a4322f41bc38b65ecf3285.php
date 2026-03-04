@@ -4,9 +4,9 @@
 
 <?php $__env->startSection('content'); ?>
 <!-- Hero Section -->
-<section class="hero">
+<section class="hero" id="home" >
     <div class="hero-content">
-        <div class="hero-badge">🕌 Layanan Profesional</div>
+        <div class="hero-badge">Layanan Profesional</div>
         <h1>Sistem Servis AC<br><span class="gradient-text">Masjid & Musholla</span></h1>
         <p>Platform manajemen servis AC terpadu untuk masjid dan musholla. Kelola unit, jadwalkan servis, dan pantau kondisi AC secara real-time.</p>
         <div class="hero-actions">
@@ -266,22 +266,21 @@
                 <a href="tel:02112345678" class="btn btn-info btn-sm">
                     <i class="fas fa-phone"></i> Hubungi
                 </a>
+                
             </div>
         </div>
     </div>
-</section>
-
-
-<!-- Lokasi & Maps -->
-<section class="location-section">
-    <div class="container text-center">
-        <h2>Lokasi Kami</h2>
-        <div style="max-width:600px;margin:0 auto 1.5rem;">
+            <div class="container text-center">
+        <br><br>
+        <div style="max-width:820px;margin:0 auto 1.5rem;">
             <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d991.964964857857!2d106.9620843!3d-6.211166!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e698b80e955010d:0x83a105adcc080c6b!2sSekretariat%20Forkis!5e0!3m2!1sen!2sid!4v1700000000000!5m2!1sen!2sid" width="100%" height="320" style="border:0;border-radius:12px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
             <a href="https://www.google.com/maps/place/Sekretariat+Forkis/@-6.211166,106.9620843,786m/data=!3m1!1e3!4m6!3m5!1s0x2e698b80e955010d:0x83a105adcc080c6b!8m2!3d-6.2109742!4d106.9635937!16s%2Fg%2F11b5phqxxs?entry=ttu&g_ep=EgoyMDI2MDIyMy4wIKXMDSoASAFQAw%3D%3D" target="_blank" class="btn btn-success btn-sm mb-2">Buka di Google Maps</a>
         </div>
+    </div>  
     </div>
 </section>
+
+
 
 
 <!-- CTA -->
@@ -292,7 +291,6 @@
         <a href="<?php echo e(route('login')); ?>" class="btn btn-white btn-lg">
             <i class="fas fa-rocket"></i> Login Sekarang
         </a>
-    </div>
 </section>
 <?php $__env->stopSection(); ?>
 

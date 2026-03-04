@@ -108,7 +108,7 @@ a { text-decoration: none; }
     position: sticky;
     top: 0;
     z-index: 1000;
-    height: var(--navbar-h);
+    height: 55px;
     background: var(--bg-card);
     border-bottom: 1px solid var(--border);
     display: flex;
@@ -134,7 +134,7 @@ a { text-decoration: none; }
     text-decoration: none;
     transition: opacity var(--t);
 }
-.navbar-brand:hover { opacity: 0.85; }
+
 .brand-icon {
     width: 40px; height: 40px;
     background: var(--primary);
@@ -251,6 +251,42 @@ a { text-decoration: none; }
 .navbar-toggle[aria-expanded="true"] .hamburger-icon span:nth-child(1) { transform: translateY(5px) rotate(45deg); }
 .navbar-toggle[aria-expanded="true"] .hamburger-icon span:nth-child(2) { opacity: 0; transform: scaleX(0); }
 .navbar-toggle[aria-expanded="true"] .hamburger-icon span:nth-child(3) { transform: translateY(-9px) rotate(-45deg); }
+
+/* Hamburger Login */
+.mobile-menu-btn {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 22px;
+    height: 18px;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.mobile-menu-btn span {
+    width: 22px;
+    height: 2px;
+    background: var(--text);
+    border-radius: 2px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Saat terbuka */
+.mobile-menu-btn[aria-expanded="true"] span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+}
+
+.mobile-menu-btn[aria-expanded="true"] span:nth-child(2) {
+    opacity: 0;
+    transform: scaleX(0);
+}
+
+.mobile-menu-btn[aria-expanded="true"] span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+}
 
 .mobile-menu-overlay {
     position: fixed;
@@ -1134,7 +1170,7 @@ body.has-sidebar .alert { margin: 16px 24px 0; }
     top: 0;
     left: 0;
     right: 0;
-    height: var(--topbar-h);
+    height: 55px;
     background: var(--bg-card);
     border-bottom: 1px solid var(--border);
     align-items: center;
@@ -1144,29 +1180,7 @@ body.has-sidebar .alert { margin: 16px 24px 0; }
     box-shadow: var(--shadow-sm);
 }
 
-.mobile-menu-btn {
-    width: 40px;
-    height: 40px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    border-radius: 8px;
-    transition: background var(--t);
-}
-.mobile-menu-btn:hover { background: var(--gray-100); }
-.mobile-menu-btn span {
-    display: block;
-    width: 20px;
-    height: 2px;
-    background: var(--text);
-    border-radius: 2px;
-    transition: all 0.25s ease;
-}
+
 
 .sidebar-mobile-overlay {
     position: fixed;
@@ -1346,4 +1360,68 @@ body.has-sidebar .alert { margin: 16px 24px 0; }
 
 @media (prefers-reduced-motion: reduce) {
     .marquee-track { animation: none; }
+}
+
+.mobile-sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 18px;
+    font-weight: 600;
+    font-size: 16px;
+    margin-top: 100;
+    padding: 13px 0px;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+/* Sidebar mobile container */
+.navbar-menu {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* WAJIB ini */
+    align-items: stretch;
+    padding-top: 0; /* Hapus jarak atas */
+}
+
+/* ============================= */
+/* DESKTOP MODE FIX */
+/* ============================= */
+@media (min-width: 992px) {
+
+    /* Sembunyikan toggle hamburger */
+    .navbar-toggle {
+        display: none;
+    }
+
+    /* Navbar menu jadi horizontal */
+    .navbar-menu {
+        position: static;
+        transform: none !important;
+        width: auto;
+        height: auto;
+        background: transparent;
+        flex-direction: row;
+        align-items: center;
+        gap: 20px;
+        padding: 0;
+        box-shadow: none;
+    }
+
+    /* Hilangkan header brand dalam sidebar mobile */
+    .mobile-sidebar-header {
+        display: none;
+    }
+
+    /* Overlay tidak perlu di desktop */
+    .mobile-menu-overlay {
+        display: none !important;
+    }
+}
+
+
+@media (min-width: 992px) {
+    #darkModeTextGuest {
+        display: none;
+    }
 }
