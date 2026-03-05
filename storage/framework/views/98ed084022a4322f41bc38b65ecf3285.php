@@ -65,7 +65,7 @@
                     </div>
                     <h3 class="fcard-title">Cepat & Responsif</h3>
                     <p class="fcard-desc">Tim teknisi berpengalaman siap merespons dalam 24 jam untuk kebutuhan servis AC masjid Anda.</p>
-                    <div class="fcard-tag">⚡ 24 Jam Respons</div>
+                    <div class="fcard-tag"> 24 Jam Respons</div>
                 </div>
                 <!-- Card 2 -->
                 <div class="fcard">
@@ -74,7 +74,7 @@
                     </div>
                     <h3 class="fcard-title">Bergaransi</h3>
                     <p class="fcard-desc">Setiap pekerjaan servis dilengkapi dengan garansi layanan resmi selama 3 bulan penuh.</p>
-                    <div class="fcard-tag">🛡️ Garansi 3 Bulan</div>
+                    <div class="fcard-tag"> Garansi 3 Bulan</div>
                 </div>
                 <!-- Card 3 -->
                 <div class="fcard">
@@ -83,7 +83,7 @@
                     </div>
                     <h3 class="fcard-title">Monitoring Real-time</h3>
                     <p class="fcard-desc">Pantau kondisi dan status servis AC masjid kapan saja dan di mana saja secara langsung.</p>
-                    <div class="fcard-tag">📊 Live Dashboard</div>
+                    <div class="fcard-tag"> Live Dashboard</div>
                 </div>
                 <!-- Card 4 -->
                 <div class="fcard">
@@ -92,7 +92,7 @@
                     </div>
                     <h3 class="fcard-title">Laporan Lengkap</h3>
                     <p class="fcard-desc">SPK dan invoice terstruktur untuk setiap pekerjaan servis yang dilakukan secara transparan.</p>
-                    <div class="fcard-tag">📄 SPK & Invoice</div>
+                    <div class="fcard-tag"> SPK & Invoice</div>
                 </div>
                 <!-- Card 5 -->
                 <div class="fcard">
@@ -101,7 +101,7 @@
                     </div>
                     <h3 class="fcard-title">Notifikasi Otomatis</h3>
                     <p class="fcard-desc">Sistem otomatis mengingatkan jadwal servis berdasarkan urgensi dan kondisi AC.</p>
-                    <div class="fcard-tag">🔔 Smart Alert</div>
+                    <div class="fcard-tag"> Smart Alert</div>
                 </div>
                 <!-- Card 6 -->
                 <div class="fcard">
@@ -110,7 +110,7 @@
                     </div>
                     <h3 class="fcard-title">Multi-Role Access</h3>
                     <p class="fcard-desc">Sistem hak akses terstruktur untuk Frontdesk, Manager, dan Admin dalam satu platform.</p>
-                    <div class="fcard-tag">👥 3 Level Akses</div>
+                    <div class="fcard-tag"> 3 Level Akses</div>
                 </div>
                 <!-- DUPLICATE for seamless loop -->
                 <div class="fcard">
@@ -119,7 +119,7 @@
                     </div>
                     <h3 class="fcard-title">Cepat & Responsif</h3>
                     <p class="fcard-desc">Tim teknisi berpengalaman siap merespons dalam 24 jam untuk kebutuhan servis AC masjid Anda.</p>
-                    <div class="fcard-tag">⚡ 24 Jam Respons</div>
+                    <div class="fcard-tag"> 24 Jam Respons</div>
                 </div>
                 <div class="fcard">
                     <div class="fcard-icon" style="background: #e6f4ea; color: #1e8e3e">
@@ -127,7 +127,7 @@
                     </div>
                     <h3 class="fcard-title">Bergaransi</h3>
                     <p class="fcard-desc">Setiap pekerjaan servis dilengkapi dengan garansi layanan resmi selama 3 bulan penuh.</p>
-                    <div class="fcard-tag">🛡️ Garansi 3 Bulan</div>
+                    <div class="fcard-tag"> Garansi 3 Bulan</div>
                 </div>
                 <div class="fcard">
                     <div class="fcard-icon" style="background: #fef0cd; color: #b06000">
@@ -135,7 +135,7 @@
                     </div>
                     <h3 class="fcard-title">Monitoring Real-time</h3>
                     <p class="fcard-desc">Pantau kondisi dan status servis AC masjid kapan saja dan di mana saja secara langsung.</p>
-                    <div class="fcard-tag">📊 Live Dashboard</div>
+                    <div class="fcard-tag"> Live Dashboard</div>
                 </div>
                 <div class="fcard">
                     <div class="fcard-icon" style="background: #fce8e6; color: #c5221f">
@@ -143,7 +143,7 @@
                     </div>
                     <h3 class="fcard-title">Laporan Lengkap</h3>
                     <p class="fcard-desc">SPK dan invoice terstruktur untuk setiap pekerjaan servis yang dilakukan secara transparan.</p>
-                    <div class="fcard-tag">📄 SPK & Invoice</div>
+                    <div class="fcard-tag"> SPK & Invoice</div>
                 </div>
                 <div class="fcard">
                     <div class="fcard-icon" style="background: #f3e8fd; color: #7b1fa2">
@@ -151,7 +151,7 @@
                     </div>
                     <h3 class="fcard-title">Notifikasi Otomatis</h3>
                     <p class="fcard-desc">Sistem otomatis mengingatkan jadwal servis berdasarkan urgensi dan kondisi AC.</p>
-                    <div class="fcard-tag">🔔 Smart Alert</div>
+                    <div class="fcard-tag"> Smart Alert</div>
                 </div>
                 <div class="fcard">
                     <div class="fcard-icon" style="background: #e0f7fa; color: #0097a7">
@@ -159,7 +159,7 @@
                     </div>
                     <h3 class="fcard-title">Multi-Role Access</h3>
                     <p class="fcard-desc">Sistem hak akses terstruktur untuk Frontdesk, Manager, dan Admin dalam satu platform.</p>
-                    <div class="fcard-tag">👥 3 Level Akses</div>
+                    <div class="fcard-tag"> 3 Level Akses</div>
                 </div>
             </div>
         </div>
@@ -176,7 +176,7 @@
 <section class="section section-alt" id="harga">
     <div class="container">
         <div class="section-header">
-            <h2>Harga Servis</h2>
+            <h2>Infaq Biaya Servis</h2>
             <p>Harga transparan, kualitas terjamin</p>
         </div>
         <div class="pricing-grid">
@@ -246,24 +246,24 @@
             <div class="contact-card">
                 <i class="fab fa-whatsapp"></i>
                 <h3>WhatsApp CS</h3>
-                <p>+62 812 3456 7890</p>
-                <a href="https://wa.me/6281234567890" class="btn btn-success btn-sm" target="_blank">
+                <p>0895-3259-13693</p>
+                <a href="https://wa.me/62895325913693" class="btn btn-success btn-sm" target="_blank">
                     <i class="fab fa-whatsapp"></i> Chat Sekarang
                 </a>
             </div>
             <div class="contact-card">
                 <i class="fas fa-envelope"></i>
                 <h3>Email</h3>
-                <p>cs@acservismasjid.id</p>
-                <a href="mailto:cs@acservismasjid.id" class="btn btn-primary btn-sm">
+                <p>sekretariat@forkis.org</p>
+                <a href="mailto:sekretariat@forkis.org" class="btn btn-primary btn-sm">
                     <i class="fas fa-envelope"></i> Kirim Email
                 </a>
             </div>
             <div class="contact-card">
                 <i class="fas fa-phone"></i>
                 <h3>Telepon</h3>
-                <p>(021) 1234-5678</p>
-                <a href="tel:02112345678" class="btn btn-info btn-sm">
+                <p>885 1031</p>
+                <a href="tel:8851031" class="btn btn-info btn-sm">
                     <i class="fas fa-phone"></i> Hubungi
                 </a>
                 

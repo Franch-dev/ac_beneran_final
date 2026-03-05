@@ -66,7 +66,7 @@
             <div class="card-accent-bar"></div>
             <div class="card-top">
                 <span class="card-type-chip <?php echo e($masjid->type); ?>">
-                    <?php echo e($masjid->type === 'masjid' ? '🕌 Masjid' : '🏘️ Musholla'); ?>
+                    <?php echo e($masjid->type === 'masjid' ? ' Masjid' : ' Musholla'); ?>
 
                 </span>
                 <span class="urgency-pill urgency-<?php echo e($masjid->urgency_status); ?>">
@@ -153,8 +153,8 @@
                 <div class="form-group">
                     <label class="form-label">Tipe <span class="required">*</span></label>
                     <select name="type" id="masjidType" class="form-select" required>
-                        <option value="masjid">🕌 Masjid</option>
-                        <option value="musholla">🏘️ Musholla</option>
+                        <option value="masjid"> Masjid</option>
+                        <option value="musholla"> Musholla</option>
                     </select>
                 </div>
                 <div class="form-group">
