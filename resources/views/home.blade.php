@@ -4,15 +4,9 @@
 
 @section('content')
 <!-- Hero Section -->
-<<<<<<< HEAD
-<section class="hero">
+<section class="hero" id="home">
     <div class="hero-content">
         <div class="hero-badge">🕌 Layanan Profesional</div>
-=======
-<section class="hero" id="home" >
-    <div class="hero-content">
-        <div class="hero-badge">Layanan Profesional</div>
->>>>>>> e4258cdc0d298041d4477996327ae2a51c05c6f5
         <h1>Sistem Servis AC<br><span class="gradient-text">Masjid & Musholla</span></h1>
         <p>Platform manajemen servis AC terpadu untuk masjid dan musholla. Kelola unit, jadwalkan servis, dan pantau kondisi AC secara real-time.</p>
         <div class="hero-actions">
@@ -53,59 +47,6 @@
 </section>
 
 <!-- Keunggulan -->
-<<<<<<< HEAD
-<section class="section" id="keunggulan">
-    <div class="container">
-        <div class="section-header">
-            <h2>Keunggulan Layanan</h2>
-            <p>Mengapa memilih kami untuk servis AC masjid Anda?</p>
-        </div>
-        <div class="feature-grid">
-            <div class="feature-card">
-                <div class="feature-icon" style="background: #e3f2fd">
-                    <i class="fas fa-bolt" style="color: #1976d2"></i>
-                </div>
-                <h3>Cepat & Responsif</h3>
-                <p>Tim teknisi berpengalaman siap merespons dalam 24 jam untuk kebutuhan servis AC masjid.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon" style="background: #e8f5e9">
-                    <i class="fas fa-shield-alt" style="color: #388e3c"></i>
-                </div>
-                <h3>Bergaransi</h3>
-                <p>Setiap pekerjaan servis dilengkapi dengan garansi layanan selama 3 bulan.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon" style="background: #fff3e0">
-                    <i class="fas fa-chart-bar" style="color: #f57c00"></i>
-                </div>
-                <h3>Monitoring Real-time</h3>
-                <p>Pantau kondisi dan status servis AC masjid kapan saja dan di mana saja.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon" style="background: #fce4ec">
-                    <i class="fas fa-file-invoice" style="color: #c62828"></i>
-                </div>
-                <h3>Laporan Lengkap</h3>
-                <p>SPK dan invoice terstruktur untuk setiap pekerjaan servis yang dilakukan.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon" style="background: #f3e5f5">
-                    <i class="fas fa-bell" style="color: #7b1fa2"></i>
-                </div>
-                <h3>Notifikasi Otomatis</h3>
-                <p>Sistem otomatis mengingatkan jadwal servis berdasarkan urgensi kondisi AC.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon" style="background: #e0f7fa">
-                    <i class="fas fa-users-cog" style="color: #0097a7"></i>
-                </div>
-                <h3>Multi-Role Access</h3>
-                <p>Sistem hak akses terstruktur untuk Frontdesk, Manager, dan Admin.</p>
-            </div>
-        </div>
-    </div>
-=======
 <section class="section features-section" id="keunggulan">
     <div class="section-header container">
         <div class="features-eyebrow">✦ Keunggulan Kami</div>
@@ -229,18 +170,14 @@
 
     <!-- Pause on hover hint -->
     <p class="marquee-hint container">Hover untuk berhenti · Scroll untuk melihat semua fitur</p>
->>>>>>> e4258cdc0d298041d4477996327ae2a51c05c6f5
+</section>
 </section>
 
 <!-- Harga Servis -->
 <section class="section section-alt" id="harga">
     <div class="container">
         <div class="section-header">
-<<<<<<< HEAD
             <h2>Harga Servis</h2>
-=======
-            <h2>Infaq Biaya Servis</h2>
->>>>>>> e4258cdc0d298041d4477996327ae2a51c05c6f5
             <p>Harga transparan, kualitas terjamin</p>
         </div>
         <div class="pricing-grid">
@@ -310,77 +247,43 @@
             <div class="contact-card">
                 <i class="fab fa-whatsapp"></i>
                 <h3>WhatsApp CS</h3>
-<<<<<<< HEAD
-                <p>+62 812 3456 7890</p>
-                <a href="https://wa.me/6281234567890" class="btn btn-success btn-sm" target="_blank">
-=======
                 <p>0895-3259-13693</p>
                 <a href="https://wa.me/62895325913693" class="btn btn-success btn-sm" target="_blank">
->>>>>>> e4258cdc0d298041d4477996327ae2a51c05c6f5
                     <i class="fab fa-whatsapp"></i> Chat Sekarang
                 </a>
             </div>
             <div class="contact-card">
                 <i class="fas fa-envelope"></i>
                 <h3>Email</h3>
-<<<<<<< HEAD
-                <p>cs@acservismasjid.id</p>
-                <a href="mailto:cs@acservismasjid.id" class="btn btn-primary btn-sm">
-=======
                 <p>sekretariat@forkis.org</p>
                 <a href="mailto:sekretariat@forkis.org" class="btn btn-primary btn-sm">
->>>>>>> e4258cdc0d298041d4477996327ae2a51c05c6f5
                     <i class="fas fa-envelope"></i> Kirim Email
                 </a>
             </div>
             <div class="contact-card">
                 <i class="fas fa-phone"></i>
                 <h3>Telepon</h3>
-<<<<<<< HEAD
-                <p>(021) 1234-5678</p>
-                <a href="tel:02112345678" class="btn btn-info btn-sm">
+                <p>885 1031</p>
+                <a href="tel:8851031" class="btn btn-info btn-sm">
                     <i class="fas fa-phone"></i> Hubungi
                 </a>
             </div>
         </div>
     </div>
 </section>
-
 
 <!-- Lokasi & Maps -->
 <section class="location-section">
     <div class="container text-center">
         <h2>Lokasi Kami</h2>
-        <div style="max-width:600px;margin:0 auto 1.5rem;">
-            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d991.964964857857!2d106.9620843!3d-6.211166!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e698b80e955010d:0x83a105adcc080c6b!2sSekretariat%20Forkis!5e0!3m2!1sen!2sid!4v1700000000000!5m2!1sen!2sid" width="100%" height="320" style="border:0;border-radius:12px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-            <a href="https://www.google.com/maps/place/Sekretariat+Forkis/@-6.211166,106.9620843,786m/data=!3m1!1e3!4m6!3m5!1s0x2e698b80e955010d:0x83a105adcc080c6b!8m2!3d-6.2109742!4d106.9635937!16s%2Fg%2F11b5phqxxs?entry=ttu&g_ep=EgoyMDI2MDIyMy4wIKXMDSoASAFQAw%3D%3D" target="_blank" class="btn btn-success btn-sm mb-2">Buka di Google Maps</a>
-        </div>
-=======
-                <p>885 1031</p>
-                <a href="tel:8851031" class="btn btn-info btn-sm">
-                    <i class="fas fa-phone"></i> Hubungi
-                </a>
-                
-            </div>
-        </div>
-    </div>
-            <div class="container text-center">
-        <br><br>
         <div style="max-width:820px;margin:0 auto 1.5rem;">
             <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d991.964964857857!2d106.9620843!3d-6.211166!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e698b80e955010d:0x83a105adcc080c6b!2sSekretariat%20Forkis!5e0!3m2!1sen!2sid!4v1700000000000!5m2!1sen!2sid" width="100%" height="320" style="border:0;border-radius:12px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
             <a href="https://www.google.com/maps/place/Sekretariat+Forkis/@-6.211166,106.9620843,786m/data=!3m1!1e3!4m6!3m5!1s0x2e698b80e955010d:0x83a105adcc080c6b!8m2!3d-6.2109742!4d106.9635937!16s%2Fg%2F11b5phqxxs?entry=ttu&g_ep=EgoyMDI2MDIyMy4wIKXMDSoASAFQAw%3D%3D" target="_blank" class="btn btn-success btn-sm mb-2">Buka di Google Maps</a>
         </div>
-    </div>  
->>>>>>> e4258cdc0d298041d4477996327ae2a51c05c6f5
     </div>
 </section>
 
 
-<<<<<<< HEAD
-=======
-
-
->>>>>>> e4258cdc0d298041d4477996327ae2a51c05c6f5
 <!-- CTA -->
 <section class="cta-section">
     <div class="container text-center">
@@ -389,9 +292,6 @@
         <a href="{{ route('login') }}" class="btn btn-white btn-lg">
             <i class="fas fa-rocket"></i> Login Sekarang
         </a>
-<<<<<<< HEAD
     </div>
-=======
->>>>>>> e4258cdc0d298041d4477996327ae2a51c05c6f5
 </section>
 @endsection

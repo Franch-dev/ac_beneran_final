@@ -66,11 +66,7 @@
             <div class="card-accent-bar"></div>
             <div class="card-top">
                 <span class="card-type-chip {{ $masjid->type }}">
-<<<<<<< HEAD
                     {{ $masjid->type === 'masjid' ? '🕌 Masjid' : '🏘️ Musholla' }}
-=======
-                    {{ $masjid->type === 'masjid' ? ' Masjid' : ' Musholla' }}
->>>>>>> e4258cdc0d298041d4477996327ae2a51c05c6f5
                 </span>
                 <span class="urgency-pill urgency-{{ $masjid->urgency_status }}">
                     <span class="urgency-pulse"></span>
@@ -154,13 +150,8 @@
                 <div class="form-group">
                     <label class="form-label">Tipe <span class="required">*</span></label>
                     <select name="type" id="masjidType" class="form-select" required>
-<<<<<<< HEAD
                         <option value="masjid">🕌 Masjid</option>
                         <option value="musholla">🏘️ Musholla</option>
-=======
-                        <option value="masjid"> Masjid</option>
-                        <option value="musholla"> Musholla</option>
->>>>>>> e4258cdc0d298041d4477996327ae2a51c05c6f5
                     </select>
                 </div>
                 <div class="form-group">

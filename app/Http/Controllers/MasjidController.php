@@ -12,15 +12,15 @@ class MasjidController extends Controller
     {
         $query = Masjid::with('acUnits', 'serviceOrders');
 
-        if ($request->search) {
-            $search = $request->search;
+        if ($request->filled('search')) {
+            $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%$search%")
                   ->orWhere('custom_id', 'like', "%$search%");
             });
         }
 
-        $masjids = $query->latest()->get();
+        $masjids = $query->latest()->paginate(15);
         return view('dashboard', compact('masjids'));
     }
 
