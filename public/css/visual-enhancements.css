@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* ==========================================
    VISUAL DESIGN ENHANCEMENTS
    Modern UI improvements and polish
@@ -490,12 +491,116 @@ html {
 }
 
 /* === UTILITY CLASSES === */
+=======
+/* Visual Enhancements - Google Design System Supplements */
+
+/* Smooth scrollbar for popups */
+.popup, .popup-col-left, .popup-col-right, .masjid-select-list {
+    scrollbar-width: thin;
+    scrollbar-color: var(--gray-300) transparent;
+}
+
+/* Card elevation on hover refinement */
+.masjid-card, .summary-card, .feature-card, .pricing-card, .contact-card, .urgency-card {
+    will-change: transform;
+}
+
+/* Table striping subtle */
+.data-table tbody tr:nth-child(even) td {
+    background: rgba(248, 249, 250, 0.5);
+}
+[data-theme="dark"] .data-table tbody tr:nth-child(even) td {
+    background: rgba(41, 42, 45, 0.5);
+}
+
+/* Focus ring */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* Selection color */
+::selection {
+    background: rgba(26, 115, 232, 0.15);
+    color: var(--text);
+}
+
+/* Smooth transitions for dark mode */
+body * {
+    transition: background-color var(--t), border-color var(--t), color var(--t);
+}
+.navbar-menu {
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Google-style chip/tag */
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: var(--gray-100);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+}
+
+/* Tooltip-style info */
+[title] { cursor: help; }
+
+/* Loading skeleton */
+@keyframes skeleton {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+.skeleton {
+    background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%);
+    background-size: 200% 100%;
+    animation: skeleton 1.5s infinite;
+    border-radius: var(--radius);
+}
+
+/* Improved active states */
+.btn:active { transform: scale(0.98) !important; }
+.btn-primary:active { box-shadow: 0 1px 4px rgba(26,115,232,0.3) !important; }
+
+/* Divider */
+.divider {
+    height: 1px;
+    background: var(--border);
+    margin: 16px 0;
+}
+
+/* Badge counter */
+.badge-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    background: var(--google-red);
+    color: #fff;
+    border-radius: var(--radius-full);
+    font-size: 0.6875rem;
+    font-weight: 700;
+}
+
+/* Overflow text */
+>>>>>>> e4258cdc0d298041d4477996327ae2a51c05c6f5
 .text-truncate {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
+<<<<<<< HEAD
 .text-break {
     word-break: break-word;
     overflow-wrap: break-word;
@@ -557,4 +662,22 @@ html {
         var(--gray-800) 100%
     );
     background-size: 200% 100%;
+=======
+/* Google Workspace-style section separator */
+.section-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 24px 0;
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+    font-weight: 500;
+}
+.section-divider::before,
+.section-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+>>>>>>> e4258cdc0d298041d4477996327ae2a51c05c6f5
 }

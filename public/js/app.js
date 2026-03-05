@@ -27,6 +27,7 @@ function closeAllPopups() {
     document.body.style.overflow = '';
 }
 
+<<<<<<< HEAD
 // === DARK MODE ===
 function toggleDarkMode() {
     const html  = document.documentElement;
@@ -45,6 +46,9 @@ function toggleDarkMode() {
         if (icon) icon.className = saved === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
     }
 })();
+=======
+
+>>>>>>> e4258cdc0d298041d4477996327ae2a51c05c6f5
 
 // === NAVBAR / MOBILE MENU MANAGEMENT ===
 const NavbarManager = {
@@ -186,10 +190,13 @@ function toggleNavbar() {
     NavbarManager.toggle();
 }
 
+<<<<<<< HEAD
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
     NavbarManager.init();
 });
+=======
+>>>>>>> e4258cdc0d298041d4477996327ae2a51c05c6f5
 
 // === FETCH HELPER ===
 async function apiFetch(url, method = 'GET', data = null) {
@@ -258,3 +265,188 @@ document.head.appendChild(_toastStyle);
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeAllPopups();
 });
+<<<<<<< HEAD
+=======
+
+// ============================================
+// SIDEBAR MANAGER
+// ============================================
+const SidebarManager = {
+    sidebar: null,
+    collapseBtn: null,
+    mobileMenuBtn: null,
+    overlay: null,
+
+    init() {
+        this.sidebar = document.getElementById('sidebar');
+        this.collapseBtn = document.getElementById('sidebarCollapseBtn');
+        this.mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        this.overlay = document.getElementById('sidebarOverlay');
+
+        if (!this.sidebar) return; // Not a sidebar page
+
+        // Load saved state
+        const saved = localStorage.getItem('sidebarCollapsed');
+        if (saved === 'true') {
+            document.body.classList.add('sidebar-collapsed');
+            const icon = document.getElementById('collapseIcon');
+            if (icon) icon.className = 'fas fa-chevron-right';
+        }
+
+        // Desktop collapse toggle
+        if (this.collapseBtn) {
+            this.collapseBtn.addEventListener('click', () => this.toggleCollapse());
+        }
+
+        // Mobile toggle
+        if (this.mobileMenuBtn) {
+            this.mobileMenuBtn.addEventListener('click', () => this.toggleMobile());
+        }
+
+        // Overlay click close
+        if (this.overlay) {
+            this.overlay.addEventListener('click', () => this.closeMobile());
+        }
+
+        // Escape key close
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') this.closeMobile();
+        });
+
+        // Add tooltips to links
+        this.sidebar.querySelectorAll('.sidebar-link').forEach(link => {
+            const label = link.querySelector('.sidebar-label');
+            if (label) link.setAttribute('data-tooltip', label.textContent.trim());
+        });
+    },
+
+    toggleCollapse() {
+        const isCollapsed = document.body.classList.toggle('sidebar-collapsed');
+        localStorage.setItem('sidebarCollapsed', isCollapsed);
+        const icon = document.getElementById('collapseIcon');
+        if (icon) icon.className = isCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
+    },
+
+    openMobile() {
+        this.sidebar?.classList.add('mobile-open');
+        this.overlay?.classList.add('active');
+        document.body.style.overflow = 'hidden';
+
+        // 🔥 Sembunyikan dark mode header
+        const headerBtn = document.getElementById('headerDarkModeBtn');
+        if (headerBtn) headerBtn.style.display = 'none';
+    },  
+
+    closeMobile() {
+        this.sidebar?.classList.remove('mobile-open');
+        this.overlay?.classList.remove('active');
+        document.body.style.overflow = '';
+
+        // 🔥 Tampilkan kembali dark mode header
+        const headerBtn = document.getElementById('headerDarkModeBtn');
+        if (headerBtn) headerBtn.style.display = '';
+    },
+
+    toggleMobile() {
+    const isOpen = this.sidebar?.classList.contains('mobile-open');
+
+    if (isOpen) {
+        this.closeMobile();
+    } else {
+        this.openMobile();
+    }
+}
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    NavbarManager.init();
+    SidebarManager.init();
+
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    // 🔥 Sync text
+    ['darkModeText', 'darkModeTextGuest'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = savedTheme === 'dark'
+                ? 'Mode Terang'
+                : 'Mode Gelap';
+        }
+    });
+
+    // 🔥 Sync icon
+    document.querySelectorAll(
+        '#darkModeIcon, #darkModeIconMobile, #darkModeIconGuest'
+    ).forEach(icon => {
+        icon.className = savedTheme === 'dark'
+            ? 'fas fa-sun'
+            : 'fas fa-moon';
+    });
+});
+
+
+
+// Dark mode icon sync for mobile topbar
+// Dark mode icon + text sync
+window.toggleDarkMode = function() {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+
+    const newTheme = isDark ? 'light' : 'dark';
+    html.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+
+    // 🔥 Sync semua icon
+    document.querySelectorAll(
+        '#darkModeIcon, #darkModeIconMobile, #darkModeIconGuest'
+    ).forEach(icon => {
+        icon.className = newTheme === 'dark'
+            ? 'fas fa-sun'
+            : 'fas fa-moon';
+    });
+
+    // 🔥 Sync semua text
+    const textMap = [
+        'darkModeText',
+        'darkModeTextGuest'
+    ];
+
+    textMap.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = newTheme === 'dark'
+                ? 'Mode Terang'
+                : 'Mode Gelap';
+        }
+    });
+};
+
+document.addEventListener("DOMContentLoaded", function () {
+    const links = document.querySelectorAll(".nav-link");
+
+    links.forEach(link => {
+        link.addEventListener("click", function () {
+
+            // Hapus semua active
+            links.forEach(l => l.classList.remove("active"));
+
+            // Tambah active ke yang diklik
+            this.classList.add("active");
+        });
+    });
+});
+
+
+const mobileBtn = document.getElementById("mobileMenuBtn");
+const sidebar = document.getElementById("sidebar");
+const overlay = document.getElementById("sidebarOverlay");
+
+mobileBtn.addEventListener("click", function () {
+    const isOpen = this.getAttribute("aria-expanded") === "true";
+
+    this.setAttribute("aria-expanded", !isOpen);
+    sidebar.classList.toggle("active");
+    overlay.classList.toggle("active");
+});
+>>>>>>> e4258cdc0d298041d4477996327ae2a51c05c6f5

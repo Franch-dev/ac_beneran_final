@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* ==========================================
    RESPONSIVE IMPROVEMENTS & FIXES
    Additional responsive styles for better mobile experience
@@ -420,4 +421,38 @@
         background: var(--bg-card);
         box-shadow: 4px 0 24px rgba(0,0,0,0.5);
     }
+=======
+/* Responsive Improvements - Google Design System */
+
+/* Ensure smooth layout at all breakpoints */
+@media (min-width: 1280px) {
+    .page-container { padding: 40px 32px; }
+    .cards-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+    .cards-grid { grid-template-columns: repeat(2, 1fr); }
+    .summary-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Ensure table is horizontally scrollable on mobile */
+.table-container {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Better touch targets on mobile */
+@media (max-width: 768px) {
+    .btn { min-height: 44px; }
+    .nav-link { min-height: 44px; justify-content: flex-start; }
+    .form-input, .form-select, .form-textarea { min-height: 44px; font-size: 16px; }
+    .search-input { min-height: 44px; font-size: 16px; }
+}
+
+/* Print styles */
+@media print {
+    .navbar, .footer, .btn, .popup, .overlay { display: none !important; }
+    body { background: white; color: black; }
+    .page-container { padding: 0; }
+    .data-table { box-shadow: none; border: 1px solid #ccc; }
+>>>>>>> e4258cdc0d298041d4477996327ae2a51c05c6f5
 }
