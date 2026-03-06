@@ -130,7 +130,7 @@
         </a>
 
         <a href="#harga" class="nav-link">
-            <i class="fas fa-tag"></i> Harga
+            <i class="fas fa-tag"></i> Infaq Servis
         </a>
 
         <a href="#kontak" class="nav-link">
