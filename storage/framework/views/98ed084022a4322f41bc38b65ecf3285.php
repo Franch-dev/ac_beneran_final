@@ -291,7 +291,7 @@
         <a href="<?php echo e(route('login')); ?>" class="btn btn-white btn-lg">
             <i class="fas fa-rocket"></i> Login Sekarang
         </a>
-</section>
+    </div> </section>
 <?php $__env->stopSection(); ?>
 
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\Hype G12\ac_beneran_final\resources\views/home.blade.php ENDPATH**/ ?>

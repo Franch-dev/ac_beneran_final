@@ -166,10 +166,57 @@ a { text-decoration: none; }
     gap: 6px;
     transition: all var(--t);
     white-space: nowrap;
+    position: relative;
 }
 .nav-link:hover { color: var(--primary); background: var(--primary-soft); }
 .nav-link:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-.nav-link.active { color: var(--primary); background: var(--primary-soft); font-weight: 600; }
+.nav-link.active { color: var(--primary); font-weight: 600; }
+.nav-link.active::after { content: ""; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); width: 60%; height: 2px; background: var(--primary); border-radius: 2px;  }
+
+
+/* STYLE KHUSUS MOBILE SIDEBAR */
+@media (max-width: 768px) {
+
+    .nav-link {
+        position: relative;
+        padding-left: 20px;
+    }
+
+    /* garis kiri active */
+    .nav-link.active::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 6px;
+        bottom: 6px;
+        width: 3px;
+        background: var(--primary);
+        border-radius: 3px;
+    }
+
+        /* hapus garis bawah active bawaan */
+    .navbar-menu .nav-link.active {
+        border-bottom: none !important;
+    }
+
+    /* kalau garisnya dari ::after */
+    .navbar-menu .nav-link.active::after {
+        display: none !important;
+    }
+
+        /* Hapus background active di sidebar mobile */
+    .navbar-menu .nav-link.active {
+        background: transparent !important;
+    }
+
+    /* Optional: biar text tetap biru */
+    .navbar-menu .nav-link.active {
+        color: var(--primary);
+        font-weight: 600;
+    }
+
+}
+.nav-sep { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
 .nav-sep { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
 .nav-user {
     display: flex;
@@ -1019,23 +1066,11 @@ body.sidebar-collapsed .sidebar-collapse-btn { transform: rotate(360deg); }
     position: relative;
     overflow: hidden;
 }
-.sidebar-link:hover { background: var(--primary-soft); color: var(--primary); cursor: pointer; }
-.sidebar-link.active {
-    background: var(--primary-soft);
-    color: var(--primary);
-    font-weight: 600;
-}
-.sidebar-link.active::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 3px;
-    height: 60%;
-    background: var(--primary);
-    border-radius: 0 2px 2px 0;
-}
+.sidebar-link:hover { background: var(--primary-soft); color: var(--primary); }
+.sidebar-link.active { color: var(--primary); font-weight: 600; }
+.sidebar-link.active::after { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 3px; height: 60%; background: var(--primary); border-radius: 0 2px 2px 0;  }
+
+
 .sidebar-icon {
     width: 20px;
     height: 20px;

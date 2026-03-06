@@ -291,5 +291,5 @@
         <a href="{{ route('login') }}" class="btn btn-white btn-lg">
             <i class="fas fa-rocket"></i> Login Sekarang
         </a>
-</section>
+    </div> </section>
 @endsection
