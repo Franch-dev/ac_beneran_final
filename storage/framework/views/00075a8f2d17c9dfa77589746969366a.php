@@ -19,44 +19,49 @@
     </div>
 
     <!-- Summary Cards -->
-    <div class="summary-grid">
-        <div class="summary-card">
-            <div class="summary-icon bg-primary">
-                <i class="fas fa-mosque"></i>
-            </div>
-            <div class="summary-content">
-                <div class="summary-num"><?php echo e($totalLokasi); ?></div>
-                <div class="summary-label">Total Lokasi</div>
-            </div>
+<div class="summary-grid">
+
+    <div class="summary-card">
+        <div class="summary-icon bg-primary">
+            <i class="fas fa-mosque"></i>
         </div>
-        <div class="summary-card">
-            <div class="summary-icon bg-info">
-                <i class="fas fa-snowflake"></i>
-            </div>
-            <div class="summary-content">
-                <div class="summary-num"><?php echo e($totalUnit); ?></div>
-                <div class="summary-label">Total Unit AC</div>
-            </div>
-        </div>
-        <div class="summary-card">
-            <div class="summary-icon bg-danger">
-                <i class="fas fa-exclamation-circle"></i>
-            </div>
-            <div class="summary-content">
-                <div class="summary-num"><?php echo e($overdue); ?></div>
-                <div class="summary-label">Overdue (>120 hari)</div>
-            </div>
-        </div>
-        <div class="summary-card">
-            <div class="summary-icon bg-warning">
-                <i class="fas fa-clipboard-list"></i>
-            </div>
-            <div class="summary-content">
-                <div class="summary-num"><?php echo e($orders->where('status', 'pending')->count()); ?></div>
-                <div class="summary-label">Order Pending</div>
-            </div>
+        <div class="summary-content">
+            <div class="summary-num counter" data-target="<?php echo e($totalLokasi); ?>">0</div>
+            <div class="summary-label">Total Lokasi</div>
         </div>
     </div>
+
+    <div class="summary-card">
+        <div class="summary-icon bg-info">
+            <i class="fas fa-snowflake"></i>
+        </div>
+        <div class="summary-content">
+            <div class="summary-num counter" data-target="<?php echo e($totalUnit); ?>">0</div>
+            <div class="summary-label">Total Unit AC</div>
+        </div>
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-icon bg-danger">
+            <i class="fas fa-exclamation-circle"></i>
+        </div>
+        <div class="summary-content">
+            <div class="summary-num counter" data-target="<?php echo e($overdue); ?>">0</div>
+            <div class="summary-label">Overdue (>120 hari)</div>
+        </div>
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-icon bg-warning">
+            <i class="fas fa-clipboard-list"></i>
+        </div>
+        <div class="summary-content">
+            <div class="summary-num counter" data-target="<?php echo e($orders->where('status','pending')->count()); ?>">0</div>
+            <div class="summary-label">Order Pending</div>
+        </div>
+    </div>
+
+</div>
 
 
 
