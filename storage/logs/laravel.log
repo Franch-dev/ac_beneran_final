@@ -1087,3 +1087,29 @@ Did you mean this?
 [stacktrace]
 #0 {main}
 "} 
+[2026-03-08 08:44:04] local.ERROR: Uncaught ErrorException: Constant HARGA_MASJID already defined in C:\laragon\www\ac_beneran_final\app\helpers.php:14
+Stack trace:
+#0 C:\laragon\www\ac_beneran_final\vendor\laravel\framework\src\Illuminate\Foundation\Bootstrap\HandleExceptions.php(258): Illuminate\Foundation\Bootstrap\HandleExceptions->handleError()
+#1 C:\laragon\www\ac_beneran_final\app\helpers.php(14): Illuminate\Foundation\Bootstrap\HandleExceptions->Illuminate\Foundation\Bootstrap\{closure}()
+#2 C:\laragon\www\ac_beneran_final\vendor\composer\ClassLoader.php(576): include('...')
+#3 C:\laragon\www\ac_beneran_final\vendor\composer\ClassLoader.php(427): Composer\Autoload\{closure}()
+#4 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#5 Command line code(1): class_exists()
+#6 [internal function]: {closure}()
+#7 Command line code(1): array_filter()
+#8 {main}
+  thrown {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Uncaught ErrorException: Constant HARGA_MASJID already defined in C:\\laragon\\www\\ac_beneran_final\\app\\helpers.php:14
+Stack trace:
+#0 C:\\laragon\\www\\ac_beneran_final\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Bootstrap\\HandleExceptions.php(258): Illuminate\\Foundation\\Bootstrap\\HandleExceptions->handleError()
+#1 C:\\laragon\\www\\ac_beneran_final\\app\\helpers.php(14): Illuminate\\Foundation\\Bootstrap\\HandleExceptions->Illuminate\\Foundation\\Bootstrap\\{closure}()
+#2 C:\\laragon\\www\\ac_beneran_final\\vendor\\composer\\ClassLoader.php(576): include('...')
+#3 C:\\laragon\\www\\ac_beneran_final\\vendor\\composer\\ClassLoader.php(427): Composer\\Autoload\\{closure}()
+#4 [internal function]: Composer\\Autoload\\ClassLoader->loadClass()
+#5 Command line code(1): class_exists()
+#6 [internal function]: {closure}()
+#7 Command line code(1): array_filter()
+#8 {main}
+  thrown at C:/laragon/www/ac_beneran_final/app/helpers.php:14)
+[stacktrace]
+#0 {main}
+"} 

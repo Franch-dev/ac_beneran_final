@@ -434,50 +434,75 @@ window.scrollTo(0, 0);
 document.addEventListener('DOMContentLoaded', () => {
     const sections = document.querySelectorAll('section[id]');
     const navLinks = document.querySelectorAll('.nav-link');
+    let lastActiveLink = null;
 
     const updateActiveNav = () => {
-        let current = "";
-        const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollPosition = window.pageYOffset + 100; // Offset for detection
+        let currentSection = null;
 
-        sections.forEach((section) => {
-            const sectionTop = section.offsetTop;
-            const sectionHeight = section.clientHeight;
-            
-            // Jika posisi scroll sudah melewati batas atas section (dengan offset 150px)
-            if (scrollPosition >= sectionTop - 150) {
-                current = section.getAttribute("id");
-            }
-        });
-
-        navLinks.forEach((link) => {
-            link.classList.remove("active");
-            // Ambil ID dari href (misal: "#keunggulan")
-            const href = link.getAttribute("href");
-            if (href && href.includes(`#${current}`)) {
-                link.classList.add("active");
+        // Special handling for home section (at the very top)
+        const homeSection = document.getElementById('home');
+        if (homeSection && scrollPosition < homeSection.offsetHeight) {
+            currentSection = 'home';
+        } else {
+            // Find the section that matches current scroll position
+            sections.forEach((section) => {
+                const sectionId = section.getAttribute("id");
+                if (sectionId === 'home') return; // Skip home, already handled
                 
-                // Update URL di address bar secara halus (tanpa loncat)
-                if (current && window.location.hash !== `#${current}`) {
-                    history.replaceState(null, null, `#${current}`);
+                const sectionTop = section.offsetTop;
+                const sectionBottom = sectionTop + section.offsetHeight;
+                
+                // If scroll is within this section, mark it as current
+                if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
+                    currentSection = sectionId;
+                }
+            });
+
+            // If no section found, use the last one before current scroll
+            if (!currentSection) {
+                for (let i = sections.length - 1; i >= 0; i--) {
+                    const sectionId = sections[i].getAttribute("id");
+                    if (scrollPosition >= sections[i].offsetTop) {
+                        currentSection = sectionId;
+                        break;
+                    }
                 }
             }
-        });
+        }
+
+        // Update nav links
+        if (currentSection) {
+            navLinks.forEach((link) => {
+                const href = link.getAttribute("href");
+                if (!href) return;
+                
+                const linkId = href.substring(1); // Remove # from href
+                
+                if (linkId === currentSection) {
+                    if (lastActiveLink !== link) {
+                        // Remove active from all links
+                        navLinks.forEach(l => l.classList.remove("active"));
+                        // Add active to current link
+                        link.classList.add("active");
+                        lastActiveLink = link;
+                    }
+                }
+            });
+
+            // Update URL
+            if (window.location.hash !== `#${currentSection}`) {
+                history.replaceState(null, null, `#${currentSection}`);
+            }
+        }
     };
 
     // Jalankan fungsi saat user scroll
-    window.addEventListener('scroll', updateActiveNav);
+    window.addEventListener('scroll', updateActiveNav, { passive: true });
     
     // Jalankan sekali saat halaman dimuat untuk sinkronisasi awal
-    updateActiveNav();
-});/* ==========================================
-   SCROLL SPY & REFRESH TO TOP
-   ========================================== */
-
-// 1. MEMAKSA REFRESH KE ATAS
-if (history.scrollRestoration) {
-    history.scrollRestoration = 'manual';
-}
-window.scrollTo(0, 0);
+    setTimeout(updateActiveNav, 100);
+});
 
 // 2. SCROLL SPY (Otomatis ganti menu saat scroll)
 document.addEventListener('DOMContentLoaded', () => {
