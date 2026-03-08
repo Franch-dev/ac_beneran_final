@@ -29,41 +29,39 @@
     </nav>
 
     <!-- Sidebar Footer -->
-<div class="sidebar-footer">
-    <div class="sidebar-divider"></div>
+    <div class="sidebar-footer">
+        <div class="sidebar-divider"></div>
 
-    <div class="sidebar-user">
-        <div class="sidebar-avatar">
-            {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+        <div class="sidebar-user">
+            <div class="sidebar-avatar">
+                {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+            </div>
+            <div class="sidebar-user-info">
+                <div class="sidebar-user-name">{{ auth()->user()->name }}</div>
+                <span class="role-badge role-{{ auth()->user()->role }}">
+                    {{ ucfirst(auth()->user()->role) }}
+                </span>
+            </div>
         </div>
-        <div class="sidebar-user-info">
-            <div class="sidebar-user-name">{{ auth()->user()->name }}</div>
-            <span class="role-badge role-{{ auth()->user()->role }}">
-                {{ ucfirst(auth()->user()->role) }}
-            </span>
+
+        <div class="sidebar-actions">
+            <button class="sidebar-action-btn"
+                    onclick="toggleDarkMode()"
+                    title="Toggle Dark Mode"
+                    aria-label="Ganti mode gelap/terang">
+                <i class="fas fa-moon" id="darkModeIcon"></i>
+                <span class="sidebar-label" id="darkModeText">Mode Gelap</span>
+            </button>
+
+            <button class="sidebar-action-btn danger"
+                    onclick="openPopup('logoutPopup')"
+                    title="Logout"
+                    aria-label="Logout">
+                <i class="fas fa-sign-out-alt"></i>
+                <span class="sidebar-label">Logout</span>
+            </button>
         </div>
     </div>
-
-    <!-- ✅ Tambahkan wrapper ini -->
-    <div class="sidebar-actions">
-
-        <button class="sidebar-action-btn"
-                onclick="toggleDarkMode()"
-                title="Toggle Dark Mode"
-                aria-label="Ganti mode gelap/terang">
-            <i class="fas fa-moon" id="darkModeIcon"></i>
-            <span class="sidebar-label" id="darkModeText">Mode Gelap</span>
-        </button>
-
-        <button class="sidebar-action-btn danger"
-                onclick="openPopup('logoutPopup')"
-                title="Logout"
-                aria-label="Logout">
-            <i class="fas fa-sign-out-alt"></i>
-            <span class="sidebar-label">Logout</span>
-        </button>
-    </div>
-</div>
 </aside>
 
 <!-- Mobile Top Bar (for sidebar pages) -->

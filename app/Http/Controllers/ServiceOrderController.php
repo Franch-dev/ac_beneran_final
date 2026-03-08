@@ -8,6 +8,7 @@ use App\Models\Masjid;
 use App\Models\AcUnit;
 use App\Models\Invoice;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class ServiceOrderController extends Controller
@@ -17,13 +18,13 @@ class ServiceOrderController extends Controller
         $request->validate([
             'masjid_id'            => 'required|exists:masjids,id',
             'meeting_person'       => 'required|in:dkm,marbot',
-            'phone'                => 'required|string',
+            'phone'                => 'required|string|max:20',
             'service_date'         => 'required|date|after_or_equal:today',
-            'notes'                => 'nullable|string',
+            'notes'                => 'nullable|string|max:1000',
             'details'              => 'required|array|min:1',
             'details.*.pk_type'    => 'required|in:1PK,2PK,5PK',
-            'details.*.brand'      => 'required|string',
-            'details.*.quantity'   => 'required|integer|min:1',
+            'details.*.brand'      => 'required|string|max:100',
+            'details.*.quantity'   => 'required|integer|min:1|max:100',
         ]);
 
         $masjid = Masjid::with('acUnits')->findOrFail($request->masjid_id);
@@ -71,31 +72,34 @@ class ServiceOrderController extends Controller
             }
         }
 
-        $order = ServiceOrder::create([
-            'masjid_id'      => $request->masjid_id,
-            'order_number'   => ServiceOrder::generateOrderNumber(),
-            'meeting_person' => $request->meeting_person,
-            'phone'          => $request->phone,
-            'service_date'   => $request->service_date,
-            'notes'          => $request->notes,
-            'status'         => 'pending',
-        ]);
-
-        foreach ($request->details as $detail) {
-            $hargaServer = getHargaServis($masjid->type, $detail['pk_type']);
-            $hargaKirim  = isset($detail['price_per_unit']) ? (int) $detail['price_per_unit'] : 0;
-            $hargaFinal  = $hargaServer > 0 ? $hargaServer : $hargaKirim;
-
-            ServiceDetail::create([
-                'service_order_id' => $order->id,
-                'pk_type'          => $detail['pk_type'],
-                'brand'            => $detail['brand'],
-                'quantity'         => $detail['quantity'],
-                'price_per_unit'   => $hargaFinal,
+        // Use transaction to ensure data consistency
+        return DB::transaction(function () use ($request, $masjid) {
+            $order = ServiceOrder::create([
+                'masjid_id'      => $request->masjid_id,
+                'order_number'   => ServiceOrder::generateOrderNumber(),
+                'meeting_person' => $request->meeting_person,
+                'phone'          => $request->phone,
+                'service_date'   => $request->service_date,
+                'notes'          => $request->notes,
+                'status'         => 'pending',
             ]);
-        }
 
-        return response()->json(['success' => true, 'order' => $order]);
+            foreach ($request->details as $detail) {
+                $hargaServer = getHargaServis($masjid->type, $detail['pk_type']);
+                $hargaKirim  = isset($detail['price_per_unit']) ? (int) $detail['price_per_unit'] : 0;
+                $hargaFinal  = $hargaServer > 0 ? $hargaServer : $hargaKirim;
+
+                ServiceDetail::create([
+                    'service_order_id' => $order->id,
+                    'pk_type'          => $detail['pk_type'],
+                    'brand'            => $detail['brand'],
+                    'quantity'         => $detail['quantity'],
+                    'price_per_unit'   => $hargaFinal,
+                ]);
+            }
+
+            return response()->json(['success' => true, 'order' => $order]);
+        });
     }
 
     public function approve(ServiceOrder $serviceOrder)
@@ -107,26 +111,37 @@ class ServiceOrderController extends Controller
             ], 422);
         }
 
-        $serviceOrder->update(['status' => 'approved']);
-
-        $total = $serviceOrder->serviceDetails->sum(fn($d) => $d->quantity * $d->price_per_unit);
-
-        Invoice::create([
-            'service_order_id' => $serviceOrder->id,
-            'invoice_number'   => Invoice::generateInvoiceNumber(),
-            'total_price'      => $total,
-        ]);
-
-        foreach ($serviceOrder->serviceDetails as $detail) {
-            $units = $serviceOrder->masjid->acUnits
-                ->where('pk_type', $detail->pk_type)
-                ->where('brand', $detail->brand);
-            foreach ($units as $unit) {
-                $unit->update(['last_service_date' => $serviceOrder->service_date]);
-            }
+        // Check if invoice already exists to prevent duplicates
+        if ($serviceOrder->invoice) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invoice sudah ada untuk order ini.',
+            ], 422);
         }
 
-        return response()->json(['success' => true]);
+        // Use transaction to ensure data consistency
+        return DB::transaction(function () use ($serviceOrder) {
+            $serviceOrder->update(['status' => 'approved']);
+
+            $total = $serviceOrder->serviceDetails->sum(fn($d) => $d->quantity * $d->price_per_unit);
+
+            Invoice::create([
+                'service_order_id' => $serviceOrder->id,
+                'invoice_number'   => Invoice::generateInvoiceNumber(),
+                'total_price'      => $total,
+            ]);
+
+            foreach ($serviceOrder->serviceDetails as $detail) {
+                $units = $serviceOrder->masjid->acUnits
+                    ->where('pk_type', $detail->pk_type)
+                    ->where('brand', $detail->brand);
+                foreach ($units as $unit) {
+                    $unit->update(['last_service_date' => $serviceOrder->service_date]);
+                }
+            }
+
+            return response()->json(['success' => true]);
+        });
     }
 
     public function cancelApprove(ServiceOrder $serviceOrder)

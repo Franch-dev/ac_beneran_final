@@ -9,11 +9,11 @@ class RoleMiddleware
 {
     public function handle(Request $request, Closure $next, string ...$roles)
     {
-        if (!auth()->check()) {
+        if (!$request->user()) {
             return redirect()->route('login');
         }
 
-        if (!in_array(auth()->user()->role, $roles)) {
+        if (!\in_array($request->user()->role, $roles)) {
             abort(403, 'Akses tidak diizinkan.');
         }
 

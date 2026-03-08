@@ -80,7 +80,7 @@ class Masjid extends Model
         if ($this->acUnits->isEmpty()) return 'unknown';
         if ($days === null) return 'overdue';
         if ($days < 90) return 'aman';
-        if ($days <= 120) return 'harus_servis';
+        if ($days < 120) return 'harus_servis';  // Changed from <= to < for exclusive range
         return 'overdue';
     }
 }

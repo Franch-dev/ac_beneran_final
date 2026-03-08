@@ -1113,3 +1113,86 @@ Stack trace:
 [stacktrace]
 #0 {main}
 "} 
+[2026-03-08 15:44:44] production.ERROR: __VSCODE_LARAVEL_STARTUP_ERROR__: rename(C:\laragon\www\ac_beneran_final\bootstrap\cache\pacB770.tmp,C:\laragon\www\ac_beneran_final\bootstrap\cache\packages.php): Access is denied (code: 5) {"exception":"[object] (Error(code: 0): __VSCODE_LARAVEL_STARTUP_ERROR__: rename(C:\\laragon\\www\\ac_beneran_final\\bootstrap\\cache\\pacB770.tmp,C:\\laragon\\www\\ac_beneran_final\\bootstrap\\cache\\packages.php): Access is denied (code: 5) at C:/laragon/www/ac_beneran_final/vendor/_laravel_ide/discover-5802e590a92e23606bb54d2909564178.php:33)
+[stacktrace]
+#0 C:/laragon/www/ac_beneran_final/vendor/_laravel_ide/discover-5802e590a92e23606bb54d2909564178.php(62): LaravelVsCode::startupError()
+#1 {main}
+"} 
+[2026-03-08 15:45:04] production.ERROR: Uncaught ErrorException: Constant HARGA_MASJID already defined in C:\laragon\www\ac_beneran_final\app\helpers.php:14
+Stack trace:
+#0 C:\laragon\www\ac_beneran_final\vendor\laravel\framework\src\Illuminate\Foundation\Bootstrap\HandleExceptions.php(258): Illuminate\Foundation\Bootstrap\HandleExceptions->handleError()
+#1 C:\laragon\www\ac_beneran_final\app\helpers.php(14): Illuminate\Foundation\Bootstrap\HandleExceptions->Illuminate\Foundation\Bootstrap\{closure}()
+#2 C:\laragon\www\ac_beneran_final\vendor\composer\ClassLoader.php(576): include('...')
+#3 C:\laragon\www\ac_beneran_final\vendor\composer\ClassLoader.php(427): Composer\Autoload\{closure}()
+#4 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#5 Command line code(1): class_exists()
+#6 [internal function]: {closure}()
+#7 Command line code(1): array_filter()
+#8 {main}
+  thrown {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Uncaught ErrorException: Constant HARGA_MASJID already defined in C:\\laragon\\www\\ac_beneran_final\\app\\helpers.php:14
+Stack trace:
+#0 C:\\laragon\\www\\ac_beneran_final\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Bootstrap\\HandleExceptions.php(258): Illuminate\\Foundation\\Bootstrap\\HandleExceptions->handleError()
+#1 C:\\laragon\\www\\ac_beneran_final\\app\\helpers.php(14): Illuminate\\Foundation\\Bootstrap\\HandleExceptions->Illuminate\\Foundation\\Bootstrap\\{closure}()
+#2 C:\\laragon\\www\\ac_beneran_final\\vendor\\composer\\ClassLoader.php(576): include('...')
+#3 C:\\laragon\\www\\ac_beneran_final\\vendor\\composer\\ClassLoader.php(427): Composer\\Autoload\\{closure}()
+#4 [internal function]: Composer\\Autoload\\ClassLoader->loadClass()
+#5 Command line code(1): class_exists()
+#6 [internal function]: {closure}()
+#7 Command line code(1): array_filter()
+#8 {main}
+  thrown at C:/laragon/www/ac_beneran_final/app/helpers.php:14)
+[stacktrace]
+#0 {main}
+"} 
+[2026-03-08 17:03:00] production.ERROR: Uncaught ErrorException: Constant HARGA_MASJID already defined in C:\laragon\www\ac_beneran_final\app\helpers.php:14
+Stack trace:
+#0 C:\laragon\www\ac_beneran_final\vendor\laravel\framework\src\Illuminate\Foundation\Bootstrap\HandleExceptions.php(258): Illuminate\Foundation\Bootstrap\HandleExceptions->handleError()
+#1 C:\laragon\www\ac_beneran_final\app\helpers.php(14): Illuminate\Foundation\Bootstrap\HandleExceptions->Illuminate\Foundation\Bootstrap\{closure}()
+#2 C:\laragon\www\ac_beneran_final\vendor\composer\ClassLoader.php(576): include('...')
+#3 C:\laragon\www\ac_beneran_final\vendor\composer\ClassLoader.php(427): Composer\Autoload\{closure}()
+#4 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#5 Command line code(1): class_exists()
+#6 [internal function]: {closure}()
+#7 Command line code(1): array_filter()
+#8 {main}
+  thrown {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Uncaught ErrorException: Constant HARGA_MASJID already defined in C:\\laragon\\www\\ac_beneran_final\\app\\helpers.php:14
+Stack trace:
+#0 C:\\laragon\\www\\ac_beneran_final\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Bootstrap\\HandleExceptions.php(258): Illuminate\\Foundation\\Bootstrap\\HandleExceptions->handleError()
+#1 C:\\laragon\\www\\ac_beneran_final\\app\\helpers.php(14): Illuminate\\Foundation\\Bootstrap\\HandleExceptions->Illuminate\\Foundation\\Bootstrap\\{closure}()
+#2 C:\\laragon\\www\\ac_beneran_final\\vendor\\composer\\ClassLoader.php(576): include('...')
+#3 C:\\laragon\\www\\ac_beneran_final\\vendor\\composer\\ClassLoader.php(427): Composer\\Autoload\\{closure}()
+#4 [internal function]: Composer\\Autoload\\ClassLoader->loadClass()
+#5 Command line code(1): class_exists()
+#6 [internal function]: {closure}()
+#7 Command line code(1): array_filter()
+#8 {main}
+  thrown at C:/laragon/www/ac_beneran_final/app/helpers.php:14)
+[stacktrace]
+#0 {main}
+"} 
+[2026-03-08 17:08:56] production.ERROR: Uncaught ErrorException: Constant HARGA_MASJID already defined in C:\laragon\www\ac_beneran_final\app\helpers.php:14
+Stack trace:
+#0 C:\laragon\www\ac_beneran_final\vendor\laravel\framework\src\Illuminate\Foundation\Bootstrap\HandleExceptions.php(258): Illuminate\Foundation\Bootstrap\HandleExceptions->handleError()
+#1 C:\laragon\www\ac_beneran_final\app\helpers.php(14): Illuminate\Foundation\Bootstrap\HandleExceptions->Illuminate\Foundation\Bootstrap\{closure}()
+#2 C:\laragon\www\ac_beneran_final\vendor\composer\ClassLoader.php(576): include('...')
+#3 C:\laragon\www\ac_beneran_final\vendor\composer\ClassLoader.php(427): Composer\Autoload\{closure}()
+#4 [internal function]: Composer\Autoload\ClassLoader->loadClass()
+#5 Command line code(1): class_exists()
+#6 [internal function]: {closure}()
+#7 Command line code(1): array_filter()
+#8 {main}
+  thrown {"exception":"[object] (Symfony\\Component\\ErrorHandler\\Error\\FatalError(code: 0): Uncaught ErrorException: Constant HARGA_MASJID already defined in C:\\laragon\\www\\ac_beneran_final\\app\\helpers.php:14
+Stack trace:
+#0 C:\\laragon\\www\\ac_beneran_final\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Bootstrap\\HandleExceptions.php(258): Illuminate\\Foundation\\Bootstrap\\HandleExceptions->handleError()
+#1 C:\\laragon\\www\\ac_beneran_final\\app\\helpers.php(14): Illuminate\\Foundation\\Bootstrap\\HandleExceptions->Illuminate\\Foundation\\Bootstrap\\{closure}()
+#2 C:\\laragon\\www\\ac_beneran_final\\vendor\\composer\\ClassLoader.php(576): include('...')
+#3 C:\\laragon\\www\\ac_beneran_final\\vendor\\composer\\ClassLoader.php(427): Composer\\Autoload\\{closure}()
+#4 [internal function]: Composer\\Autoload\\ClassLoader->loadClass()
+#5 Command line code(1): class_exists()
+#6 [internal function]: {closure}()
+#7 Command line code(1): array_filter()
+#8 {main}
+  thrown at C:/laragon/www/ac_beneran_final/app/helpers.php:14)
+[stacktrace]
+#0 {main}
+"} 
