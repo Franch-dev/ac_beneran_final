@@ -428,3 +428,66 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 });
+
+
+const mobileBtn = document.getElementById("mobileMenuBtn");
+const sidebar = document.getElementById("sidebar");
+const overlay = document.getElementById("sidebarOverlay");
+
+mobileBtn.addEventListener("click", function () {
+    const isOpen = this.getAttribute("aria-expanded") === "true";
+
+    this.setAttribute("aria-expanded", !isOpen);
+    sidebar.classList.toggle("active");
+    overlay.classList.toggle("active");
+});
+
+/* ==========================================
+   SCROLL SPY & REFRESH TO TOP
+   ========================================== */
+
+// 1. MEMAKSA REFRESH KE ATAS
+if (history.scrollRestoration) {
+    history.scrollRestoration = 'manual';
+}
+window.scrollTo(0, 0);
+
+// 2. SCROLL SPY (Otomatis ganti menu saat scroll)
+document.addEventListener('DOMContentLoaded', () => {
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-link');
+
+    const updateActiveNav = () => {
+        let current = "";
+        const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+
+        sections.forEach((section) => {
+            const sectionTop = section.offsetTop;
+            
+            // Jika posisi scroll sudah melewati batas atas section (dengan offset 150px)
+            if (scrollPosition >= sectionTop - 150) {
+                current = section.getAttribute("id");
+            }
+        });
+
+        navLinks.forEach((link) => {
+            link.classList.remove("active");
+            // Ambil ID dari href (misal: "#keunggulan")
+            const href = link.getAttribute("href");
+            if (href && href.includes(`#${current}`)) {
+                link.classList.add("active");
+                
+                // Update URL di address bar secara halus (tanpa loncat)
+                if (current && window.location.hash !== `#${current}`) {
+                    history.replaceState(null, null, `#${current}`);
+                }
+            }
+        });
+    };
+
+    // Jalankan fungsi saat user scroll
+    window.addEventListener('scroll', updateActiveNav);
+    
+    // Jalankan sekali saat halaman dimuat untuk sinkronisasi awal
+    updateActiveNav();
+});

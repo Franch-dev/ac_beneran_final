@@ -292,6 +292,57 @@
         <a href="{{ route('login') }}" class="btn btn-white btn-lg">
             <i class="fas fa-rocket"></i> Login Sekarang
         </a>
-    </div>
-</section>
+    </div> </section>
+
+<script>
+window.addEventListener('scroll', () => {
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-link');
+
+    let current = "";
+
+    sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        const sectionHeight = section.clientHeight;
+        // Jika scroll sudah masuk ke area section (dengan offset 200px)
+        if (window.pageYOffset >= (sectionTop - 200)) {
+            current = section.getAttribute('id');
+        }
+    });
+
+    navLinks.forEach(link => {
+        link.classList.remove('active');
+        // Kita cek apakah href di link navbar mengandung ID section saat ini
+        if (link.getAttribute('href').includes('#' + current)) {
+            link.classList.add('active');
+
+            // Ubah URL di atas tanpa refresh
+            if (current) {
+                history.replaceState(null, null, '#' + current);
+            }
+        }
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Cari link yang teksnya 'Home' atau href-nya '#home'
+    const homeLink = document.querySelector('a[href="#home"]');
+
+    if (homeLink) {
+        homeLink.addEventListener('click', function(e) {
+            e.preventDefault(); // Berhenti dari proses default
+
+            // Paksa scroll ke koordinat 0,0 (Paling Atas)
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+
+            // Ubah URL secara manual agar bersih kembali
+            history.replaceState(null, null, ' ');
+        });
+    }
+});
+
+</script>
 @endsection
