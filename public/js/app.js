@@ -490,4 +490,36 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Jalankan sekali saat halaman dimuat untuk sinkronisasi awal
     updateActiveNav();
+
+    const counters = document.querySelectorAll('.counter');
+
+counters.forEach(counter => {
+
+    const target = parseFloat(counter.dataset.target);
+    const isDecimal = target % 1 !== 0;
+
+    let current = 0;
+
+    const updateCounter = () => {
+
+        const increment = target / 80;
+
+        current += increment;
+
+        if (current < target) {
+
+            counter.innerText = isDecimal
+                ? current.toFixed(1)
+                : Math.floor(current);
+
+            requestAnimationFrame(updateCounter);
+
+        } else {
+
+            counter.innerText = target;
+        }
+    };
+
+    updateCounter();
+});
 });

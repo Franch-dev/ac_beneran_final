@@ -19,31 +19,36 @@
         </div>
     </div>
     <div class="hero-visual">
-        <div class="hero-card">
-            <div class="stat-grid">
-                <div class="stat-item">
-                    <i class="fas fa-mosque text-primary"></i>
-                    <span class="stat-num">{{ $totalMasjid ?? '-' }}</span>
-                    <span class="stat-label">Masjid</span>
-                </div>
-                <div class="stat-item">
-                    <i class="fas fa-snowflake text-info"></i>
-                    <span class="stat-num">{{ $totalUnit ?? '-' }}</span>
-                    <span class="stat-label">Unit AC</span>
-                </div>
-                <div class="stat-item">
-                    <i class="fas fa-tools text-success"></i>
-                    <span class="stat-num">{{ $totalServis ?? '-' }}</span>
-                    <span class="stat-label">Servis</span>
-                </div>
-                <div class="stat-item">
-                    <i class="fas fa-star text-warning"></i>
-                    <span class="stat-num">{{ $manualRating ?? '4.7' }}</span>
-                    <span class="stat-label">Rating</span>
-                </div>
+    <div class="hero-card">
+        <div class="stat-grid">
+
+            <div class="stat-item">
+                <i class="fas fa-mosque text-primary"></i>
+                <span class="stat-num counter" data-target="{{ $totalMasjid ?? 0 }}">0</span>
+                <span class="stat-label">Masjid</span>
             </div>
+
+            <div class="stat-item">
+                <i class="fas fa-snowflake text-info"></i>
+                <span class="stat-num counter" data-target="{{ $totalUnit ?? 0 }}">0</span>
+                <span class="stat-label">Unit AC</span>
+            </div>
+
+            <div class="stat-item">
+                <i class="fas fa-tools text-success"></i>
+                <span class="stat-num counter" data-target="{{ $totalServis ?? 0 }}">0</span>
+                <span class="stat-label">Servis</span>
+            </div>
+
+            <div class="stat-item">
+                <i class="fas fa-star text-warning"></i>
+                <span class="stat-num counter" data-target="{{ $manualRating ?? 4.7 }}">0</span>
+                <span class="stat-label">Rating</span>
+            </div>
+
         </div>
     </div>
+</div>
 </section>
 
 <!-- Keunggulan -->
@@ -342,6 +347,38 @@ document.addEventListener('DOMContentLoaded', function() {
             history.replaceState(null, null, ' ');
         });
     }
+});
+
+const counters = document.querySelectorAll('.counter');
+
+counters.forEach(counter => {
+
+    const target = parseFloat(counter.dataset.target);
+    const isDecimal = target % 1 !== 0;
+
+    let current = 0;
+
+    const updateCounter = () => {
+
+        const increment = target / 80;
+
+        current += increment;
+
+        if (current < target) {
+
+            counter.innerText = isDecimal
+                ? current.toFixed(1)
+                : Math.floor(current);
+
+            requestAnimationFrame(updateCounter);
+
+        } else {
+
+            counter.innerText = target;
+        }
+    };
+
+    updateCounter();
 });
 
 </script>
