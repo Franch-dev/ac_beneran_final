@@ -36,6 +36,9 @@
 /storage/debugbar
 /storage/views
 /storage/cache
+storage/framework/sessions
+storage/framework/views
+storage/framework/cache
 /bootstrap/cache
 
 # Vendor
