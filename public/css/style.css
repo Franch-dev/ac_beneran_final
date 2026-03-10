@@ -204,14 +204,6 @@ a { text-decoration: none; }
     transform: translateY(-2px);
 }
 
-.nav-link:hover::before {
-    opacity: 1;
-}
-
-.nav-link:hover::after {
-    width: 60%;
-}
-
 .nav-link:focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;
@@ -222,54 +214,25 @@ a { text-decoration: none; }
     font-weight: 600;
 }
 
-.nav-link.active::before {
-    opacity: 1;
-}
-
 .nav-link.active::after {
     width: 60%;
 }
 
 
-/* STYLE KHUSUS MOBILE SIDEBAR */
-@media (max-width: 768px) {
+@media (max-width: 768px){
 
-    .nav-link {
-        position: relative;
-        padding-left: 20px;
+    /* hover hanya ubah warna teks */
+    .navbar-menu .nav-link:hover{
+        color: var(--primary);
+        transform: none;
     }
 
-    /* garis kiri active */
-    .nav-link.active::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 6px;
-        bottom: 6px;
-        width: 3px;
-        background: var(--primary);
-        border-radius: 3px;
-    }
-
-    /* hapus garis bawah active bawaan */
-    .navbar-menu .nav-link.active {
-        border-bottom: none !important;
-    }
-
-    /* kalau garisnya dari ::after */
-    .navbar-menu .nav-link.active::after {
-        display: none !important;
-    }
-
-    /* Hapus background active di sidebar mobile */
-    .navbar-menu .nav-link.active {
-        background: transparent !important;
-    }
-
-    /* Optional: biar text tetap biru */
-    .navbar-menu .nav-link.active {
+    /* active beda dengan hover */
+    .navbar-menu .nav-link.active{
         color: var(--primary);
         font-weight: 600;
+        border-left: 3px solid var(--primary);
+        padding-left: 12px;
     }
 
 }
@@ -646,18 +609,42 @@ a { text-decoration: none; }
 .page-title i { color: var(--primary); font-size: 1.25rem; }
 .page-subtitle { font-size: 0.875rem; color: var(--text-muted); margin-top: 4px; }
 .page-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.role-info-bar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 16px;
-    background: var(--primary-soft);
-    border: 1px solid var(--primary-mid);
-    border-radius: var(--radius);
-    font-size: 0.8125rem;
-    color: var(--primary);
-    margin-bottom: 24px;
-    font-weight: 500;
+.role-info-bar{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:10px 14px;
+    border-radius:8px;
+    background:var(--primary-soft);
+    font-size:0.9rem;
+    line-height:1.4;
+    margin-bottom:16px;
+}
+
+/* icon */
+.role-info-bar i{
+    color:var(--primary);
+    font-size:1rem;
+}
+
+/* MOBILE */
+@media (max-width:768px){
+
+    .role-info-bar{
+        align-items:flex-start;
+        flex-wrap:wrap;
+        font-size:0.8rem;
+        padding:10px 12px;
+    }
+
+    .role-info-bar i{
+        margin-top:2px;
+    }
+
+    .role-info-bar strong{
+        display:block;
+    }
+
 }
 
 /* SEARCH */
@@ -1165,7 +1152,7 @@ a { text-decoration: none; }
     opacity: 1;
 }
 .pricing-featured { border: 2px solid var(--primary); transform: scale(1); }
-.pricing-badge { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--primary); color: #fff; padding: 2px 12px; border-radius: var(--radius-full); font-size: 0.6875rem; font-weight: 600; white-space: nowrap; }
+.pricing-badge { position: absolute; top: 5px; left: 50%; transform: translateX(-50%); background: var(--primary); color: #fff; padding: 2px 12px; border-radius: var(--radius-full); font-size: 0.6875rem; font-weight: 600; white-space: nowrap; }
 .pricing-pk { display: inline-block; background: var(--primary-soft); color: var(--primary); padding: 2px 10px; border-radius: var(--radius-full); font-size: 0.75rem; font-weight: 600; margin-bottom: 8px; }
 .pricing-header h3 { font-size: 1.0625rem; font-weight: 600; margin-bottom: 14px; }
 .pricing-price { margin-bottom: 20px; }
@@ -1509,37 +1496,56 @@ body.sidebar-collapsed .sidebar-collapse-btn { transform: rotate(180deg); }
     font-weight: 500;
     text-decoration: none;
     white-space: nowrap;
-    transition: all var(--sidebar-transition);
     margin-bottom: 2px;
+
     position: relative;
     overflow: hidden;
+
+    transition: 
+        color .25s ease,
+        background .25s ease,
+        transform .2s ease;
 }
-.sidebar-link::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 3px;
-    height: 0%;
-    background: var(--primary);
-    border-radius: 0 2px 2px 0;
-    transition: height var(--sidebar-transition);
+
+/* garis kiri */
+.sidebar-link::before{
+    content:"";
+    position:absolute;
+    left:-6px;
+    top:50%;
+    transform:translateY(-50%);
+    width:4px;
+    height:60%;
+    background:var(--primary);
+    border-radius:4px;
+
+    opacity:0;
+    transition: 
+        left .25s ease,
+        opacity .25s ease;
 }
-.sidebar-link:hover {
-    background: var(--primary-soft);
-    color: var(--primary);
+
+/* hover */
+.sidebar-link:hover{
+    color:var(--primary);
+    transform:translateX(4px);
 }
-.sidebar-link:hover::before {
-    height: 60%;
+
+.sidebar-link:hover::before{
+    left:0;
+    opacity:.5;
 }
-.sidebar-link.active {
-    color: var(--primary);
-    font-weight: 600;
-    background: var(--primary-soft);
+
+/* active */
+.sidebar-link.active{
+    color:var(--primary);
+    font-weight:600;
+    background:var(--primary-soft);
 }
-.sidebar-link.active::before {
-    height: 60%;
+
+.sidebar-link.active::before{
+    left:0;
+    opacity:1;
 }
 
 
@@ -1654,6 +1660,7 @@ body.sidebar-collapsed .sidebar-user-info { opacity: 0; width: 0; overflow: hidd
     color: var(--primary);
     cursor: pointer;
     transform: translateX(2px);
+    transform: scale(1.05);
 }
 .sidebar-action-btn.danger:hover {
     background: var(--danger-bg);
