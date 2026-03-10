@@ -32,13 +32,16 @@
 # Laravel storage (logs, sessions, cache)
 /storage/*.key
 /storage/logs
+/storage/logs/laravel-*.log
+/storage/logs/*.log
+/storage/sessions
+/storage/framework/sessions
+/storage/framework/views
+/storage/framework/cache
 /storage/pail
 /storage/debugbar
 /storage/views
 /storage/cache
-storage/framework/sessions
-storage/framework/views
-storage/framework/cache
 /bootstrap/cache
 
 # Vendor
