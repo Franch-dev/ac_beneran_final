@@ -118,7 +118,7 @@
             <span class="brand-text">AC Servis Masjid</span>
         </div>
 
-        <div class="nav-sep"></div>
+        
 
         <a href="#home" 
            class="nav-link">
@@ -137,7 +137,7 @@
             <i class="fas fa-phone"></i> Kontak
         </a>
 
-        <div class="nav-sep"></div>
+
 
         <button class="btn-icon" onclick="toggleDarkMode()">
             <i class="fas fa-moon" id="darkModeIconGuest"></i>
