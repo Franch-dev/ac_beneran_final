@@ -1514,13 +1514,12 @@ body.sidebar-collapsed .sidebar-brand-text { opacity: 0; width: 0; }
     font-size: 0.75rem;
     transition: all var(--sidebar-transition);
     flex-shrink: 0;
-    transform: rotate(0deg);
+    transform: rotate(180deg);
 }
 .sidebar-collapse-btn:hover {
     background: var(--gray-100);
     color: var(--primary);
     border-color: var(--primary);
-    transform: rotate(180deg);
     cursor: pointer;
 }
 body.sidebar-collapsed .sidebar-collapse-btn { transform: rotate(180deg); }
