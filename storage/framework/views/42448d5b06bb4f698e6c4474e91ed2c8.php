@@ -271,17 +271,17 @@
                 <a href="tel:8851031" class="btn btn-info btn-sm">
                     <i class="fas fa-phone"></i> Hubungi
                 </a>
-                
             </div>
         </div>
-    </div>
-            <div class="container text-center">
-        <br><br>
-        <div style="max-width:820px;margin:0 auto 1.5rem;">
-            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d991.964964857857!2d106.9620843!3d-6.211166!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e698b80e955010d:0x83a105adcc080c6b!2sSekretariat%20Forkis!5e0!3m2!1sen!2sid!4v1700000000000!5m2!1sen!2sid" width="100%" height="320" style="border:0;border-radius:12px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-            <a href="https://www.google.com/maps/place/Sekretariat+Forkis/@-6.211166,106.9620843,786m/data=!3m1!1e3!4m6!3m5!1s0x2e698b80e955010d:0x83a105adcc080c6b!8m2!3d-6.2109742!4d106.9635937!16s%2Fg%2F11b5phqxxs?entry=ttu&g_ep=EgoyMDI2MDIyMy4wIKXMDSoASAFQAw%3D%3D" target="_blank" class="btn btn-success btn-sm mb-2">Buka di Google Maps</a>
-        </div>
-    </div>  
+
+        <div class="map-container text-center" style="margin-top: 3rem;">
+            <div style="max-width:820px;margin:0 auto 1.5rem;">
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d991.964964857857!2d106.9620843!3d-6.211166!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e698b80e955010d:0x83a105adcc080c6b!2sSekretariat%20Forkis!5e0!3m2!1sen!2sid!4v1700000000000!5m2!1sen!2sid" width="100%" height="320" style="border:0;border-radius:12px;box-shadow: 0 4px 16px rgba(0,0,0,0.06);margin-bottom:1rem;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                <a href="https://www.google.com/maps/place/Sekretariat+Forkis/@-6.211166,106.9620843,786m/data=!3m1!1e3!4m6!3m5!1s0x2e698b80e955010d:0x83a105adcc080c6b!8m2!3d-6.2109742!4d106.9635937!16s%2Fg%2F11b5phqxxs?entry=ttu&g_ep=EgoyMDI2MDIyMy4wIKXMDSoASAFQAw%3D%3D" target="_blank" class="btn btn-success btn-sm mb-2">
+                    <i class="fas fa-map-marker-alt"></i> Buka di Google Maps
+                </a>
+            </div>
+        </div>  
     </div>
 </section>
 
@@ -299,32 +299,39 @@
     </div> </section>
 
 <script>
-window.addEventListener('scroll', () => {
+document.addEventListener('DOMContentLoaded', () => {
     const sections = document.querySelectorAll('section[id]');
     const navLinks = document.querySelectorAll('.nav-link');
-    
-    let current = "";
+
+    const observerOptions = {
+        root: null,
+        rootMargin: '-20% 0px -60% 0px',
+        threshold: 0
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const currentId = entry.target.getAttribute('id');
+                
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === `#${currentId}`) {
+                        link.classList.add('active');
+                        // Update URL hash without reload
+                        if (currentId !== 'home') {
+                            history.replaceState(null, null, `#${currentId}`);
+                        } else {
+                            history.replaceState(null, null, ' ');
+                        }
+                    }
+                });
+            }
+        });
+    }, observerOptions);
 
     sections.forEach(section => {
-        const sectionTop = section.offsetTop;
-        const sectionHeight = section.clientHeight;
-        // Jika scroll sudah masuk ke area section (dengan offset 200px)
-        if (window.pageYOffset >= (sectionTop - 200)) {
-            current = section.getAttribute('id');
-        }
-    });
-
-    navLinks.forEach(link => {
-        link.classList.remove('active');
-        // Kita cek apakah href di link navbar mengandung ID section saat ini
-        if (link.getAttribute('href').includes('#' + current)) {
-            link.classList.add('active');
-            
-            // Ubah URL di atas tanpa refresh
-            if (current) {
-                history.replaceState(null, null, '#' + current);
-            }
-        }
+        observer.observe(section);
     });
 });
 

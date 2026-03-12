@@ -78,6 +78,14 @@ const NavbarManager = {
                 this.close();
             }
         });
+
+        // Close menu when clicking on nav links
+        this.menu.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                // Use setTimeout to ensure animation completes smoothly
+                setTimeout(() => this.close(), 50);
+            });
+        });
     },
 
     toggle() {
@@ -305,7 +313,7 @@ const SidebarManager = {
         // 🔥 Sembunyikan dark mode header
         const headerBtn = document.getElementById('headerDarkModeBtn');
         if (headerBtn) headerBtn.style.display = 'none';
-    },  
+    },
 
     closeMobile() {
         this.sidebar?.classList.remove('mobile-open');
@@ -442,7 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sections.forEach((section) => {
             const sectionTop = section.offsetTop;
             const sectionHeight = section.clientHeight;
-            
+
             // Jika posisi scroll sudah melewati batas atas section (dengan offset 150px)
             if (scrollPosition >= sectionTop - 150) {
                 current = section.getAttribute("id");
@@ -455,7 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const href = link.getAttribute("href");
             if (href && href.includes(`#${current}`)) {
                 link.classList.add("active");
-                
+
                 // Update URL di address bar secara halus (tanpa loncat)
                 if (current && window.location.hash !== `#${current}`) {
                     history.replaceState(null, null, `#${current}`);
@@ -466,88 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Jalankan fungsi saat user scroll
     window.addEventListener('scroll', updateActiveNav);
-    
+
     // Jalankan sekali saat halaman dimuat untuk sinkronisasi awal
     updateActiveNav();
-});/* ==========================================
-   SCROLL SPY & REFRESH TO TOP
-   ========================================== */
-
-// 1. MEMAKSA REFRESH KE ATAS
-if (history.scrollRestoration) {
-    history.scrollRestoration = 'manual';
-}
-window.scrollTo(0, 0);
-
-// 2. SCROLL SPY (Otomatis ganti menu saat scroll)
-document.addEventListener('DOMContentLoaded', () => {
-    const sections = document.querySelectorAll('section[id]');
-    const navLinks = document.querySelectorAll('.nav-link');
-
-    const updateActiveNav = () => {
-        let current = "";
-        const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
-
-        sections.forEach((section) => {
-            const sectionTop = section.offsetTop;
-            const sectionHeight = section.clientHeight;
-            
-            // Jika posisi scroll sudah melewati batas atas section (dengan offset 150px)
-            if (scrollPosition >= sectionTop - 150) {
-                current = section.getAttribute("id");
-            }
-        });
-
-        navLinks.forEach((link) => {
-            link.classList.remove("active");
-            // Ambil ID dari href (misal: "#keunggulan")
-            const href = link.getAttribute("href");
-            if (href && href.includes(`#${current}`)) {
-                link.classList.add("active");
-                
-                // Update URL di address bar secara halus (tanpa loncat)
-                if (current && window.location.hash !== `#${current}`) {
-                    history.replaceState(null, null, `#${current}`);
-                }
-            }
-        });
-    };
-
-    // Jalankan fungsi saat user scroll
-    window.addEventListener('scroll', updateActiveNav);
-    
-    // Jalankan sekali saat halaman dimuat untuk sinkronisasi awal
-    updateActiveNav();
-
-    const counters = document.querySelectorAll('.counter');
-
-counters.forEach(counter => {
-
-    const target = parseFloat(counter.dataset.target);
-    const isDecimal = target % 1 !== 0;
-
-    let current = 0;
-
-    const updateCounter = () => {
-
-        const increment = target / 80;
-
-        current += increment;
-
-        if (current < target) {
-
-            counter.innerText = isDecimal
-                ? current.toFixed(1)
-                : Math.floor(current);
-
-            requestAnimationFrame(updateCounter);
-
-        } else {
-
-            counter.innerText = target;
-        }
-    };
-
-    updateCounter();
-});
 });
