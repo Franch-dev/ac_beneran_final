@@ -37,7 +37,7 @@
         <form action="{{ route('dashboard') }}" method="GET" class="search-form">
             <div class="search-input-wrap">
                 <i class="fas fa-search"></i>
-                <input type="text" name="search" placeholder="Cari ID atau nama masjid..." 
+                <input type="text" name="search" placeholder="Cari ID atau nama masjid..."
                        value="{{ request('search') }}" class="search-input">
                 @if(request('search'))
                     <a href="{{ route('dashboard') }}" class="search-clear"><i class="fas fa-times"></i></a>
@@ -188,7 +188,7 @@
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-check"></i> Daftarkan
                 </button>
-                <button type="button" class="btn btn-secondary" onclick="resetMasjidForm()">
+                <button type="button" class="btn btn-secondary" onclick="closeMasjidForm()">
                     <i class="fas fa-times"></i> Batal
                 </button>
             </div>

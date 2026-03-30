@@ -1,1 +1,0 @@
-        hello<?php /**PATH C:\Users\Hype G12\ac_beneran_final\resources\views\welcome.blade.php ENDPATH**/ ?>

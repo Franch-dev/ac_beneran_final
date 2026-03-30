@@ -60,7 +60,7 @@ body * {
 /* Tooltip-style info */
 [title] { cursor: help; }
 
-/* Loading skeleton */
+/* Loading skeleton - smooth, accessible animation */
 @keyframes skeleton {
     0% { background-position: -200% 0; }
     100% { background-position: 200% 0; }
@@ -68,13 +68,86 @@ body * {
 .skeleton {
     background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%);
     background-size: 200% 100%;
-    animation: skeleton 1.5s infinite;
+    animation: skeleton 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    animation-fill-mode: both;
     border-radius: var(--radius);
+}
+@media (prefers-reduced-motion: reduce) {
+    .skeleton {
+        animation-duration: 3s;
+        animation-timing-function: ease-in-out;
+    }
+}
+/* Dark mode skeleton */
+[data-theme="dark"] .skeleton {
+    background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-300) 50%, var(--gray-200) 75%);
 }
 
 /* Improved active states */
 .btn:active { transform: scale(0.98) !important; }
 .btn-primary:active { box-shadow: 0 1px 4px rgba(26,115,232,0.3) !important; }
+
+/* Dropdown menu styling */
+.dropdown, .dropstart, .dropend, .dropup {
+    position: relative;
+}
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    display: none;
+    min-width: 160px;
+    padding: 8px 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    animation: dropdownSlideDown var(--t-smooth) cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+.dropdown-menu.show {
+    display: block;
+}
+.dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 10px 16px;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--text);
+    cursor: pointer;
+    transition: background-color var(--t), color var(--t);
+    font-size: 0.9375rem;
+}
+.dropdown-item:hover {
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+.dropdown-item:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+    background: var(--primary-soft);
+}
+.dropdown-item.active {
+    background: var(--primary);
+    color: white;
+}
+.dropdown-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+}
+@keyframes dropdownSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
 /* Divider */
 .divider {
@@ -121,4 +194,72 @@ body * {
     flex: 1;
     height: 1px;
     background: var(--border);
+}
+
+/* Pagination styling */
+.pagination {
+    display: flex;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    gap: 4px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.page-item {
+    margin: 0;
+}
+.page-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 4px 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9375rem;
+    cursor: pointer;
+    transition: all var(--t-smooth);
+}
+.page-link:hover {
+    background: var(--primary-soft);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+.page-link:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+.page-link:active {
+    transform: scale(0.95);
+}
+.page-item.active .page-link {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    pointer-events: none;
+    cursor: default;
+}
+.page-item.disabled .page-link {
+    background: var(--gray-100);
+    border-color: var(--border);
+    color: var(--text-muted);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+.page-item.disabled .page-link:hover {
+    background: var(--gray-100);
+    border-color: var(--border);
+    color: var(--text-muted);
+}
+/* Dark mode pagination */
+[data-theme="dark"] .page-item.disabled .page-link {
+    background: var(--gray-200);
+    border-color: var(--border);
 }

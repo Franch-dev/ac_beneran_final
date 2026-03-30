@@ -56,7 +56,7 @@
             <i class="fas fa-clipboard-list"></i>
         </div>
         <div class="summary-content">
-            <div class="summary-num counter" data-target="{{ $orders->where('status','pending')->count() }}">0</div>
+            <div class="summary-num counter" data-target="{{ $pendingCount }}">0</div>
             <div class="summary-label">Order Pending</div>
         </div>
     </div>
@@ -71,7 +71,7 @@
             <div class="search-input-wrap">
                 <i class="fas fa-search"></i>
                 <input type="text" name="search" placeholder="Cari order / masjid..."
-                       value="{{ request('search') }}" class="search-input">
+                    value="{{ request('search') }}" class="search-input">
             </div>
             <select name="status" class="form-select" style="width:auto">
                 <option value="">Semua Status</option>
@@ -312,7 +312,7 @@
             </div>
             <div id="soEmptyState" class="empty-state">
                 <i class="fas fa-hand-pointer"></i>
-                <p>Pilih masjid dari daftar kiri</p>
+                <p>Pilih masjid dari daftar</p>
             </div>
         </div>
     </div>
@@ -457,5 +457,33 @@ const ROUTES_MON = {
 const isManager = {{ auth()->user()->isManager() ? 'true' : 'false' }};
 const isFrontdesk2 = {{ auth()->user()->isFrontdesk() ? 'true' : 'false' }};
 </script>
+
+<!-- Counter Animation Script -->
+<script>
+const counters = document.querySelectorAll('.counter');
+
+counters.forEach(counter => {
+    const target = parseFloat(counter.dataset.target);
+    const isDecimal = target % 1 !== 0;
+    let current = 0;
+
+    const updateCounter = () => {
+        const increment = target / 80;
+        current += increment;
+
+        if (current < target) {
+            counter.innerText = isDecimal
+                ? current.toFixed(1)
+                : Math.floor(current);
+            requestAnimationFrame(updateCounter);
+        } else {
+            counter.innerText = target;
+        }
+    };
+
+    updateCounter();
+});
+</script>
+
 <script src="{{ asset('js/monitoring.js') }}"></script>
 @endpush
