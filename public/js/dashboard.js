@@ -42,6 +42,11 @@ function resetMasjidForm() {
     `;
 }
 
+function closeMasjidForm() {
+    closePopup('addMasjidPopup');
+    resetMasjidForm();
+}
+
 // === ADD MASJID ===
 document.getElementById('addMasjidForm')?.addEventListener('submit', async function (e) {
     e.preventDefault();

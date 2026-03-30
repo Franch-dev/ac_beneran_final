@@ -263,6 +263,11 @@ const SidebarManager = {
 
         if (!this.sidebar) return; // Not a sidebar page
 
+        // Initialize mobile menu button aria-expanded
+        if (this.mobileMenuBtn) {
+            this.mobileMenuBtn.setAttribute('aria-expanded', 'false');
+        }
+
         // Load saved state
         const saved = localStorage.getItem('sidebarCollapsed');
         if (saved === 'true') {
@@ -310,6 +315,11 @@ const SidebarManager = {
         this.overlay?.classList.add('active');
         document.body.style.overflow = 'hidden';
 
+        // Update aria-expanded on button
+        if (this.mobileMenuBtn) {
+            this.mobileMenuBtn.setAttribute('aria-expanded', 'true');
+        }
+
         // 🔥 Sembunyikan dark mode header
         const headerBtn = document.getElementById('headerDarkModeBtn');
         if (headerBtn) headerBtn.style.display = 'none';
@@ -319,6 +329,11 @@ const SidebarManager = {
         this.sidebar?.classList.remove('mobile-open');
         this.overlay?.classList.remove('active');
         document.body.style.overflow = '';
+
+        // Update aria-expanded on button
+        if (this.mobileMenuBtn) {
+            this.mobileMenuBtn.setAttribute('aria-expanded', 'false');
+        }
 
         // 🔥 Tampilkan kembali dark mode header
         const headerBtn = document.getElementById('headerDarkModeBtn');

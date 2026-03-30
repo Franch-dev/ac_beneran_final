@@ -22,7 +22,7 @@ class MonitoringController extends Controller
             $search = $request->search;
             $query->whereHas('masjid', function ($q) use ($search) {
                 $q->where('name', 'like', "%$search%")
-                  ->orWhere('custom_id', 'like', "%$search%");
+                ->orWhere('custom_id', 'like', "%$search%");
             })->orWhere('order_number', 'like', "%$search%");
         }
 
@@ -38,9 +38,10 @@ class MonitoringController extends Controller
             ->get()
             ->filter(fn($m) => $m->urgency_status === 'overdue')
             ->count();
+        $pendingCount = ServiceOrder::where('status', 'pending')->count();
 
         $masjids = Masjid::with('acUnits')->get();
 
-        return view('monitoring', compact('orders', 'totalLokasi', 'totalUnit', 'overdue', 'masjids'));
+        return view('monitoring', compact('orders', 'totalLokasi', 'totalUnit', 'overdue', 'pendingCount', 'masjids'));
     }
 }
