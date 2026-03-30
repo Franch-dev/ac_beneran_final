@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 /* ==========================================
    RESPONSIVE IMPROVEMENTS & FIXES
    Additional responsive styles for better mobile experience
@@ -421,7 +421,7 @@
         background: var(--bg-card);
         box-shadow: 4px 0 24px rgba(0,0,0,0.5);
     }
-=======
+
 /* Responsive Improvements - Google Design System */
 
 /* Ensure smooth layout at all breakpoints */
@@ -454,5 +454,6 @@
     body { background: white; color: black; }
     .page-container { padding: 0; }
     .data-table { box-shadow: none; border: 1px solid #ccc; }
->>>>>>> e4258cdc0d298041d4477996327ae2a51c05c6f5
+
+}
 }
