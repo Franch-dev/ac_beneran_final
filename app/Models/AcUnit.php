@@ -9,6 +9,8 @@ class AcUnit extends Model
 {
     use HasFactory;
 
+    protected $connection = 'ac_service';
+
     protected $fillable = [
         'masjid_id',
         'pk_type',

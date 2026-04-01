@@ -28,30 +28,42 @@ function closeAllPopups() {
 }
 
 // === DARK MODE ===
-function toggleDarkMode() {
-    const html  = document.documentElement;
-    const isDark = html.getAttribute('data-theme') === 'dark';
-    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    const icon = document.getElementById('darkModeIcon');
-    if (icon) icon.className = isDark ? 'fas fa-moon' : 'fas fa-sun';
-    const iconMobile = document.getElementById('darkModeIconMobile');
-    if (iconMobile) iconMobile.className = isDark ? 'fas fa-moon' : 'fas fa-sun';
-    const iconGuest = document.getElementById('darkModeIconGuest');
-    if (iconGuest) iconGuest.className = isDark ? 'fas fa-moon' : 'fas fa-sun';
-    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+function syncDarkModeUI(theme) {
+    document.querySelectorAll(
+        '#darkModeIcon, #darkModeIconMobile, #darkModeIconGuest'
+    ).forEach(icon => {
+        icon.className = theme === 'dark'
+            ? 'fas fa-sun'
+            : 'fas fa-moon';
+    });
+
+    ['darkModeText', 'darkModeTextGuest'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = theme === 'dark'
+                ? 'Mode Terang'
+                : 'Mode Gelap';
+        }
+    });
 }
 
-(function () {
-    const saved = localStorage.getItem('theme');
-    if (saved) {
-        document.documentElement.setAttribute('data-theme', saved);
-        const icon = document.getElementById('darkModeIcon');
-        if (icon) icon.className = saved === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
-        const iconMobile = document.getElementById('darkModeIconMobile');
-        if (iconMobile) iconMobile.className = saved === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
-        const iconGuest = document.getElementById('darkModeIconGuest');
-        if (iconGuest) iconGuest.className = saved === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+function applyTheme(theme, persist = true) {
+    document.documentElement.setAttribute('data-theme', theme);
+    if (persist) {
+        localStorage.setItem('theme', theme);
     }
+    syncDarkModeUI(theme);
+}
+
+function toggleDarkMode() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    applyTheme(isDark ? 'light' : 'dark');
+}
+
+window.toggleDarkMode = toggleDarkMode;
+
+(function () {
+    applyTheme(localStorage.getItem('theme') || 'light', false);
 })();
 
 // === NAVBAR / MOBILE MENU MANAGEMENT ===
@@ -289,27 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
     NavbarManager.init();
     SidebarManager.init();
 
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-
-    // Sync text
-    ['darkModeText', 'darkModeTextGuest'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.textContent = savedTheme === 'dark'
-                ? 'Mode Terang'
-                : 'Mode Gelap';
-        }
-    });
-
-    // Sync icon
-    document.querySelectorAll(
-        '#darkModeIcon, #darkModeIconMobile, #darkModeIconGuest'
-    ).forEach(icon => {
-        icon.className = savedTheme === 'dark'
-            ? 'fas fa-sun'
-            : 'fas fa-moon';
-    });
+    syncDarkModeUI(localStorage.getItem('theme') || 'light');
 });
 
 // === FETCH HELPER ===
@@ -380,40 +372,6 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeAllPopups();
 });
 
-// Dark mode icon + text sync
-window.toggleDarkMode = function() {
-    const html = document.documentElement;
-    const isDark = html.getAttribute('data-theme') === 'dark';
-
-    const newTheme = isDark ? 'light' : 'dark';
-    html.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-
-    // Sync semua icon
-    document.querySelectorAll(
-        '#darkModeIcon, #darkModeIconMobile, #darkModeIconGuest'
-    ).forEach(icon => {
-        icon.className = newTheme === 'dark'
-            ? 'fas fa-sun'
-            : 'fas fa-moon';
-    });
-
-    // Sync semua text
-    const textMap = [
-        'darkModeText',
-        'darkModeTextGuest'
-    ];
-
-    textMap.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.textContent = newTheme === 'dark'
-                ? 'Mode Terang'
-                : 'Mode Gelap';
-        }
-    });
-};
-
 document.addEventListener("DOMContentLoaded", function () {
     const links = document.querySelectorAll(".nav-link");
 
@@ -434,13 +392,15 @@ const mobileBtn = document.getElementById("mobileMenuBtn");
 const sidebar = document.getElementById("sidebar");
 const overlay = document.getElementById("sidebarOverlay");
 
-mobileBtn.addEventListener("click", function () {
-    const isOpen = this.getAttribute("aria-expanded") === "true";
+if (mobileBtn && sidebar && overlay) {
+    mobileBtn.addEventListener("click", function () {
+        const isOpen = this.getAttribute("aria-expanded") === "true";
 
-    this.setAttribute("aria-expanded", !isOpen);
-    sidebar.classList.toggle("active");
-    overlay.classList.toggle("active");
-});
+        this.setAttribute("aria-expanded", !isOpen);
+        sidebar.classList.toggle("active");
+        overlay.classList.toggle("active");
+    });
+}
 
 /* ==========================================
    SCROLL SPY & REFRESH TO TOP
@@ -462,7 +422,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const scrollPosition = window.pageYOffset + 100; // Offset for detection
         let currentSection = null;
 
-<<<<<<< HEAD
         // Special handling for home section (at the very top)
         const homeSection = document.getElementById('home');
         if (homeSection && scrollPosition < homeSection.offsetHeight) {
@@ -520,86 +479,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Jalankan fungsi saat user scroll
-    window.addEventListener('scroll', updateActiveNav, { passive: true });
-    
-    // Jalankan sekali saat halaman dimuat untuk sinkronisasi awal
-    setTimeout(updateActiveNav, 100);
-});
-
-// 2. SCROLL SPY (Otomatis ganti menu saat scroll)
-document.addEventListener('DOMContentLoaded', () => {
-    const sections = document.querySelectorAll('section[id]');
-    const navLinks = document.querySelectorAll('.nav-link');
-
-    const updateActiveNav = () => {
-        let current = "";
-        const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
-
-        sections.forEach((section) => {
-            const sectionTop = section.offsetTop;
-            const sectionHeight = section.clientHeight;
-=======
-        sections.forEach((section) => {
-            const sectionTop = section.offsetTop;
->>>>>>> 4c5953a560297a4b795e6ab54c6cfe5cb24809ef
-            
-            // Jika posisi scroll sudah melewati batas atas section (dengan offset 150px)
-            if (scrollPosition >= sectionTop - 150) {
-                current = section.getAttribute("id");
-            }
-        });
-
-        navLinks.forEach((link) => {
-            link.classList.remove("active");
-            // Ambil ID dari href (misal: "#keunggulan")
-            const href = link.getAttribute("href");
-            if (href && href.includes(`#${current}`)) {
-                link.classList.add("active");
-                
-                // Update URL di address bar secara halus (tanpa loncat)
-                if (current && window.location.hash !== `#${current}`) {
-                    history.replaceState(null, null, `#${current}`);
-                }
-            }
-        });
-    };
-
-    // Jalankan fungsi saat user scroll
-    window.addEventListener('scroll', updateActiveNav);
-    
-    // Jalankan sekali saat halaman dimuat untuk sinkronisasi awal
-    updateActiveNav();
+    if (sections.length && navLinks.length) {
+        window.addEventListener('scroll', updateActiveNav, { passive: true });
+        setTimeout(updateActiveNav, 100);
+    }
 
     const counters = document.querySelectorAll('.counter');
+    counters.forEach(counter => {
+        const target = parseFloat(counter.dataset.target);
+        const isDecimal = target % 1 !== 0;
+        let current = 0;
 
-counters.forEach(counter => {
+        const updateCounter = () => {
+            const increment = target / 80;
+            current += increment;
 
-    const target = parseFloat(counter.dataset.target);
-    const isDecimal = target % 1 !== 0;
+            if (current < target) {
+                counter.innerText = isDecimal
+                    ? current.toFixed(1)
+                    : Math.floor(current);
 
-    let current = 0;
+                requestAnimationFrame(updateCounter);
+            } else {
+                counter.innerText = target;
+            }
+        };
 
-    const updateCounter = () => {
-
-        const increment = target / 80;
-
-        current += increment;
-
-        if (current < target) {
-
-            counter.innerText = isDecimal
-                ? current.toFixed(1)
-                : Math.floor(current);
-
-            requestAnimationFrame(updateCounter);
-
-        } else {
-
-            counter.innerText = target;
-        }
-    };
-
-    updateCounter();
-});
+        updateCounter();
+    });
 });

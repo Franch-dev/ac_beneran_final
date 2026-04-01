@@ -1,14 +1,17 @@
 @extends('layouts.app')
 
-@section('title', 'Beranda - AC Servis Masjid')
+@section('title', 'Forkis Platform')
 
 @section('content')
-<!-- Hero Section -->
-<section class="hero" id="home">
-    <div class="hero-content">
-        <div class="hero-badge">Layanan Profesional</div>
-        <h1>Sistem Servis AC<br><span class="gradient-text">Masjid & Musholla</span></h1>
-        <p>Platform manajemen servis AC terpadu untuk masjid dan musholla. Kelola unit, jadwalkan servis, dan pantau kondisi AC secara real-time.</p>
+@php($catalogCountValue = $catalogCount ?? 0)
+@php($compactCatalogClass = in_array($catalogCountValue, [1, 2], true) ? 'catalog-grid--compact catalog-grid--compact-'.$catalogCountValue : '')
+
+<main id="main-content">
+    <section class="hero glass-hero" id="home" data-aos="fade-up">
+        <div class="hero-content">
+        <div class="hero-badge">Website Catalog</div>
+        <h1>Platform Modular<br><span class="gradient-text">Online Forkis</span></h1>
+        <p>Satu pintu untuk mengakses mini-website internal Forkis. Saat ini ada <strong class="hero-inline-total">{{ $catalogCountValue }} website</strong> yang siap dijelajahi dari katalog utama dengan fondasi shared login dan jalur ekspansi ke subdomain.</p>
         <div class="hero-actions">
             <a href="{{ route('login') }}" class="btn btn-primary btn-lg">
                 <i class="fas fa-sign-in-alt"></i> Mulai Sekarang
@@ -19,234 +22,109 @@
         </div>
     </div>
     <div class="hero-visual">
-        <div class="hero-card">
-            <div class="stat-grid">
-                <div class="stat-item">
-                    <i class="fas fa-mosque text-primary"></i>
-                    <span class="stat-num counter" data-target="{{ $totalMasjid ?? 0 }}">0</span>
-                    <span class="stat-label">Masjid</span>
+        <div class="glass-card hero-card hero-service-card" data-aos="fade-up" data-aos-delay="120">
+            <div class="hero-service-topbar">
+                <div class="hero-service-kicker">
+                    <i class="fas fa-wave-square"></i>
+                    <span>Forkis Platform Pulse</span>
                 </div>
-                <div class="stat-item">
-                    <i class="fas fa-snowflake text-info"></i>
-                    <span class="stat-num counter" data-target="{{ $totalUnit ?? 0 }}">0</span>
-                    <span class="stat-label">Unit AC</span>
+                <span class="hero-service-pill">Live</span>
+            </div>
+
+            <div class="hero-service-spotlight">
+                <div class="hero-service-orbit hero-service-orbit--outer" aria-hidden="true"></div>
+                <div class="hero-service-orbit hero-service-orbit--inner" aria-hidden="true"></div>
+
+                <div class="hero-service-core">
+                    <span class="hero-service-label">Website Aktif</span>
+                    <div class="hero-service-value-wrap">
+                        <span class="hero-service-value counter" data-target="{{ $catalogCountValue }}">0</span>
+                    </div>
+                    <span class="hero-service-caption">modul internal yang siap dibuka dari katalog utama</span>
                 </div>
-                <div class="stat-item">
-                    <i class="fas fa-tools text-success"></i>
-                    <span class="stat-num counter" data-target="{{ $totalServis ?? 0 }}">0</span>
-                    <span class="stat-label">Servis</span>
+            </div>
+
+            <div class="hero-service-support-grid">
+                <div class="hero-support-card hero-support-card--mosque">
+                    <div class="hero-support-icon">
+                        <i class="fas fa-mosque"></i>
+                    </div>
+                    <span class="hero-support-value counter" data-target="{{ $totalMasjid ?? 0 }}">0</span>
+                    <span class="hero-support-label">Masjid Aktif</span>
                 </div>
-                <div class="stat-item">
-                    <i class="fas fa-star text-warning"></i>
-                    <span class="stat-num counter" data-target="{{ $manualRating ?? 4.7 }}">0</span>
-                    <span class="stat-label">Rating</span>
+
+                <div class="hero-support-card hero-support-card--unit">
+                    <div class="hero-support-icon">
+                        <i class="fas fa-snowflake"></i>
+                    </div>
+                    <span class="hero-support-value counter" data-target="{{ $totalUnit ?? 0 }}">0</span>
+                    <span class="hero-support-label">Unit AC</span>
                 </div>
+
+                <div class="hero-support-card hero-support-card--rating">
+                    <div class="hero-support-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <span class="hero-support-value counter" data-target="{{ $manualRating ?? 4.7 }}">0</span>
+                    <span class="hero-support-label">Rating Layanan</span>
+                </div>
+            </div>
+
+            <div class="hero-service-status glass-card">
+                <span class="hero-service-status-dot"></span>
+                <span>Arsitektur modular Forkis kini siap berkembang dari satu katalog menuju banyak website internal.</span>
             </div>
         </div>
     </div>
 </section>
 
-<!-- =====================================================
-     KATALOG WEBSITE — replaces "Keunggulan" section
-     ===================================================== -->
 <section class="section catalog-section" id="katalog">
     <div class="container">
         <div class="section-header">
-            <div class="features-eyebrow">✦ Katalog Layanan</div>
-            <h2>Temukan Layanan<br><span class="gradient-text">Yang Anda Butuhkan</span></h2>
-            <p>Kumpulan platform dan layanan terpercaya yang kami rekomendasikan</p>
+            <div class="features-eyebrow">Platform Catalog</div>
+            <h2>Jelajahi Website<br><span class="gradient-text">Internal Forkis</span></h2>
+            <p>Pilih modul yang Anda butuhkan dari satu katalog website internal yang disiapkan untuk tumbuh bersama platform.</p>
         </div>
 
-        <div class="catalog-grid">
-
-            <!-- Card 1 -->
-            <a href="https://example.com" target="_blank" rel="noopener noreferrer" class="catalog-card">
-                <div class="catalog-card-thumb" style="background: linear-gradient(135deg, #e8f0fe 0%, #c5d9ff 100%);">
-                    <div class="catalog-thumb-icon" style="color: #1a73e8;">
-                        <i class="fas fa-mosque"></i>
+<div class="catalog-grid {{ $compactCatalogClass }}" data-aos="fade-up" data-aos-delay="100">
+            @forelse ($catalogModules as $module)
+                <a href="{{ $module['url'] }}" class="catalog-card glass-card" data-aos="fade-up" data-aos-delay="{{ $loop->index * 80 }}" aria-label="{{ $module['headline'] }} - {{ $module['description'] }}">
+                    <div class="catalog-card-thumb" style="background: {{ $module['thumb_background'] }};">
+                        <div class="catalog-thumb-icon" style="color: {{ $module['thumb_color'] }};">
+                            <i class="{{ $module['icon'] }}"></i>
+                        </div>
+                        @if (! empty($module['badge']))
+                            <div class="catalog-card-badge {{ $module['badge_variant'] }}">{{ $module['badge'] }}</div>
+                        @endif
                     </div>
-                    <div class="catalog-card-badge">Official</div>
-                </div>
-                <div class="catalog-card-body">
-                    <div class="catalog-card-meta">
-                        <span class="catalog-domain">example.com</span>
-                        <span class="catalog-tag">Masjid</span>
+                    <div class="catalog-card-body">
+                        <div class="catalog-card-meta">
+                            <span class="catalog-domain">{{ $module['domain_label'] }}</span>
+                            <span class="catalog-tag">{{ $module['tag'] }}</span>
+                        </div>
+                        <h3 class="catalog-card-title">{{ $module['headline'] }}</h3>
+                        <p class="catalog-card-desc">{{ $module['description'] }}</p>
                     </div>
-                    <h3 class="catalog-card-title">Portal Masjid Al-Furqon</h3>
-                    <p class="catalog-card-desc">Informasi lengkap masjid, jadwal sholat, dan kegiatan komunitas terpadu.</p>
-                </div>
-                <div class="catalog-card-footer">
-                    <span class="catalog-visit">Kunjungi <i class="fas fa-arrow-right"></i></span>
-                </div>
-            </a>
-
-            <!-- Card 2 -->
-            <a href="https://example.com" target="_blank" rel="noopener noreferrer" class="catalog-card">
-                <div class="catalog-card-thumb" style="background: linear-gradient(135deg, #e6f4ea 0%, #a8d5b5 100%);">
-                    <div class="catalog-thumb-icon" style="color: #1e8e3e;">
-                        <i class="fas fa-tools"></i>
+                    <div class="catalog-card-footer">
+                        <span class="catalog-visit">Buka Website <i class="fas fa-arrow-right"></i></span>
                     </div>
-                </div>
-                <div class="catalog-card-body">
-                    <div class="catalog-card-meta">
-                        <span class="catalog-domain">example.com</span>
-                        <span class="catalog-tag">Servis</span>
-                    </div>
-                    <h3 class="catalog-card-title">Pusat Servis AC Indonesia</h3>
-                    <p class="catalog-card-desc">Platform booking servis AC profesional dengan teknisi bersertifikat nasional.</p>
-                </div>
-                <div class="catalog-card-footer">
-                    <span class="catalog-visit">Kunjungi <i class="fas fa-arrow-right"></i></span>
-                </div>
-            </a>
-
-            <!-- Card 3 -->
-            <a href="https://example.com" target="_blank" rel="noopener noreferrer" class="catalog-card">
-                <div class="catalog-card-thumb" style="background: linear-gradient(135deg, #fef0cd 0%, #fdd99a 100%);">
-                    <div class="catalog-thumb-icon" style="color: #b06000;">
-                        <i class="fas fa-shield-alt"></i>
-                    </div>
-                    <div class="catalog-card-badge catalog-card-badge--hot">Populer</div>
-                </div>
-                <div class="catalog-card-body">
-                    <div class="catalog-card-meta">
-                        <span class="catalog-domain">example.com</span>
-                        <span class="catalog-tag">Garansi</span>
-                    </div>
-                    <h3 class="catalog-card-title">Garansi Servis Terpercaya</h3>
-                    <p class="catalog-card-desc">Layanan bergaransi resmi 3 bulan dengan proteksi penuh setiap unit AC.</p>
-                </div>
-                <div class="catalog-card-footer">
-                    <span class="catalog-visit">Kunjungi <i class="fas fa-arrow-right"></i></span>
-                </div>
-            </a>
-
-            <!-- Card 4 -->
-            <a href="https://example.com" target="_blank" rel="noopener noreferrer" class="catalog-card">
-                <div class="catalog-card-thumb" style="background: linear-gradient(135deg, #fce8e6 0%, #f5b8b5 100%);">
-                    <div class="catalog-thumb-icon" style="color: #c5221f;">
-                        <i class="fas fa-chart-bar"></i>
+                </a>
+            @empty
+                <div class="catalog-card glass-card" data-aos="fade-up">
+                    <div class="catalog-card-body">
+                        <div class="catalog-card-meta">
+                            <span class="catalog-domain">catalog</span>
+                            <span class="catalog-tag">Empty</span>
+                        </div>
+                        <h3 class="catalog-card-title">Belum Ada Modul</h3>
+                        <p class="catalog-card-desc">Tambahkan modul pertama di konfigurasi katalog untuk menampilkan website internal di landing page.</p>
                     </div>
                 </div>
-                <div class="catalog-card-body">
-                    <div class="catalog-card-meta">
-                        <span class="catalog-domain">example.com</span>
-                        <span class="catalog-tag">Analytics</span>
-                    </div>
-                    <h3 class="catalog-card-title">Dashboard Monitoring AC</h3>
-                    <p class="catalog-card-desc">Pantau kondisi dan performa AC seluruh masjid dalam satu dashboard real-time.</p>
-                </div>
-                <div class="catalog-card-footer">
-                    <span class="catalog-visit">Kunjungi <i class="fas fa-arrow-right"></i></span>
-                </div>
-            </a>
-
-            <!-- Card 5 -->
-            <a href="https://example.com" target="_blank" rel="noopener noreferrer" class="catalog-card">
-                <div class="catalog-card-thumb" style="background: linear-gradient(135deg, #f3e8fd 0%, #d8b4fe 100%);">
-                    <div class="catalog-thumb-icon" style="color: #7b1fa2;">
-                        <i class="fas fa-file-invoice"></i>
-                    </div>
-                </div>
-                <div class="catalog-card-body">
-                    <div class="catalog-card-meta">
-                        <span class="catalog-domain">example.com</span>
-                        <span class="catalog-tag">Dokumen</span>
-                    </div>
-                    <h3 class="catalog-card-title">Generator SPK & Invoice</h3>
-                    <p class="catalog-card-desc">Buat surat perintah kerja dan invoice profesional secara otomatis dan cepat.</p>
-                </div>
-                <div class="catalog-card-footer">
-                    <span class="catalog-visit">Kunjungi <i class="fas fa-arrow-right"></i></span>
-                </div>
-            </a>
-
-            <!-- Card 6 -->
-            <a href="https://example.com" target="_blank" rel="noopener noreferrer" class="catalog-card">
-                <div class="catalog-card-thumb" style="background: linear-gradient(135deg, #e0f7fa 0%, #80deea 100%);">
-                    <div class="catalog-thumb-icon" style="color: #0097a7;">
-                        <i class="fas fa-users"></i>
-                    </div>
-                </div>
-                <div class="catalog-card-body">
-                    <div class="catalog-card-meta">
-                        <span class="catalog-domain">example.com</span>
-                        <span class="catalog-tag">Komunitas</span>
-                    </div>
-                    <h3 class="catalog-card-title">Forum Pengelola Masjid</h3>
-                    <p class="catalog-card-desc">Komunitas aktif pengurus dan DKM masjid seluruh Indonesia berbagi pengalaman.</p>
-                </div>
-                <div class="catalog-card-footer">
-                    <span class="catalog-visit">Kunjungi <i class="fas fa-arrow-right"></i></span>
-                </div>
-            </a>
-
-            <!-- Card 7 -->
-            <a href="https://example.com" target="_blank" rel="noopener noreferrer" class="catalog-card">
-                <div class="catalog-card-thumb" style="background: linear-gradient(135deg, #fff3e0 0%, #ffcc80 100%);">
-                    <div class="catalog-thumb-icon" style="color: #e65100;">
-                        <i class="fas fa-bell"></i>
-                    </div>
-                </div>
-                <div class="catalog-card-body">
-                    <div class="catalog-card-meta">
-                        <span class="catalog-domain">example.com</span>
-                        <span class="catalog-tag">Notifikasi</span>
-                    </div>
-                    <h3 class="catalog-card-title">Sistem Pengingat Servis</h3>
-                    <p class="catalog-card-desc">Notifikasi otomatis jadwal servis AC agar tidak ada unit yang terlewat.</p>
-                </div>
-                <div class="catalog-card-footer">
-                    <span class="catalog-visit">Kunjungi <i class="fas fa-arrow-right"></i></span>
-                </div>
-            </a>
-
-            <!-- Card 8 -->
-            <a href="https://example.com" target="_blank" rel="noopener noreferrer" class="catalog-card">
-                <div class="catalog-card-thumb" style="background: linear-gradient(135deg, #e8eaed 0%, #bdc1c6 100%);">
-                    <div class="catalog-thumb-icon" style="color: #5f6368;">
-                        <i class="fas fa-graduation-cap"></i>
-                    </div>
-                </div>
-                <div class="catalog-card-body">
-                    <div class="catalog-card-meta">
-                        <span class="catalog-domain">example.com</span>
-                        <span class="catalog-tag">Edukasi</span>
-                    </div>
-                    <h3 class="catalog-card-title">Panduan Perawatan AC</h3>
-                    <p class="catalog-card-desc">Tips dan tutorial lengkap cara merawat AC masjid agar awet dan hemat energi.</p>
-                </div>
-                <div class="catalog-card-footer">
-                    <span class="catalog-visit">Kunjungi <i class="fas fa-arrow-right"></i></span>
-                </div>
-            </a>
-
-            <!-- Card 9 -->
-            <a href="https://example.com" target="_blank" rel="noopener noreferrer" class="catalog-card">
-                <div class="catalog-card-thumb" style="background: linear-gradient(135deg, #e8f5e9 0%, #a5d6a7 100%);">
-                    <div class="catalog-thumb-icon" style="color: #2e7d32;">
-                        <i class="fas fa-leaf"></i>
-                    </div>
-                    <div class="catalog-card-badge catalog-card-badge--new">Baru</div>
-                </div>
-                <div class="catalog-card-body">
-                    <div class="catalog-card-meta">
-                        <span class="catalog-domain">example.com</span>
-                        <span class="catalog-tag">Eco</span>
-                    </div>
-                    <h3 class="catalog-card-title">AC Ramah Lingkungan</h3>
-                    <p class="catalog-card-desc">Solusi AC hemat energi dan ramah lingkungan khusus fasilitas ibadah.</p>
-                </div>
-                <div class="catalog-card-footer">
-                    <span class="catalog-visit">Kunjungi <i class="fas fa-arrow-right"></i></span>
-                </div>
-            </a>
-
+            @endforelse
         </div>
     </div>
 </section>
 
-<!-- Harga Servis -->
 <section class="section section-alt" id="harga">
     <div class="container">
         <div class="section-header">
@@ -254,7 +132,7 @@
             <p>Harga transparan, kualitas terjamin</p>
         </div>
         <div class="pricing-grid">
-            <div class="pricing-card">
+            <div class="pricing-card glass-card" data-aos="fade-up" data-aos-delay="100">
                 <div class="pricing-header">
                     <span class="pricing-pk">1 PK</span>
                     <h3>Standar</h3>
@@ -270,7 +148,7 @@
                     <li><i class="fas fa-check"></i> Garansi 3 Bulan</li>
                 </ul>
             </div>
-            <div class="pricing-card pricing-featured">
+            <div class="pricing-card pricing-featured glass-card" data-aos="fade-up" data-aos-delay="200">
                 <div class="pricing-badge">Terpopuler</div>
                 <div class="pricing-header">
                     <span class="pricing-pk">2 PK</span>
@@ -288,7 +166,7 @@
                     <li><i class="fas fa-check"></i> Garansi 3 Bulan</li>
                 </ul>
             </div>
-            <div class="pricing-card">
+            <div class="pricing-card glass-card" data-aos="fade-up" data-aos-delay="300">
                 <div class="pricing-header">
                     <span class="pricing-pk">5 PK</span>
                     <h3>Enterprise</h3>
@@ -309,7 +187,6 @@
     </div>
 </section>
 
-<!-- Kontak -->
 <section class="section" id="kontak">
     <div class="container">
         <div class="section-header">
@@ -317,7 +194,7 @@
             <p>Tim CS kami siap membantu Anda</p>
         </div>
         <div class="contact-grid">
-            <div class="contact-card">
+            <div class="contact-card glass-card" data-aos="fade-up" data-aos-delay="100">
                 <i class="fab fa-whatsapp"></i>
                 <h3>WhatsApp CS</h3>
                 <p>0895-3259-13693</p>
@@ -325,7 +202,7 @@
                     <i class="fab fa-whatsapp"></i> Chat Sekarang
                 </a>
             </div>
-            <div class="contact-card">
+            <div class="contact-card glass-card" data-aos="fade-up" data-aos-delay="200">
                 <i class="fas fa-envelope"></i>
                 <h3>Email</h3>
                 <p>sekretariat@forkis.org</p>
@@ -333,7 +210,7 @@
                     <i class="fas fa-envelope"></i> Kirim Email
                 </a>
             </div>
-            <div class="contact-card">
+            <div class="contact-card glass-card" data-aos="fade-up" data-aos-delay="300">
                 <i class="fas fa-phone"></i>
                 <h3>Telepon</h3>
                 <p>885 1031</p>
@@ -354,18 +231,16 @@
     </div>
 </section>
 
-<!-- CTA -->
 <section class="cta-section">
     <div class="container text-center">
-        <h2>Siap Mengelola Servis AC Masjid?</h2>
-        <p>Bergabung dengan ratusan masjid yang sudah mempercayakan manajemen AC mereka kepada kami.</p>
+        <h2>Siap Masuk ke Platform Forkis?</h2>
+        <p>Login sekali untuk mengakses katalog website internal dan modul operasional Forkis dari satu pintu.</p>
         <a href="{{ route('login') }}" class="btn btn-white btn-lg">
             <i class="fas fa-rocket"></i> Login Sekarang
         </a>
     </div>
 </section>
-
-
+</main>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
@@ -400,33 +275,15 @@ document.addEventListener('DOMContentLoaded', () => {
     sections.forEach(section => observer.observe(section));
 });
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const homeLink = document.querySelector('a[href="#home"]');
     if (homeLink) {
-        homeLink.addEventListener('click', function(e) {
+        homeLink.addEventListener('click', function (e) {
             e.preventDefault();
             window.scrollTo({ top: 0, behavior: 'smooth' });
             history.replaceState(null, null, ' ');
         });
     }
-});
-
-const counters = document.querySelectorAll('.counter');
-counters.forEach(counter => {
-    const target = parseFloat(counter.dataset.target);
-    const isDecimal = target % 1 !== 0;
-    let current = 0;
-    const updateCounter = () => {
-        const increment = target / 80;
-        current += increment;
-        if (current < target) {
-            counter.innerText = isDecimal ? current.toFixed(1) : Math.floor(current);
-            requestAnimationFrame(updateCounter);
-        } else {
-            counter.innerText = target;
-        }
-    };
-    updateCounter();
 });
 </script>
 @endsection

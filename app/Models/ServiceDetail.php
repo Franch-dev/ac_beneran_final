@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class ServiceDetail extends Model
 {
+    protected $connection = 'ac_service';
+
     protected $fillable = ['service_order_id', 'pk_type', 'brand', 'quantity', 'price_per_unit'];
 
     public function serviceOrder()

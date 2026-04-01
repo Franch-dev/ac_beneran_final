@@ -7,6 +7,7 @@ use Carbon\Carbon;
 
 class Masjid extends Model
 {
+    protected $connection = 'ac_service';
 
     protected $fillable = [
         'custom_id',

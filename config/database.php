@@ -16,7 +16,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'mysql'),
+    'default' => env('DB_CONNECTION', 'main'),
 
     /*
     |--------------------------------------------------------------------------
@@ -54,6 +54,66 @@ return [
             'unix_socket' => env('DB_SOCKET', ''),
             'charset' => env('DB_CHARSET', 'utf8mb4'),
             'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                (PHP_VERSION_ID >= 80500 ? PDO::MYSQL_ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+        'main' => [
+            'driver' => 'mysql',
+            'url' => env('MAIN_DB_URL', env('DB_URL')),
+            'host' => env('MAIN_DB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('MAIN_DB_PORT', env('DB_PORT', '3306')),
+            'database' => env('MAIN_DB_DATABASE', env('DB_DATABASE', '')),
+            'username' => env('MAIN_DB_USERNAME', env('DB_USERNAME', 'root')),
+            'password' => env('MAIN_DB_PASSWORD', env('DB_PASSWORD', '')),
+            'unix_socket' => env('MAIN_DB_SOCKET', env('DB_SOCKET', '')),
+            'charset' => env('MAIN_DB_CHARSET', env('DB_CHARSET', 'utf8mb4')),
+            'collation' => env('MAIN_DB_COLLATION', env('DB_COLLATION', 'utf8mb4_unicode_ci')),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                (PHP_VERSION_ID >= 80500 ? PDO::MYSQL_ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+        'ac_service' => [
+            'driver' => 'mysql',
+            'url' => env('AC_SERVICE_DB_URL', env('DB_URL')),
+            'host' => env('AC_SERVICE_DB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('AC_SERVICE_DB_PORT', env('DB_PORT', '3306')),
+            'database' => env('AC_SERVICE_DB_DATABASE', env('DB_DATABASE', '')),
+            'username' => env('AC_SERVICE_DB_USERNAME', env('DB_USERNAME', 'root')),
+            'password' => env('AC_SERVICE_DB_PASSWORD', env('DB_PASSWORD', '')),
+            'unix_socket' => env('AC_SERVICE_DB_SOCKET', env('DB_SOCKET', '')),
+            'charset' => env('AC_SERVICE_DB_CHARSET', env('DB_CHARSET', 'utf8mb4')),
+            'collation' => env('AC_SERVICE_DB_COLLATION', env('DB_COLLATION', 'utf8mb4_unicode_ci')),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                (PHP_VERSION_ID >= 80500 ? PDO::MYSQL_ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+        'inventory' => [
+            'driver' => 'mysql',
+            'url' => env('INVENTORY_DB_URL', env('DB_URL')),
+            'host' => env('INVENTORY_DB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('INVENTORY_DB_PORT', env('DB_PORT', '3306')),
+            'database' => env('INVENTORY_DB_DATABASE', env('DB_DATABASE', '')),
+            'username' => env('INVENTORY_DB_USERNAME', env('DB_USERNAME', 'root')),
+            'password' => env('INVENTORY_DB_PASSWORD', env('DB_PASSWORD', '')),
+            'unix_socket' => env('INVENTORY_DB_SOCKET', env('DB_SOCKET', '')),
+            'charset' => env('INVENTORY_DB_CHARSET', env('DB_CHARSET', 'utf8mb4')),
+            'collation' => env('INVENTORY_DB_COLLATION', env('DB_COLLATION', 'utf8mb4_unicode_ci')),
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,

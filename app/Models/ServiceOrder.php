@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class ServiceOrder extends Model
 {
+    protected $connection = 'ac_service';
+
     protected $fillable = [
         'masjid_id', 'order_number', 'meeting_person',
         'phone', 'service_date', 'notes', 'status'

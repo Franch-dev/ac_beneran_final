@@ -86,13 +86,13 @@
 
 @else
 <!-- TOP NAVBAR (for guests/landing page) -->
-<nav class="navbar" role="navigation" aria-label="Navigasi utama">
+<nav class="navbar glass-navbar" role="navigation" aria-label="Navigasi utama">
     <a href="#main-content" class="skip-link">Langsung ke konten utama</a>
 
     <!-- Brand selalu tampil di header -->
     <div class="navbar-brand">
-        <div class="brand-icon"><i class="fas fa-snowflake"></i></div>
-        <span class="brand-text">AC Servis Masjid</span>
+        <div class="brand-icon"><i class="fas fa-layer-group"></i></div>
+        <span class="brand-text">Forkis Platform</span>
     </div>
 
     <!-- Toggle Mobile -->
@@ -112,19 +112,19 @@
 
         <!-- Brand di dalam mobile sidebar -->
         <div class="mobile-sidebar-header">
-            <div class="brand-icon"><i class="fas fa-snowflake"></i></div>
-            <span class="brand-text">AC Servis Masjid</span>
+            <div class="brand-icon"><i class="fas fa-layer-group"></i></div>
+            <span class="brand-text">Forkis Platform</span>
         </div>
 
         <div class="nav-sep"></div>
 
-        <a href="#home" 
+        <a href="#home"
            class="nav-link">
             <i class="fas fa-home"></i> Home
         </a>
 
-        <a href="#keunggulan" class="nav-link ">
-            <i class="fas fa-star"></i> Keunggulan
+        <a href="#katalog" class="nav-link ">
+            <i class="fas fa-tags"></i> Katalog Website
         </a>
 
         <a href="#harga" class="nav-link">
