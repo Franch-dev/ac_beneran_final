@@ -6,7 +6,7 @@
 @php($catalogCountValue = $catalogCount ?? 0)
 @php($compactCatalogClass = in_array($catalogCountValue, [1, 2], true) ? 'catalog-grid--compact catalog-grid--compact-'.$catalogCountValue : '')
 
-<main id="main-content">
+
     <section class="hero glass-hero" id="home" data-aos="fade-up">
         <div class="hero-content">
         <div class="hero-badge">Website Catalog</div>
@@ -240,7 +240,7 @@
         </a>
     </div>
 </section>
-</main>
+
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {

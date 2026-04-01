@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="id" data-theme="light">
 <head>
+    <script>
+      try {
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+      } catch(e) {}
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -15,6 +20,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css">
 </head>
 @auth
 <body class="has-sidebar">
@@ -68,6 +74,10 @@
     </div>
 
     <script src="{{ asset('js/app.js') }}"></script>
+    <script type="module" src="{{ asset('js/lenis-setup.js') }}"></script>
+    <script type="module" src="{{ asset('js/aos-setup.js') }}"></script>
+    <script type="module" src="{{ asset('js/gsap-master.js') }}"></script>
+    <script type="module" src="{{ asset('js/framer-equivalents.js') }}"></script>
     @stack('scripts')
 </body>
 </html>

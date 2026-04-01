@@ -66,29 +66,47 @@
 --glass-border-dark: 1px solid rgba(255, 255, 255, 0.08);
 --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.1);
 --shadow-glass-dark: 0 8px 32px rgba(255, 255, 255, 0.02);
+}
 
-.glass {
-  background: var(--glass-bg);
+/* Glass base */
+.glass,
+.glass-hero,
+.glass-card,
+.glass-navbar {
+  background: rgba(255,255,255,0.85);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
-  border: var(--glass-border);
-  box-shadow: var(--shadow-glass);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-md);
   border-radius: var(--radius-xl);
 }
 
-[data-theme="dark"] .glass {
-  background: rgba(41, 42, 45, 0.6);
+[data-theme="dark"] .glass,
+[data-theme="dark"] .glass-hero,
+[data-theme="dark"] .glass-card,
+[data-theme="dark"] .glass-navbar {
+  background: rgba(30, 30, 35, 0.72);
   border: var(--glass-border-dark);
   box-shadow: var(--shadow-glass-dark);
 }
 
-.glass-hero { composes: glass; }
-.glass-card { composes: glass; padding: 1.5rem; }
-.glass-navbar { composes: glass; position: sticky; }
-
+/* @supports fallback for browsers without backdrop-filter */
+@supports not (backdrop-filter: blur(1px)) {
+  .glass,
+  .glass-hero,
+  .glass-card,
+  .glass-navbar {
+    background: var(--bg-card);
+  }
 }
 
-.d-md-none { display: inline !important; }
+.glass-card { padding: 1.5rem; }
+.glass-navbar { position: sticky; z-index: 1000; }
+
+/* Z-index: prevent GSAP pin spacer from overlapping navbar */
+.gsap-pin-spacer { z-index: 900; }
+
+.d-md-none { display: none !important; }
 @media (min-width: 768px) { .d-md-none { display: none !important; } }
 
 [data-theme="dark"] {
@@ -113,7 +131,25 @@
     --gray-100: #292a2d;
     --gray-200: #3c4043;
     --gray-300: #5f6368;
+    --gray-400: #80868b;
+    --gray-500: #9aa0a6;
+    --gray-600: #bdc1c6;
+    --gray-700: #dadce0;
+    --gray-800: #e8eaed;
     --gray-900: #e8eaed;
+    --info: #8ab4f8;
+    --info-soft: #1a2a4a;
+    --google-blue: #669df6;
+    --google-red: #f28b82;
+    --google-yellow: #fdd663;
+    --google-green: #81c995;
+    --shadow-xs: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.2);
+    --shadow-md: 0 2px 8px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.25);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.25);
+    --shadow-xl: 0 8px 24px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3);
+    --glass-bg: rgba(30, 30, 35, 0.72);
+    --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.35);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -769,7 +805,7 @@ a { text-decoration: none; }
 }
 .hero p { font-size: 1rem; color: var(--text-muted); margin-bottom: 32px; line-height: 1.75; word-break: break-word; }
 .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
-.hero-visual { display: flex; align-items: center; justify-content: center; }
+.hero-visual { display: flex; align-items: center; justify-content: center; overflow: hidden; max-width: 100%; }
 .hero-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -1909,8 +1945,9 @@ body.has-sidebar .alert { margin: 16px 24px 0; }
     color: var(--text-muted);
     line-height: 1.6;
     margin: 0;
-    display: -webkit-box;
+display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -1989,4 +2026,30 @@ body.has-sidebar .alert { margin: 16px 24px 0; }
     #darkModeTextGuest {
         display: none;
     }
+}
+
+
+/* ============================================
+   GPU PROMOTION — Task 1.6
+   Promote animated elements to compositor layers
+   ============================================ */
+.hero-content,
+.catalog-card,
+.pricing-card,
+.contact-card,
+.summary-card {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* ============================================
+   MOBILE GLASS BLUR REDUCTION — Task 1.9
+   Reduce backdrop-filter blur on mobile for GPU perf
+   ============================================ */
+@media (max-width: 768px) {
+  .glass-card {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
 }

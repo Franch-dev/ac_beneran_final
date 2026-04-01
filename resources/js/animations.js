@@ -2,29 +2,35 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
-import Lenis from '@studio-freight/lenis';
 
 gsap.registerPlugin(ScrollTrigger);
 
+/* ── Lenis smooth-scroll (fail-safe) ── */
+try {
+  const { default: Lenis } = await import('@studio-freight/lenis');
 const lenis = new Lenis({
-  duration: 1.4,
-  easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t))
-});
+    duration: 0.8,
+    easing: (t) => t<.5 ? 4*t*t*t : (t-1)*(2*t-2)*(2*t-2)+1, // smooth cubic
+  });
 
-function raf(time) {
-  lenis.raf(time);
+  function raf(time) {
+    lenis.raf(time);
+    requestAnimationFrame(raf);
+  }
   requestAnimationFrame(raf);
+} catch (e) {
+  console.warn('[Forkis] Lenis smooth-scroll unavailable:', e.message);
 }
 
-requestAnimationFrame(raf);
-
+/* ── AOS ── */
 AOS.init({
   duration: 800,
   easing: 'ease-out-cubic',
   once: true,
-  offset: 120
+  offset: 120,
 });
 
+/* ── Counter animation ── */
 const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
 
 const animateCounter = (counter) => {
@@ -47,83 +53,80 @@ const animateCounter = (counter) => {
   requestAnimationFrame(update);
 };
 
-const counterObserver = new IntersectionObserver((entries, observer) => {
-  entries.forEach((entry) => {
-    if (entry.isIntersecting) {
-      animateCounter(entry.target);
-      observer.unobserve(entry.target);
-    }
-  });
-}, {
-  threshold: 0.5
-});
+const counterObserver = new IntersectionObserver(
+  (entries, observer) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        animateCounter(entry.target);
+        observer.unobserve(entry.target);
+      }
+    });
+  },
+  { threshold: 0.5 }
+);
 
 document.querySelectorAll('.counter').forEach((counter) => {
   counterObserver.observe(counter);
 });
 
+/* ── GSAP scroll-triggered animations (NO opacity — AOS handles visibility) ── */
 gsap.from('.hero-content', {
-  opacity: 0,
-  y: 50,
+  y: 40,
   duration: 1,
   ease: 'power3.out',
-  delay: 0.1
+  delay: 0.1,
 });
 
 gsap.from('.hero-service-card', {
   scrollTrigger: {
     trigger: '.hero-service-card',
-    start: 'top 90%'
+    start: 'top 90%',
   },
-  opacity: 0,
-  y: 40,
+  y: 30,
   duration: 1,
-  ease: 'power3.out'
+  ease: 'power3.out',
 });
 
 gsap.from('.catalog-card', {
   scrollTrigger: {
     trigger: '.catalog-section',
-    start: 'top 85%'
+    start: 'top 85%',
   },
-  opacity: 0,
-  y: 40,
+  y: 30,
   duration: 0.8,
   stagger: 0.12,
-  ease: 'power3.out'
+  ease: 'power3.out',
 });
 
 gsap.from('.pricing-card', {
   scrollTrigger: {
     trigger: '#harga',
-    start: 'top 90%'
+    start: 'top 90%',
   },
-  opacity: 0,
-  y: 40,
+  y: 30,
   duration: 0.85,
   stagger: 0.12,
-  ease: 'power3.out'
+  ease: 'power3.out',
 });
 
 gsap.from('.contact-card', {
   scrollTrigger: {
     trigger: '#kontak',
-    start: 'top 90%'
+    start: 'top 90%',
   },
-  opacity: 0,
-  y: 40,
+  y: 30,
   duration: 0.85,
   stagger: 0.12,
-  ease: 'power3.out'
+  ease: 'power3.out',
 });
 
+/* ── Floating pill (decorative, no visibility impact) ── */
 gsap.to('.hero-service-pill', {
   y: [-6, 6, -6],
   duration: 2.8,
   ease: 'sine.inOut',
   repeat: -1,
-  yoyo: true
+  yoyo: true,
 });
 
-export { gsap, ScrollTrigger, Lenis };
-
+export { gsap, ScrollTrigger };

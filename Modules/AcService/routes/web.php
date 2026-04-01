@@ -6,16 +6,19 @@ use App\Http\Controllers\MasjidController;
 use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\ServiceOrderController;
 use Illuminate\Support\Facades\Route;
-use Modules\AcService\Http\Controllers\AcServiceHomeController;
 
-Route::get('/modules/ac-service', AcServiceHomeController::class)->name('modules.ac-service.index');
+Route::get('/modules/ac-service', function () {
+    return redirect()->route('dashboard');
+})->name('modules.ac-service.index');
 
 $module = collect(config('modules.catalog', []))->firstWhere('key', 'ac-service');
 $domain = $module['subdomain'] ?? null;
 
 if ($domain) {
     Route::domain($domain)->group(function (): void {
-        Route::get('/', AcServiceHomeController::class)->name('modules.ac-service.subdomain.index');
+        Route::get('/', function () {
+            return redirect()->route('dashboard');
+        })->name('modules.ac-service.subdomain.index');
     });
 }
 

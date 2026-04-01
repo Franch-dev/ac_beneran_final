@@ -1,6 +1,6 @@
 @auth
 <!-- SIDEBAR (only for authenticated pages) -->
-<aside class="sidebar" id="sidebar" aria-label="Navigasi sidebar">
+<aside class="sidebar glass" id="sidebar" aria-label="Navigasi sidebar">
     <!-- Sidebar Header -->
     <div class="sidebar-header">
         <div class="sidebar-logo">

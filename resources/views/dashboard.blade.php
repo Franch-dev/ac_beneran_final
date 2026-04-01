@@ -37,7 +37,7 @@
         <form action="{{ route('dashboard') }}" method="GET" class="search-form">
             <div class="search-input-wrap">
                 <i class="fas fa-search"></i>
-                <input type="text" name="search" placeholder="Cari ID atau nama masjid..." 
+                <input type="text" name="search" placeholder="Cari ID atau nama masjid..."
                        value="{{ request('search') }}" class="search-input">
                 @if(request('search'))
                     <a href="{{ route('dashboard') }}" class="search-clear"><i class="fas fa-times"></i></a>
@@ -313,6 +313,7 @@
 <script>
 const ROUTES = {
     masjidStore: '{{ route("masjid.store") }}',
+    // warga.store temporarily disabled until route defined
     masjidUpdate: (id) => `/masjid/${id}`,
     masjidDestroy: (id) => `/masjid/${id}`,
     masjidDetail: (id) => `/masjid/${id}`,
