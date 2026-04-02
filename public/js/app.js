@@ -269,16 +269,18 @@ const SidebarManager = {
         this.sidebar?.classList.add('mobile-open');
         this.overlay?.classList.add('active');
         document.body.style.overflow = 'hidden';
+        window.pauseScroll?.();
 
         // Hide dark mode header
         const headerBtn = document.getElementById('headerDarkModeBtn');
         if (headerBtn) headerBtn.style.display = 'none';
-    },  
+    },
 
     closeMobile() {
         this.sidebar?.classList.remove('mobile-open');
         this.overlay?.classList.remove('active');
         document.body.style.overflow = '';
+        window.resumeScroll?.();
 
         // Show dark mode header
         const headerBtn = document.getElementById('headerDarkModeBtn');
@@ -431,10 +433,10 @@ document.addEventListener('DOMContentLoaded', () => {
             sections.forEach((section) => {
                 const sectionId = section.getAttribute("id");
                 if (sectionId === 'home') return; // Skip home, already handled
-                
+
                 const sectionTop = section.offsetTop;
                 const sectionBottom = sectionTop + section.offsetHeight;
-                
+
                 // If scroll is within this section, mark it as current
                 if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
                     currentSection = sectionId;
@@ -458,9 +460,9 @@ document.addEventListener('DOMContentLoaded', () => {
             navLinks.forEach((link) => {
                 const href = link.getAttribute("href");
                 if (!href) return;
-                
+
                 const linkId = href.substring(1); // Remove # from href
-                
+
                 if (linkId === currentSection) {
                     if (lastActiveLink !== link) {
                         // Remove active from all links

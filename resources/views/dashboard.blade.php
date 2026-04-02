@@ -51,7 +51,7 @@
     </div>
 
     <!-- Masjid Cards -->
-    <div class="cards-grid" id="masjidGrid">
+<div class="cards-grid" id="masjidGrid" data-aos="fade-up" style="--cols-xs: 1; --cols-sm: 2;">
         @forelse($masjids as $masjid)
         @php
             $urgency = $masjid->urgency_status;

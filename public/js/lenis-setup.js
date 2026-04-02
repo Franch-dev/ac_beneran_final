@@ -35,19 +35,16 @@ try {
     easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
   });
 
-  // ── 3.3 Single RAF loop driving Lenis ───────────────────────────────────────
-  // This is the ONE requestAnimationFrame loop for the whole page (Req 9.3).
-  // GSAP is wired in via gsap.ticker below — no second rAF loop is created.
-  function raf(time) {
-    _lenis.raf(time);
-    requestAnimationFrame(raf);
-  }
-  requestAnimationFrame(raf);
-
-  // ── 3.4 GSAP ticker integration ─────────────────────────────────────────────
+  // ── 3.3 Single driver: GSAP ticker OR rAF — never both (prevents double scroll updates).
   if (typeof gsap !== 'undefined' && gsap.ticker) {
     gsap.ticker.add((time) => _lenis.raf(time * 1000));
     gsap.ticker.lagSmoothing(0);
+  } else {
+    function raf(time) {
+      _lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
   }
 
   // ── 3.5 Anchor link interception ────────────────────────────────────────────

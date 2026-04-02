@@ -21,6 +21,38 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css">
+    <style>
+        :root {
+            scroll-padding-top: 5rem;
+        }
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 6px;
+            background: var(--primary);
+            color: white;
+            padding: 12px 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: var(--radius);
+            transition: top 0.25s ease;
+            z-index: 9999;
+        }
+        .skip-link:focus {
+            top: 1rem;
+            padding: 12px 1.25rem;
+            outline: 3px solid white;
+            box-shadow: var(--shadow-md);
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.2s !important;
+            }
+            html { scroll-behavior: auto; }
+        }
+    </style>
 </head>
 @auth
 <body class="has-sidebar">
@@ -73,11 +105,8 @@
         </div>
     </div>
 
+    {{-- Smooth scroll, AOS, and counters live in @vite resources/js/app.js (single Lenis rAF). Legacy public/*.js modules removed here to avoid duplicate engines and scroll jank. --}}
     <script src="{{ asset('js/app.js') }}"></script>
-    <script type="module" src="{{ asset('js/lenis-setup.js') }}"></script>
-    <script type="module" src="{{ asset('js/aos-setup.js') }}"></script>
-    <script type="module" src="{{ asset('js/gsap-master.js') }}"></script>
-    <script type="module" src="{{ asset('js/framer-equivalents.js') }}"></script>
     @stack('scripts')
 </body>
 </html>

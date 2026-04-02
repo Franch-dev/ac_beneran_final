@@ -18,6 +18,10 @@
             <span class="sidebar-icon"><i class="fas fa-home"></i></span>
             <span class="sidebar-label">Home</span>
         </a>
+        <a href="{{ route('home') }}#katalog" class="sidebar-link" role="menuitem">
+            <span class="sidebar-icon"><i class="fas fa-layer-group"></i></span>
+            <span class="sidebar-label">Katalog</span>
+        </a>
         <a href="{{ route('dashboard') }}" class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" role="menuitem">
             <span class="sidebar-icon"><i class="fas fa-th-large"></i></span>
             <span class="sidebar-label">Dashboard</span>
@@ -87,7 +91,7 @@
 @else
 <!-- TOP NAVBAR (for guests/landing page) -->
 <nav class="navbar glass-navbar" role="navigation" aria-label="Navigasi utama">
-    <a href="#main-content" class="skip-link">Langsung ke konten utama</a>
+    <!-- Skip link removed per feedback -->
 
     <!-- Brand selalu tampil di header -->
     <div class="navbar-brand">

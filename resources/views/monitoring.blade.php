@@ -19,7 +19,7 @@
     </div>
 
     <!-- Summary Cards -->
-<div class="summary-grid">
+<div class="summary-grid" data-aos="fade-up">
 
     <div class="summary-card">
         <div class="summary-icon bg-primary">
