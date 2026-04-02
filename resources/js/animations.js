@@ -2,49 +2,15 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 
 /**
- * Single Lenis instance + one rAF loop (no duplicate GSAP/Lenis stacks).
- * AOS handles scroll reveals; avoid overlapping GSAP ScrollTrigger on the same nodes.
+ * AOS animations + counters. Native smooth scroll (no Lenis).
  */
-let lenisInstance = null;
-
-try {
-  const { default: Lenis } = await import('@studio-freight/lenis');
-  lenisInstance = new Lenis({
-    duration: 1.15,
-    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-    smoothWheel: true,
-  });
-
-  function raf(time) {
-    lenisInstance.raf(time);
-    requestAnimationFrame(raf);
-  }
-  requestAnimationFrame(raf);
-} catch (e) {
-  console.warn('[Forkis] Lenis unavailable, native scroll:', e?.message ?? e);
-}
-
-export function pauseScroll() {
-  if (lenisInstance) lenisInstance.stop();
-}
-export function resumeScroll() {
-  if (lenisInstance) lenisInstance.start();
-}
-window.pauseScroll = pauseScroll;
-window.resumeScroll = resumeScroll;
 
 function bootAnimations() {
-  initAosAndAnchors();
+  initAOS();
   initCounters();
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', bootAnimations);
-} else {
-  bootAnimations();
-}
-
-function initAosAndAnchors() {
+function initAOS() {
   AOS.init({
     duration: 800,
     easing: 'ease-out-cubic',
@@ -52,18 +18,17 @@ function initAosAndAnchors() {
     offset: window.matchMedia('(max-width: 767px)').matches ? 60 : 120,
   });
 
-  if (lenisInstance) {
-    document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
-      anchor.addEventListener('click', (e) => {
-        const target = anchor.getAttribute('href');
-        if (!target || target === '#' || target === '#!') return;
-        const el = document.querySelector(target);
-        if (!el) return;
-        e.preventDefault();
-        lenisInstance.scrollTo(el, { offset: -8 });
-      });
+  // Native anchor handling
+  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+    anchor.addEventListener('click', (e) => {
+      const target = anchor.getAttribute('href');
+      if (!target || target === '#' || target === '#!') return;
+      const el = document.querySelector(target);
+      if (!el) return;
+      e.preventDefault();
+      el.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
     });
-  }
+  });
 }
 
 const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
@@ -105,3 +70,10 @@ function initCounters() {
     counterObserver.observe(counter);
   });
 }
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootAnimations);
+} else {
+  bootAnimations();
+}
+
