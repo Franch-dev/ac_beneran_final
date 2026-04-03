@@ -78,3 +78,6 @@ yarn-error.log
 
 # Compiled/generated files
 /bootstrap/compiled.php
+
+# Folder for update web
+Website-Update
