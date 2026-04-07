@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('ac_units', function (Blueprint $table) {
+        Schema::connection('ac_service')->create('ac_units', function (Blueprint $table) {
             $table->id();
             $table->foreignId('masjid_id')->constrained()->onDelete('cascade');
             $table->enum('pk_type', ['1PK', '2PK', '5PK']);
@@ -21,6 +21,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('ac_units');
+        Schema::connection('ac_service')->dropIfExists('ac_units');
     }
 };

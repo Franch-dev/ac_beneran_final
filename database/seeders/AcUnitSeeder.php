@@ -12,6 +12,10 @@ class AcUnitSeeder extends Seeder
     public function run(): void
     {
         $csvPath = database_path('seeders/data/PKL data AC - Sheet1.csv');
+        if (!is_file($csvPath)) {
+            throw new \RuntimeException("Seeder source not found: {$csvPath}");
+        }
+
         $rows = array_map('str_getcsv', file($csvPath));
         $header = array_shift($rows);
         if (isset($header[0])) {
@@ -41,13 +45,17 @@ class AcUnitSeeder extends Seeder
                 $quantity = 1; // fallback to minimal unit so record persists
             }
 
-            AcUnit::create([
-                'masjid_id' => $masjid->id,
-                'pk_type' => $pkType,
-                'brand' => $brand,
-                'quantity' => $quantity,
-                'last_service_date' => $lastServiceDate,
-            ]);
+            AcUnit::updateOrCreate(
+                [
+                    'masjid_id' => $masjid->id,
+                    'pk_type' => $pkType,
+                    'brand' => $brand,
+                ],
+                [
+                    'quantity' => $quantity,
+                    'last_service_date' => $lastServiceDate,
+                ]
+            );
         }
     }
 

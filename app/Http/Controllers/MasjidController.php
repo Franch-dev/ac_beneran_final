@@ -4,13 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Models\Masjid;
 use App\Models\AcUnit;
+use App\Models\ServiceOrder;
 use Illuminate\Http\Request;
 
 class MasjidController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Masjid::with('acUnits', 'serviceOrders');
+        $query = Masjid::with([
+            'acUnits',
+            'serviceOrders' => fn ($serviceOrders) => $serviceOrders
+                ->latest('service_date')
+                ->latest(),
+        ]);
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -21,7 +27,27 @@ class MasjidController extends Controller
         }
 
         $masjids = $query->latest()->paginate(15);
-        return view('dashboard', compact('masjids'));
+
+        $dashboardMetrics = [
+            'total_locations' => Masjid::count(),
+            'total_units' => AcUnit::sum('quantity'),
+            'active_orders' => ServiceOrder::active()->count(),
+            'overdue_locations' => Masjid::with('acUnits')
+                ->get()
+                ->filter(fn ($masjid) => $masjid->urgency_status === 'overdue')
+                ->count(),
+            'needs_attention_locations' => Masjid::with('acUnits')
+                ->get()
+                ->filter(fn ($masjid) => in_array($masjid->urgency_status, ['harus_servis', 'overdue'], true))
+                ->count(),
+            'type_totals' => Masjid::query()
+                ->select('type')
+                ->selectRaw('count(*) as total')
+                ->groupBy('type')
+                ->pluck('total', 'type'),
+        ];
+
+        return view('dashboard', compact('masjids', 'dashboardMetrics'));
     }
 
     public function store(Request $request)

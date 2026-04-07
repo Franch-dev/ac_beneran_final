@@ -3,92 +3,165 @@
 @section('title', 'Monitoring - AC Servis Masjid')
 
 @section('content')
-<div class="page-container">
-    <div class="page-header">
-        <div>
-            <h1 class="page-title"><i class="fas fa-chart-line"></i> Monitoring</h1>
-            <p class="page-subtitle">Pantau status servis AC seluruh masjid</p>
+@php
+    $statusLabels = \App\Models\ServiceOrder::STATUS_LABELS;
+    $pendingCount = (int) ($statusTotals['pending'] ?? 0);
+    $waitingInvoiceCount = (int) ($statusTotals['waiting_invoice'] ?? 0);
+    $waitingReviewCount = (int) ($statusTotals['waiting_review'] ?? 0);
+    $searchTerm = request('search');
+    $statusFilter = request('status');
+@endphp
+<div class="page-container page-operations page-operations--monitoring">
+    <section class="ops-hero ops-hero--monitoring glass-surface" data-aos="fade-down">
+        <div class="ops-hero__copy">
+            <span class="ops-hero__eyebrow">Workflow Control Tower</span>
+            <div class="page-header page-header--hero">
+                <div>
+                    <h1 class="page-title"><i class="fas fa-chart-line"></i> Monitoring Service Order</h1>
+                    <p class="page-subtitle">Pantau antrean servis, bottleneck workflow, dan urgensi lokasi secara real-time.</p>
+                </div>
+                <div class="page-actions page-actions--hero">
+                    @if(auth()->user()->isFrontdesk())
+                    <button class="btn btn-primary" onclick="openPopup('serviceOrderPopup')">
+                        <i class="fas fa-plus"></i> Buat Service Order
+                    </button>
+                    @endif
+                    <a href="{{ route('dashboard') }}" class="btn btn-outline">
+                        <i class="fas fa-th-large"></i> Kembali ke Dashboard
+                    </a>
+                </div>
+            </div>
+            <p class="ops-hero__lead">
+                Gunakan filter, status badge, dan timeline audit untuk memastikan setiap service order bergerak
+                tanpa kehilangan konteks lokasi, teknisi, dan dokumen pendukung.
+            </p>
+            <div class="ops-chip-row">
+                <span class="ops-chip"><i class="fas fa-list-check"></i> {{ $orders->total() }} order terindeks</span>
+                <span class="ops-chip"><i class="fas fa-filter"></i> {{ $statusFilter ? 'Status: ' . ($statusLabels[$statusFilter] ?? $statusFilter) : 'Semua status' }}</span>
+                <span class="ops-chip"><i class="fas fa-magnifying-glass"></i> {{ $searchTerm ? 'Cari: "' . $searchTerm . '"' : 'Pencarian nonaktif' }}</span>
+            </div>
         </div>
-        <div class="page-actions">
-            @if(auth()->user()->isFrontdesk())
-            <button class="btn btn-primary" onclick="openPopup('serviceOrderPopup')">
-                <i class="fas fa-plus"></i> Buat Service Order
-            </button>
-            @endif
+        <div class="ops-kpi-grid" data-stagger-group>
+            <article class="ops-kpi-card" data-stagger-item>
+                <span class="ops-kpi-card__label">Lokasi Dipantau</span>
+                <strong class="ops-kpi-card__value">{{ $totalLokasi }}</strong>
+                <span class="ops-kpi-card__meta">Masjid dan musholla aktif</span>
+            </article>
+            <article class="ops-kpi-card" data-stagger-item>
+                <span class="ops-kpi-card__label">Unit AC</span>
+                <strong class="ops-kpi-card__value">{{ $totalUnit }}</strong>
+                <span class="ops-kpi-card__meta">Total perangkat dalam inventori</span>
+            </article>
+            <article class="ops-kpi-card" data-stagger-item>
+                <span class="ops-kpi-card__label">Overdue</span>
+                <strong class="ops-kpi-card__value">{{ $overdue }}</strong>
+                <span class="ops-kpi-card__meta">Lokasi dengan jeda servis di atas 120 hari</span>
+            </article>
+            <article class="ops-kpi-card ops-kpi-card--alert" data-stagger-item>
+                <span class="ops-kpi-card__label">Pending Saat Ini</span>
+                <strong class="ops-kpi-card__value">{{ $pendingCount }}</strong>
+                <span class="ops-kpi-card__meta">Order pending lintas seluruh antrean</span>
+            </article>
+        </div>
+    </section>
+
+    <div class="summary-grid ops-summary-grid" data-stagger-group>
+        <div class="summary-card summary-card--primary ui-reveal" data-stagger-item>
+            <div class="summary-icon bg-primary">
+                <i class="fas fa-mosque"></i>
+            </div>
+            <div class="summary-content">
+                <div class="summary-kicker">Cakupan</div>
+                <div class="summary-num counter" data-target="{{ $totalLokasi }}">0</div>
+                <div class="summary-label">Total Lokasi</div>
+                <div class="summary-caption">Seluruh lokasi yang sedang dipantau</div>
+            </div>
+        </div>
+
+        <div class="summary-card summary-card--info ui-reveal" data-stagger-item>
+            <div class="summary-icon bg-info">
+                <i class="fas fa-snowflake"></i>
+            </div>
+            <div class="summary-content">
+                <div class="summary-kicker">Inventori</div>
+                <div class="summary-num counter" data-target="{{ $totalUnit }}">0</div>
+                <div class="summary-label">Total Unit AC</div>
+                <div class="summary-caption">Basis beban kerja teknisi dan estimator</div>
+            </div>
+        </div>
+
+        <div class="summary-card summary-card--danger ui-reveal" data-stagger-item>
+            <div class="summary-icon bg-danger">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div class="summary-content">
+                <div class="summary-kicker">Prioritas</div>
+                <div class="summary-num counter" data-target="{{ $overdue }}">0</div>
+                <div class="summary-label">Overdue</div>
+                <div class="summary-caption">Perlu penjadwalan ulang atau eskalasi</div>
+            </div>
+        </div>
+
+        <div class="summary-card summary-card--warning ui-reveal" data-stagger-item>
+            <div class="summary-icon bg-warning">
+                <i class="fas fa-clipboard-list"></i>
+            </div>
+            <div class="summary-content">
+                <div class="summary-kicker">Queue</div>
+                <div class="summary-num counter" data-target="{{ $pendingCount }}">0</div>
+                <div class="summary-label">Order Pending</div>
+                <div class="summary-caption">Butuh approval atau pemrosesan lanjutan</div>
+            </div>
         </div>
     </div>
 
-    <!-- Summary Cards -->
-<div class="summary-grid" data-aos="fade-up">
-
-    <div class="summary-card">
-        <div class="summary-icon bg-primary">
-            <i class="fas fa-mosque"></i>
+    <section class="search-bar ops-control-bar" data-aos="fade-up" data-aos-delay="120">
+        <div class="ops-control-bar__header">
+            <div>
+                <h2 class="ops-section-title">Filter Antrean</h2>
+                <p class="ops-section-copy">Gabungkan pencarian teks dan filter status untuk menelusuri order, SLA, dan potensi hambatan proses.</p>
+            </div>
+            <div class="ops-control-meta">
+                <span class="notification-badge notification-badge--warning">{{ $pendingCount }} pending</span>
+                <span class="notification-badge notification-badge--info">{{ $waitingInvoiceCount }} menunggu invoice</span>
+                <span class="notification-badge notification-badge--accent">{{ $waitingReviewCount }} menunggu review</span>
+            </div>
         </div>
-        <div class="summary-content">
-            <div class="summary-num counter" data-target="{{ $totalLokasi }}">0</div>
-            <div class="summary-label">Total Lokasi</div>
-        </div>
-    </div>
-
-    <div class="summary-card">
-        <div class="summary-icon bg-info">
-            <i class="fas fa-snowflake"></i>
-        </div>
-        <div class="summary-content">
-            <div class="summary-num counter" data-target="{{ $totalUnit }}">0</div>
-            <div class="summary-label">Total Unit AC</div>
-        </div>
-    </div>
-
-    <div class="summary-card">
-        <div class="summary-icon bg-danger">
-            <i class="fas fa-exclamation-circle"></i>
-        </div>
-        <div class="summary-content">
-            <div class="summary-num counter" data-target="{{ $overdue }}">0</div>
-            <div class="summary-label">Overdue (>120 hari)</div>
-        </div>
-    </div>
-
-    <div class="summary-card">
-        <div class="summary-icon bg-warning">
-            <i class="fas fa-clipboard-list"></i>
-        </div>
-        <div class="summary-content">
-            <div class="summary-num counter" data-target="{{ $orders->where('status','pending')->count() }}">0</div>
-            <div class="summary-label">Order Pending</div>
-        </div>
-    </div>
-
-</div>
-
-
-
-    <!-- Search & Filter -->
-    <div class="search-bar">
-        <form action="{{ route('monitoring') }}" method="GET" class="search-form">
+        <form action="{{ route('monitoring') }}" method="GET" class="search-form search-form--hero">
             <div class="search-input-wrap">
                 <i class="fas fa-search"></i>
                 <input type="text" name="search" placeholder="Cari order / masjid..."
-                       value="{{ request('search') }}" class="search-input">
+                       value="{{ $searchTerm }}" class="search-input">
             </div>
-            <select name="status" class="form-select" style="width:auto">
+            <select name="status" class="form-select ops-select-filter">
                 <option value="">Semua Status</option>
-                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Approved</option>
+                @foreach($statusLabels as $key => $label)
+                <option value="{{ $key }}" {{ $statusFilter == $key ? 'selected' : '' }}>{{ $label }}</option>
+                @endforeach
             </select>
             <button type="submit" class="btn btn-primary">Filter</button>
             @if(request()->anyFilled(['search', 'status']))
                 <a href="{{ route('monitoring') }}" class="btn btn-secondary">Reset</a>
             @endif
         </form>
-    </div>
+    </section>
 
     <!-- Orders Table -->
     @if($orders->count() > 0)
-    <div class="table-container">
-        <table class="data-table">
+    <section class="monitoring-table-card ui-reveal" data-aos="fade-up" data-aos-delay="160">
+        <div class="table-card-header">
+            <div>
+                <h2>Queue Service Order</h2>
+                <p>Tabel ini dirancang untuk review cepat, approval, penugasan teknisi, dan pelacakan dokumen dari satu tempat.</p>
+            </div>
+            <div class="table-chip-wrap">
+                <span class="table-chip"><i class="fas fa-layer-group"></i> {{ $orders->count() }} order di halaman ini</span>
+                <span class="table-chip"><i class="fas fa-bolt"></i> {{ $pendingCount }} butuh tindakan cepat</span>
+                <span class="table-chip"><i class="fas fa-file-invoice"></i> {{ $waitingInvoiceCount + $waitingReviewCount }} butuh dokumen</span>
+            </div>
+        </div>
+        <div class="table-container ops-table-shell">
+        <table class="data-table monitoring-table ops-data-table">
             <thead>
                 <tr>
                     <th>No. Order</th>
@@ -96,36 +169,89 @@
                     <th>Tgl Servis</th>
                     <th>Detail Unit</th>
                     <th>Status</th>
+                    <th>Progress</th>
                     <th>Urgensi</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($orders as $order)
+                @php
+                    $latestStep = $order->workflowSteps->last();
+                    $assignment = $order->technicianAssignment;
+                    $urgency = $order->masjid->urgency_status;
+                    $urgencyLabel = match($urgency) {
+                        'aman' => 'Aman',
+                        'harus_servis' => 'Harus Servis',
+                        'overdue' => 'Overdue',
+                        default => 'Belum Ada Data',
+                    };
+                    $progress = match($order->status) {
+                        'pending' => ['value' => 18, 'label' => 'Menunggu approval', 'tone' => 'warning'],
+                        'approved' => ['value' => 42, 'label' => 'SPK sudah terbit', 'tone' => 'success'],
+                        'in_progress' => ['value' => 68, 'label' => 'Teknisi sedang bekerja', 'tone' => 'primary'],
+                        'waiting_invoice' => ['value' => 84, 'label' => 'Menunggu invoice', 'tone' => 'info'],
+                        'waiting_review' => ['value' => 92, 'label' => 'Menunggu review akhir', 'tone' => 'accent'],
+                        'completed' => ['value' => 100, 'label' => 'Workflow selesai', 'tone' => 'success'],
+                        default => ['value' => 12, 'label' => 'Status belum dipetakan', 'tone' => 'neutral'],
+                    };
+                @endphp
                 <tr>
                     <td>
-                        <div class="order-num">{{ $order->order_number }}</div>
-                        <div class="text-sm text-muted">{{ $order->created_at->format('d M Y') }}</div>
-                    </td>
-                    <td>
-                        <div class="fw-bold">{{ $order->masjid->name }}</div>
-                        <div class="text-sm text-muted">{{ $order->masjid->custom_id }}</div>
-                    </td>
-                    <td>
-                        <div>{{ $order->service_date->format('d M Y') }}</div>
-                        <div class="text-sm {{ $order->service_date < now() ? 'text-danger' : 'text-success' }}">
-                            {{ $order->service_date < now() ? 'Lewat' : 'Mendatang' }}
+                        <div class="table-primary">
+                            <div class="order-num">{{ $order->order_number }}</div>
+                            <div class="table-meta">Dibuat {{ $order->created_at->format('d M Y') }}</div>
                         </div>
                     </td>
                     <td>
+                        <div class="location-cell">
+                            <div class="location-name">{{ $order->masjid->name }}</div>
+                            <div class="location-meta">{{ $order->masjid->custom_id }} · {{ $order->masjid->acUnits->sum('quantity') }} unit</div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="date-chip {{ $order->service_date < now() ? 'is-late' : '' }}">
+                            <strong>{{ $order->service_date->format('d M Y') }}</strong>
+                            <span class="table-meta">{{ $order->service_date < now() ? 'Lewat jadwal' : 'Rencana mendatang' }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="detail-chip-stack">
                         @foreach($order->serviceDetails as $detail)
                         <div class="detail-chip">{{ $detail->pk_type }} {{ $detail->brand }} × {{ $detail->quantity }}</div>
                         @endforeach
+                        </div>
                     </td>
                     <td>
                         <span class="status-badge status-{{ $order->status }}">
-                            {{ ucfirst($order->status) }}
+                            <span class="badge-dot"></span>
+                            {{ $statusLabels[$order->status] ?? \App\Models\ServiceOrder::statusLabel($order->status) }}
                         </span>
+                    </td>
+                    <td>
+                        @if($latestStep)
+                            <div class="workflow-summary">
+                                <span class="detail-chip detail-chip--stage">
+                                    {{ \App\Models\WorkflowStep::stepLabel($latestStep->step) }}
+                                </span>
+                                @if($assignment)
+                                <div class="workflow-summary__actor">
+                                    <i class="fas fa-user-hard-hat"></i>
+                                    {{ $assignment->technician_name }}
+                                </div>
+                                @endif
+                            </div>
+                        @else
+                            <span class="text-muted text-sm">–</span>
+                        @endif
+                        <div class="progress-stack">
+                            <div class="progress-track">
+                                <span class="progress-fill tone-{{ $progress['tone'] }}" style="--progress-value: {{ $progress['value'] }}%"></span>
+                            </div>
+                            <div class="progress-meta">
+                                {{ $progress['label'] }}
+                            </div>
+                        </div>
                     </td>
                     <td>
                         @php
@@ -137,45 +263,70 @@
                                 default => 'Belum Ada Data',
                             };
                         @endphp
-                        <span class="urgency-badge urgency-text-{{ $urgency }}">
+                        <span class="urgency-badge urgency-badge-{{ $urgency }}">
+                            <span class="badge-dot"></span>
                             {{ $urgencyLabel }}
                         </span>
                     </td>
-                    <td>
-                        <div class="action-btns">
-                            <button class="btn btn-sm btn-info" onclick="showOrderDetail({{ $order->id }})">
-                                <i class="fas fa-eye"></i>
+                    <td class="table-cell-actions">
+                        <div class="action-btns action-btns--dense">
+                            <button class="btn btn-sm btn-info" type="button" onclick="showOrderDetail({{ $order->id }})">
+                                <i class="fas fa-eye"></i> Detail
                             </button>
 
-                            @if(auth()->user()->isManager())
-                                @if($order->status === 'pending')
-                                <button class="btn btn-sm btn-success" onclick="approveOrder({{ $order->id }})">
-                                    <i class="fas fa-check"></i> Approve
-                                </button>
-                                @elseif($order->status === 'approved')
-                                <button class="btn btn-sm btn-warning" onclick="cancelApprove({{ $order->id }})">
-                                    <i class="fas fa-undo"></i> Batal
-                                </button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteOrder({{ $order->id }})">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                                @endif
+                            {{-- Manager/Admin approve to generate SPK --}}
+                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'pending')
+                            <button class="btn btn-sm btn-success" type="button" onclick="approveOrder({{ $order->id }})">
+                                <i class="fas fa-check"></i> Approve SPK
+                            </button>
                             @endif
 
-                            @if($order->status === 'approved' && (auth()->user()->isFrontdesk() || auth()->user()->isManager()))
+                            {{-- Assign technician after SPK --}}
+                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'approved')
+                            <button class="btn btn-sm btn-outline btn-accent" type="button"
+                                onclick="openAssignTech({{ $order->id }}, @js($order->order_number), @js($order->masjid->name))">
+                                <i class="fas fa-user-hard-hat"></i> Tugaskan
+                            </button>
+                            @endif
+
+                            {{-- Technician mark task done --}}
+                            @if(auth()->user()->isTechnician() && in_array($order->status, ['approved','in_progress']))
+                            <button class="btn btn-sm btn-warning" type="button" onclick="markTaskDone({{ $order->id }})">
+                                <i class="fas fa-check-double"></i> Task Done
+                            </button>
+                            @endif
+
+                            {{-- Front desk generate invoice --}}
+                            @if((auth()->user()->isFrontdesk() || auth()->user()->isAdmin()) && $order->status === 'waiting_invoice' && ! $order->invoice)
+                            <button class="btn btn-sm btn-primary" type="button" onclick="generateInvoice({{ $order->id }})">
+                                <i class="fas fa-file-invoice"></i> Buat Invoice
+                            </button>
+                            @endif
+
+                            {{-- Manager/Admin approve invoice --}}
+                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_review')
+                            <button class="btn btn-sm btn-success" type="button" onclick="approveInvoice({{ $order->id }})">
+                                <i class="fas fa-check-circle"></i> Approve Invoice
+                            </button>
+                            @endif
+
+                            {{-- SPK / Invoice viewer --}}
+                            @if(in_array($order->status, ['approved','in_progress','waiting_invoice','waiting_review','completed']))
                                 <a href="{{ route('spk.print', $order->id) }}" target="_blank" class="btn btn-sm btn-secondary">
                                     <i class="fas fa-print"></i> SPK
                                 </a>
-                                @if($order->invoice)
+                            @endif
+                            @if($order->invoice)
                                 <a href="{{ route('invoice.print', $order->id) }}" target="_blank" class="btn btn-sm btn-primary">
                                     <i class="fas fa-file-invoice"></i> Invoice
                                 </a>
-                                @else
-                                <button class="btn btn-sm btn-primary" disabled title="Invoice belum dibuat">
-                                    <i class="fas fa-file-invoice"></i> Invoice
-                                </button>
-                                @endif
                             @endif
+
+                            {{-- Workflow timeline button (all manager/admin/frontdesk/tech) --}}
+                            <button class="btn btn-sm btn-info" type="button"
+                                onclick="showWorkflowTimeline({{ $order->id }}, @js($order->order_number), @js($order->masjid->name))">
+                                <i class="fas fa-stream"></i> Timeline
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -183,6 +334,115 @@
             </tbody>
         </table>
     </div>
+
+    <div class="monitoring-mobile-list">
+        @foreach($orders as $order)
+        @php
+            $latestStep = $order->workflowSteps->last();
+            $assignment = $order->technicianAssignment;
+            $urgency = $order->masjid->urgency_status;
+            $urgencyLabel = match($urgency) {
+                'aman' => 'Aman',
+                'harus_servis' => 'Harus Servis',
+                'overdue' => 'Overdue',
+                default => 'Belum Ada Data',
+            };
+            $scheduleState = $order->service_date < now() ? 'Lewat' : 'Mendatang';
+        @endphp
+        <article class="monitoring-mobile-card" data-aos="fade-up" data-aos-delay="{{ ($loop->index % 5) * 50 }}">
+            <div class="monitoring-mobile-card__header">
+                <div>
+                    <div class="order-num">{{ $order->order_number }}</div>
+                    <div class="monitoring-mobile-card__site">{{ $order->masjid->name }}</div>
+                </div>
+                <span class="status-badge status-{{ $order->status }}">
+                    {{ $statusLabels[$order->status] ?? \App\Models\ServiceOrder::statusLabel($order->status) }}
+                </span>
+            </div>
+            <div class="monitoring-mobile-card__meta">
+                <span>{{ $order->masjid->custom_id }}</span>
+                <span class="notification-badge {{ $order->service_date < now() ? 'notification-badge--danger' : 'notification-badge--success' }}">{{ $scheduleState }}</span>
+                <span class="notification-badge notification-badge--neutral">{{ $urgencyLabel }}</span>
+            </div>
+            <div class="monitoring-mobile-card__grid">
+                <div>
+                    <span class="monitoring-mobile-card__label">Tanggal Servis</span>
+                    <strong>{{ $order->service_date->format('d M Y') }}</strong>
+                </div>
+                <div>
+                    <span class="monitoring-mobile-card__label">Workflow</span>
+                    <strong>{{ $latestStep ? \App\Models\WorkflowStep::stepLabel($latestStep->step) : '-' }}</strong>
+                </div>
+                <div>
+                    <span class="monitoring-mobile-card__label">Teknisi</span>
+                    <strong>{{ $assignment ? $assignment->technician_name : '-' }}</strong>
+                </div>
+                <div>
+                    <span class="monitoring-mobile-card__label">Unit</span>
+                    <strong>{{ $order->serviceDetails->sum('quantity') }}</strong>
+                </div>
+            </div>
+            <div class="detail-chip-list">
+                @foreach($order->serviceDetails as $detail)
+                <div class="detail-chip">{{ $detail->pk_type }} {{ $detail->brand }} x {{ $detail->quantity }}</div>
+                @endforeach
+            </div>
+            <div class="action-btns">
+                <button class="btn btn-sm btn-info" type="button" onclick="showOrderDetail({{ $order->id }})">
+                    <i class="fas fa-eye"></i> Detail
+                </button>
+
+                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'pending')
+                <button class="btn btn-sm btn-success" type="button" onclick="approveOrder({{ $order->id }})">
+                    <i class="fas fa-check"></i> Approve SPK
+                </button>
+                @endif
+
+                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'approved')
+                <button class="btn btn-sm btn-outline btn-accent" type="button"
+                    onclick="openAssignTech({{ $order->id }}, @js($order->order_number), @js($order->masjid->name))">
+                    <i class="fas fa-user-hard-hat"></i> Tugaskan
+                </button>
+                @endif
+
+                @if(auth()->user()->isTechnician() && in_array($order->status, ['approved','in_progress']))
+                <button class="btn btn-sm btn-warning" type="button" onclick="markTaskDone({{ $order->id }})">
+                    <i class="fas fa-check-double"></i> Task Done
+                </button>
+                @endif
+
+                @if((auth()->user()->isFrontdesk() || auth()->user()->isAdmin()) && $order->status === 'waiting_invoice' && ! $order->invoice)
+                <button class="btn btn-sm btn-primary" type="button" onclick="generateInvoice({{ $order->id }})">
+                    <i class="fas fa-file-invoice"></i> Buat Invoice
+                </button>
+                @endif
+
+                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_review')
+                <button class="btn btn-sm btn-success" type="button" onclick="approveInvoice({{ $order->id }})">
+                    <i class="fas fa-check-circle"></i> Approve Invoice
+                </button>
+                @endif
+
+                @if(in_array($order->status, ['approved','in_progress','waiting_invoice','waiting_review','completed']))
+                <a href="{{ route('spk.print', $order->id) }}" target="_blank" class="btn btn-sm btn-secondary">
+                    <i class="fas fa-print"></i> SPK
+                </a>
+                @endif
+                @if($order->invoice)
+                <a href="{{ route('invoice.print', $order->id) }}" target="_blank" class="btn btn-sm btn-primary">
+                    <i class="fas fa-file-invoice"></i> Invoice
+                </a>
+                @endif
+
+                <button class="btn btn-sm btn-info" type="button"
+                    onclick="showWorkflowTimeline({{ $order->id }}, @js($order->order_number), @js($order->masjid->name))">
+                    <i class="fas fa-stream"></i> Timeline
+                </button>
+            </div>
+        </article>
+        @endforeach
+    </div>
+    </section>
     @else
     <div class="empty-state">
         <i class="fas fa-clipboard-list"></i>
@@ -191,20 +451,27 @@
     </div>
     @endif
 
+    @if($orders->hasPages())
+    <div class="pagination-shell">
+        {{ $orders->onEachSide(1)->links() }}
+    </div>
+    @endif
+
         <!-- Urgency Legend -->
     <div class="legend-bar">
         <span class="legend-item"><span class="legend-dot urgency-aman"></span> Aman (<90 hari)</span>
-        <span class="legend-item"><span class="legend-dot urgency-harus_servis"></span> Harus Servis (90–120 hari)</span>
+        <span class="legend-item"><span class="legend-dot urgency-harus_servis"></span> Harus Servis (90-120 hari)</span>
         <span class="legend-item"><span class="legend-dot urgency-overdue"></span> Overdue (>120 hari)</span>
     </div>
 
     <!-- Masjid Urgency Overview -->
-    <div class="section-title" style="margin-top: 2rem">
+    <div class="section-title ops-section-heading" style="margin-top: 2rem">
         <h2>Status Urgensi Seluruh Masjid</h2>
+        <p class="ops-section-copy">Snapshot lokasi yang perlu dijadwalkan lebih cepat berdasarkan jeda servis terpanjang.</p>
     </div>
-    <div class="urgency-grid">
+    <div class="urgency-grid" data-stagger-group>
         @foreach($masjids as $masjid)
-        <div class="urgency-card urgency-card-{{ $masjid->urgency_status }}">
+        <div class="urgency-card urgency-card-{{ $masjid->urgency_status }} ui-reveal" data-stagger-item>
             <div class="urgency-card-header">
                 <span class="urgency-card-id">{{ $masjid->custom_id }}</span>
                 <span class="urgency-dot urgency-{{ $masjid->urgency_status }}"></span>
@@ -212,11 +479,17 @@
             <div class="urgency-card-name">{{ Str::limit($masjid->name, 30) }}</div>
             <div class="urgency-card-info">
                 <span>{{ $masjid->acUnits->sum('quantity') }} unit</span>
-                <span>{{ $masjid->max_days_since_service ? $masjid->max_days_since_service . ' hari' : '–' }}</span>
+                <span>{{ $masjid->max_days_since_service ? $masjid->max_days_since_service . ' hari' : '-' }}</span>
             </div>
         </div>
         @endforeach
     </div>
+
+    @if($masjids->hasPages())
+    <div class="pagination-shell">
+        {{ $masjids->onEachSide(1)->links() }}
+    </div>
+    @endif
 </div>
 
 <!-- Service Order Popup -->
@@ -264,8 +537,8 @@
                     <div class="form-group">
                         <label class="form-label">Ditemui oleh</label>
                         <select id="soMeetingPerson" class="form-select">
-                            <option value="dkm">DKM (<span id="soDkmName"></span>)</option>
-                            <option value="marbot">Marbot (<span id="soMarbotName"></span>)</option>
+                            <option value="dkm">DKM</option>
+                            <option value="marbot">Marbot</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -296,9 +569,9 @@
                 <div id="soHargaInfo" class="info-banner" style="display:none;margin-top:0.5rem;font-size:0.78rem"></div>
 
                 <!-- Total Estimasi -->
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0.875rem;background:var(--primary-soft);border:1px solid var(--primary-mid);border-radius:var(--radius-sm);margin-top:0.5rem;font-size:0.82rem;color:var(--primary);font-weight:600">
-                    <span><i class="fas fa-receipt" style="margin-right:0.4rem"></i> Estimasi Total</span>
-                    <span id="soTotalPreview">–</span>
+                <div class="so-total-preview">
+                    <span><i class="fas fa-receipt"></i> Estimasi Total</span>
+                    <span id="soTotalPreview">-</span>
                 </div>
 
                 <div class="popup-actions">
@@ -323,6 +596,7 @@
 <div class="popup popup-lg" id="orderDetailPopup">
     <div class="popup-header">
         <h3><i class="fas fa-clipboard-list"></i> Detail Service Order</h3>
+        <button class="popup-close" type="button" onclick="closePopup('orderDetailPopup')" aria-label="Tutup detail service order">&times;</button>
     </div>
     <div class="popup-body" id="orderDetailBody">
         <!-- Dynamic -->
@@ -440,6 +714,8 @@
     </div>
 </div>
 
+@include('monitoring.workflow_panel')
+
 @endsection
 
 @push('scripts')
@@ -458,4 +734,5 @@ const isManager = {{ auth()->user()->isManager() ? 'true' : 'false' }};
 const isFrontdesk2 = {{ auth()->user()->isFrontdesk() ? 'true' : 'false' }};
 </script>
 <script src="{{ asset('js/monitoring.js') }}"></script>
+<script src="{{ asset('js/workflow.js') }}"></script>
 @endpush

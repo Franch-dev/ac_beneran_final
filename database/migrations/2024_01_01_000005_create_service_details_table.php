@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('service_details', function (Blueprint $table) {
+        Schema::connection('ac_service')->create('service_details', function (Blueprint $table) {
             $table->id();
             $table->foreignId('service_order_id')->constrained()->onDelete('cascade');
             $table->enum('pk_type', ['1PK', '2PK', '5PK']);
@@ -21,6 +21,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('service_details');
+        Schema::connection('ac_service')->dropIfExists('service_details');
     }
 };

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AcUnit;
 use App\Models\Masjid;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ACController extends Controller
 {
@@ -53,7 +54,7 @@ class ACController extends Controller
     public function bulkStore(Request $request)
     {
         $request->validate([
-            'masjid_id' => 'required|exists:masjids,id',
+            'masjid_id' => ['required', Rule::exists('ac_service.masjids', 'id')],
             'units' => 'required|array|min:1',
             'units.*.pk_type' => 'required|in:1PK,2PK,5PK',
             'units.*.brand' => 'required|string',

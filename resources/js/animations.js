@@ -6,8 +6,20 @@ import 'aos/dist/aos.css';
  */
 
 function bootAnimations() {
+  decorateStaggerGroups();
   initAOS();
   initCounters();
+}
+
+function decorateStaggerGroups() {
+  document.querySelectorAll('[data-stagger-group]').forEach((group) => {
+    const items = Array.from(group.querySelectorAll('[data-stagger-item]'));
+
+    items.forEach((item, index) => {
+      item.classList.add('ui-reveal');
+      item.style.setProperty('--ui-reveal-delay', `${Math.min(index * 70, 320)}ms`);
+    });
+  });
 }
 
 function initAOS() {
@@ -16,18 +28,6 @@ function initAOS() {
     easing: 'ease-out-cubic',
     once: true,
     offset: window.matchMedia('(max-width: 767px)').matches ? 60 : 120,
-  });
-
-  // Native anchor handling
-  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
-    anchor.addEventListener('click', (e) => {
-      const target = anchor.getAttribute('href');
-      if (!target || target === '#' || target === '#!') return;
-      const el = document.querySelector(target);
-      if (!el) return;
-      e.preventDefault();
-      el.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
-    });
   });
 }
 
@@ -76,4 +76,3 @@ if (document.readyState === 'loading') {
 } else {
   bootAnimations();
 }
-

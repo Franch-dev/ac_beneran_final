@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('masjids', function (Blueprint $table) {
+        Schema::connection('ac_service')->create('masjids', function (Blueprint $table) {
             $table->id();
             $table->string('custom_id')->unique();
             $table->enum('type', ['masjid', 'musholla']);
@@ -24,6 +24,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('masjids');
+        Schema::connection('ac_service')->dropIfExists('masjids');
     }
 };

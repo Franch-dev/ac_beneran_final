@@ -26,10 +26,63 @@
             <span class="sidebar-icon"><i class="fas fa-th-large"></i></span>
             <span class="sidebar-label">Dashboard</span>
         </a>
-        <a href="{{ route('monitoring') }}" class="sidebar-link {{ request()->routeIs('monitoring') ? 'active' : '' }}" role="menuitem">
+        <a href="{{ route('monitoring') }}" class="sidebar-link monitoring-link {{ request()->routeIs('monitoring') ? 'active' : '' }}" role="menuitem">
             <span class="sidebar-icon"><i class="fas fa-chart-line"></i></span>
             <span class="sidebar-label">Monitoring</span>
+            <span class="sidebar-notification-stack" aria-label="Ringkasan antrean monitoring">
+                <span class="badge-lite badge-lite-pending" data-status-badge="pending" data-badge-label="Pending" hidden>0</span>
+                <span class="badge-lite badge-lite-invoice" data-status-badge="waiting_invoice" data-badge-label="Waiting Invoice" hidden>0</span>
+                <span class="badge-lite badge-lite-review" data-status-badge="waiting_review" data-badge-label="Waiting Review" hidden>0</span>
+            </span>
         </a>
+
+        {{-- Profile (all roles) --}}
+        <a href="{{ route('profile.index') }}"
+           class="sidebar-link {{ request()->routeIs('profile.*') ? 'active' : '' }}"
+           role="menuitem" data-tooltip="Profil Saya">
+             <span class="sidebar-icon"><i class="fas fa-user-circle"></i></span>
+             <span class="sidebar-label">Profil Saya</span>
+        </a>
+
+        {{-- Admin only --}}
+        @if(auth()->user()->isAdmin())
+        <a href="{{ route('users.index') }}"
+           class="sidebar-link {{ request()->routeIs('users.*') ? 'active' : '' }}"
+           role="menuitem" data-tooltip="Manajemen User">
+            <span class="sidebar-icon"><i class="fas fa-users-cog"></i></span>
+            <span class="sidebar-label">Manajemen User</span>
+        </a>
+        @endif
+
+        {{-- Manager + Admin --}}
+        @if(auth()->user()->isManager() || auth()->user()->isAdmin())
+        <a href="{{ route('reports.index') }}"
+           class="sidebar-link {{ request()->routeIs('reports.*') ? 'active' : '' }}"
+           role="menuitem" data-tooltip="Laporan">
+            <span class="sidebar-icon"><i class="fas fa-chart-bar"></i></span>
+            <span class="sidebar-label">Laporan</span>
+        </a>
+        @endif
+
+        {{-- Technician --}}
+        @if(auth()->user()->isTechnician())
+        <a href="{{ route('technician.dashboard') }}"
+           class="sidebar-link {{ request()->routeIs('technician.*') ? 'active' : '' }}"
+           role="menuitem" data-tooltip="Dashboard Teknisi">
+            <span class="sidebar-icon"><i class="fas fa-tools"></i></span>
+            <span class="sidebar-label">Dashboard Teknisi</span>
+        </a>
+        @endif
+
+        {{-- Viewer --}}
+        @if(auth()->user()->isViewer())
+        <a href="{{ route('viewer.dashboard') }}"
+           class="sidebar-link {{ request()->routeIs('viewer.*') ? 'active' : '' }}"
+           role="menuitem" data-tooltip="Dashboard Viewer">
+            <span class="sidebar-icon"><i class="fas fa-eye"></i></span>
+            <span class="sidebar-label">Dashboard Viewer</span>
+        </a>
+        @endif
     </nav>
 
     <!-- Sidebar Footer -->

@@ -3,55 +3,118 @@
 @section('title', 'Dashboard - AC Servis Masjid')
 
 @section('content')
-<div class="page-container">
-    <!-- Page Header -->
-    <div class="page-header">
-        <div>
-            <h1 class="page-title"><i class="fas fa-th-large"></i> Dashboard</h1>
-            <p class="page-subtitle">Selamat datang, <strong>{{ auth()->user()->name }}</strong></p>
-        </div>
-        <div class="page-actions">
-            @if(auth()->user()->isFrontdesk())
-            <button class="btn btn-primary" onclick="openPopup('addMasjidPopup')">
-                <i class="fas fa-plus"></i> Tambah Masjid
-            </button>
-            @endif
-        </div>
-    </div>
+@php
+    $visibleMasjids = $masjids->getCollection();
+    $visibleUnits = $visibleMasjids->sum(fn ($masjid) => $masjid->acUnits->sum('quantity'));
+    $activeOrders = $dashboardMetrics['active_orders'] ?? 0;
+    $needsAttention = $dashboardMetrics['needs_attention_locations'] ?? 0;
+    $searchTerm = request('search');
+@endphp
 
-    <!-- Role Badge -->
-    <div class="role-info-bar">
-        <i class="fas fa-user-shield"></i>
-        Anda login sebagai: <strong>{{ ucfirst(auth()->user()->role) }}</strong>
+<div class="page-container page-operations page-operations--dashboard">
+    <section class="ops-hero ops-hero--dashboard glass-surface" data-aos="fade-down">
+        <div class="ops-hero__copy">
+            <span class="ops-hero__eyebrow">Masjid Operations Center</span>
+            <div class="page-header page-header--hero">
+                <div>
+                    <h1 class="page-title"><i class="fas fa-th-large"></i> Dashboard Masjid</h1>
+                    <p class="page-subtitle">Portofolio lokasi, urgensi servis, dan kontak operasional dalam satu panel.</p>
+                </div>
+                <div class="page-actions page-actions--hero">
+                    @if(auth()->user()->isFrontdesk())
+                    <button class="btn btn-primary" onclick="openPopup('addMasjidPopup')">
+                        <i class="fas fa-plus"></i> Tambah Masjid
+                    </button>
+                    @endif
+                    <a href="{{ route('monitoring') }}" class="btn btn-outline">
+                        <i class="fas fa-wave-square"></i> Buka Monitoring
+                    </a>
+                </div>
+            </div>
+            <p class="ops-hero__lead">
+                Selamat datang, <strong>{{ auth()->user()->name }}</strong>. Gunakan kartu lokasi untuk meninjau kesiapan servis,
+                PIC lapangan, dan order aktif tanpa berpindah halaman.
+            </p>
+            <div class="ops-chip-row">
+                <span class="ops-chip">
+                    <i class="fas fa-user-shield"></i>
+                    <strong>{{ ucfirst(auth()->user()->role) }}</strong>
+                </span>
+                <span class="ops-chip">
+                    <i class="fas fa-filter"></i>
+                    {{ $searchTerm ? 'Filter aktif: "' . $searchTerm . '"' : 'Mode tampilan: semua lokasi' }}
+                </span>
+                <span class="ops-chip">
+                    <i class="fas fa-bell"></i>
+                    {{ $needsAttention }} lokasi perlu tindak lanjut
+                </span>
+            </div>
+        </div>
+        <div class="ops-kpi-grid" data-stagger-group>
+            <article class="ops-kpi-card" data-stagger-item>
+                <span class="ops-kpi-card__label">Total Lokasi</span>
+                <strong class="ops-kpi-card__value">{{ $dashboardMetrics['total_locations'] ?? $masjids->total() }}</strong>
+                <span class="ops-kpi-card__meta">Masjid dan musholla terdaftar</span>
+            </article>
+            <article class="ops-kpi-card" data-stagger-item>
+                <span class="ops-kpi-card__label">Unit Terpantau</span>
+                <strong class="ops-kpi-card__value">{{ $dashboardMetrics['total_units'] ?? $visibleUnits }}</strong>
+                <span class="ops-kpi-card__meta">Total unit AC lintas seluruh lokasi</span>
+            </article>
+            <article class="ops-kpi-card" data-stagger-item>
+                <span class="ops-kpi-card__label">Order Aktif</span>
+                <strong class="ops-kpi-card__value">{{ $activeOrders }}</strong>
+                <span class="ops-kpi-card__meta">Service order lintas halaman yang masih berjalan</span>
+            </article>
+            <article class="ops-kpi-card ops-kpi-card--alert" data-stagger-item>
+                <span class="ops-kpi-card__label">Perlu Follow-Up</span>
+                <strong class="ops-kpi-card__value">{{ $needsAttention }}</strong>
+                <span class="ops-kpi-card__meta">Status harus servis atau overdue di seluruh jaringan</span>
+            </article>
+        </div>
+    </section>
+
+    <div class="role-info-bar role-info-bar--elevated">
+        <i class="fas fa-circle-info"></i>
         @if(auth()->user()->isManager())
-        — Anda dapat menyetujui service order di halaman Monitoring
+        Anda dapat meninjau kesiapan lokasi di sini lalu menyetujui service order dari halaman Monitoring.
         @elseif(auth()->user()->isFrontdesk())
-        — Anda dapat mengelola masjid dan membuat service order
+        Anda dapat menambah masjid, mengelola unit AC, dan menyiapkan lokasi sebelum membuat service order.
         @else
-        — Anda hanya dapat melihat data
+        Anda berada dalam mode baca. Semua data lokasi dan status servis dapat dipantau tanpa hak ubah.
         @endif
     </div>
 
-    <!-- Search -->
-    <div class="search-bar">
-        <form action="{{ route('dashboard') }}" method="GET" class="search-form">
+    <section class="search-bar ops-control-bar" data-aos="fade-up" data-aos-delay="120">
+        <div class="ops-control-bar__header">
+            <div>
+                <h2 class="ops-section-title">Cari Lokasi</h2>
+                <p class="ops-section-copy">Telusuri lokasi berdasarkan ID masjid atau nama untuk mempercepat eksekusi operasional.</p>
+            </div>
+            <div class="ops-control-meta">
+                <span class="notification-badge notification-badge--neutral">{{ $masjids->count() }} kartu tampil</span>
+                <span class="notification-badge notification-badge--soft">Scroll untuk inspeksi cepat</span>
+            </div>
+        </div>
+        <form action="{{ route('dashboard') }}" method="GET" class="search-form search-form--hero">
             <div class="search-input-wrap">
                 <i class="fas fa-search"></i>
                 <input type="text" name="search" placeholder="Cari ID atau nama masjid..."
-                       value="{{ request('search') }}" class="search-input">
-                @if(request('search'))
-                    <a href="{{ route('dashboard') }}" class="search-clear"><i class="fas fa-times"></i></a>
+                       value="{{ $searchTerm }}" class="search-input">
+                @if($searchTerm)
+                    <a href="{{ route('dashboard') }}" class="search-clear" aria-label="Hapus pencarian">
+                        <i class="fas fa-times"></i>
+                    </a>
                 @endif
             </div>
             <button type="submit" class="btn btn-primary">Cari</button>
         </form>
-        @if(request('search'))
-            <p class="search-result-info">Menampilkan hasil untuk: <strong>"{{ request('search') }}"</strong> ({{ $masjids->count() }} ditemukan)</p>
+        @if($searchTerm)
+            <p class="search-result-info">Menampilkan hasil untuk: <strong>"{{ $searchTerm }}"</strong> ({{ $masjids->total() }} ditemukan)</p>
         @endif
-    </div>
+    </section>
 
-    <!-- Masjid Cards -->
-<div class="cards-grid" id="masjidGrid" data-aos="fade-up" style="--cols-xs: 1; --cols-sm: 2;">
+    <div class="cards-grid ops-card-grid" id="masjidGrid" data-stagger-group style="--cols-xs: 1; --cols-sm: 2;">
         @forelse($masjids as $masjid)
         @php
             $urgency = $masjid->urgency_status;
@@ -61,70 +124,92 @@
                 'overdue' => 'Overdue',
                 default => 'Belum Ada Data',
             };
+            $phoneEntries = is_array($masjid->phone_numbers)
+                ? array_filter($masjid->phone_numbers)
+                : (filled($masjid->phone_numbers) ? [$masjid->phone_numbers] : []);
+            $phoneSummary = collect($phoneEntries)->take(2)->implode(' · ');
+            $lastServiceText = $masjid->max_days_since_service
+                ? $masjid->max_days_since_service . ' hari lalu'
+                : 'Belum ada catatan';
+            $activeOrder = $masjid->serviceOrders->first(fn ($serviceOrder) => $serviceOrder->isActive());
         @endphp
-        <div class="masjid-card urgency-{{ $masjid->urgency_status }}" data-id="{{ $masjid->id }}">
+        <article class="masjid-card ops-masjid-card urgency-{{ $urgency }} ui-reveal" data-id="{{ $masjid->id }}" data-stagger-item>
             <div class="card-accent-bar"></div>
             <div class="card-top">
-                <span class="card-type-chip {{ $masjid->type }}">
-                    {{ $masjid->type === 'masjid' ? '🕌 Masjid' : '🏘️ Musholla' }}
-                </span>
-                <span class="urgency-pill urgency-{{ $masjid->urgency_status }}">
+                <div class="card-top__eyebrow">
+                    <span class="card-type-chip {{ $masjid->type }}">
+                        {{ $masjid->type === 'masjid' ? 'Masjid' : 'Musholla' }}
+                    </span>
+                    <span class="notification-badge {{ $activeOrder ? 'notification-badge--live' : 'notification-badge--neutral' }}">
+                        <i class="fas {{ $activeOrder ? 'fa-bell-concierge' : 'fa-clock' }}"></i>
+                        {{ $activeOrder ? 'Order aktif' : 'Siap dijadwalkan' }}
+                    </span>
+                </div>
+                <span class="urgency-pill urgency-{{ $urgency }}">
                     <span class="urgency-pulse"></span>
                     {{ $urgencyLabel }}
                 </span>
             </div>
             <div class="card-body">
-                <div><span class="card-id">{{ $masjid->custom_id }}</span></div>
+                <div class="card-id-row">
+                    <span class="card-id">{{ $masjid->custom_id }}</span>
+                    <span class="card-counter">{{ $masjid->serviceOrders->count() }} order</span>
+                </div>
                 <div class="card-name">{{ $masjid->name }}</div>
-                <div class="card-address"><i class="fas fa-map-marker-alt"></i> {{ Str::limit($masjid->address, 65) }}</div>
-                <div class="card-phone"><i class="fas fa-phone"></i>
-                    @if(is_array($masjid->phone_numbers))
-                        @foreach($masjid->phone_numbers as $phone)
-                            <span class="phone-number">{{ $phone }}</span>@if(!$loop->last), @endif
-                        @endforeach
-                    @elseif(!empty($masjid->phone_numbers))
-                        <span class="phone-number">{{ $masjid->phone_numbers }}</span>
-                    @else
-                        <span class="phone-number text-muted">Tidak ada nomor telepon</span>
-                    @endif
+                <div class="card-address"><i class="fas fa-map-marker-alt"></i> {{ Str::limit($masjid->address, 76) }}</div>
+                <div class="masjid-contact-stack">
+                    <span class="contact-chip"><i class="fas fa-user-tie"></i> {{ $masjid->dkm_name }}</span>
+                    <span class="contact-chip"><i class="fas fa-user-gear"></i> {{ $masjid->marbot_name }}</span>
                 </div>
-                <div class="card-stats">
-                    <span class="card-stat"><i class="fas fa-user"></i> {{ $masjid->dkm_name }}</span>
-                    <span class="card-stat"><i class="fas fa-snowflake"></i> {{ $masjid->acUnits->sum('quantity') }} unit AC</span>
+                <div class="card-phone">
+                    <i class="fas fa-phone"></i>
+                    <span class="phone-number {{ $phoneSummary ? '' : 'text-muted' }}">
+                        {{ $phoneSummary ?: 'Tidak ada nomor telepon' }}
+                    </span>
                 </div>
-                @php
-                    $activeOrder = $masjid->serviceOrders->where('status', 'pending')->first()
-                        ?? $masjid->serviceOrders->where('status', 'approved')->first();
-                @endphp
+                <div class="masjid-card-metrics">
+                    <div class="masjid-metric">
+                        <span class="masjid-metric__label">Unit AC</span>
+                        <strong class="masjid-metric__value">{{ $masjid->acUnits->sum('quantity') }}</strong>
+                    </div>
+                    <div class="masjid-metric">
+                        <span class="masjid-metric__label">Servis Terakhir</span>
+                        <strong class="masjid-metric__value">{{ $lastServiceText }}</strong>
+                    </div>
+                </div>
                 @if($activeOrder)
                 <span class="card-order-badge status-{{ $activeOrder->status }}">
-                    <i class="fas fa-circle-dot"></i>
-                    {{ ucfirst($activeOrder->status) }} · {{ $activeOrder->service_date->format('d M Y') }}
+                    <i class="fas fa-wave-square"></i>
+                    {{ $activeOrder->order_number }} · {{ $activeOrder->service_date->format('d M Y') }}
+                </span>
+                @else
+                <span class="card-order-badge card-order-badge--idle">
+                    <i class="fas fa-calendar-plus"></i> Belum ada service order aktif
                 </span>
                 @endif
             </div>
             <div class="card-footer">
-                <button class="btn btn-sm btn-info" onclick="showDetail({{ $masjid->id }})">
+                <button class="btn btn-sm btn-info" type="button" onclick="showDetail({{ $masjid->id }})">
                     <i class="fas fa-eye"></i> Detail AC
                 </button>
                 @if(auth()->user()->isFrontdesk())
-                <button class="btn btn-sm btn-warning" onclick="openEditAC({{ $masjid->id }})">
+                <button class="btn btn-sm btn-warning" type="button" onclick="openEditAC({{ $masjid->id }})">
                     <i class="fas fa-tools"></i> Kelola AC
                 </button>
-                <button class="btn btn-sm btn-secondary" onclick="openEditMasjid({{ $masjid->id }}, '{{ addslashes($masjid->name) }}', '{{ addslashes($masjid->address) }}', '{{ addslashes($masjid->dkm_name) }}', '{{ addslashes($masjid->marbot_name) }}', {{ json_encode($masjid->phone_numbers) }})">
+                <button class="btn btn-sm btn-secondary" type="button" onclick="openEditMasjid({ id: {{ $masjid->id }}, name: @js($masjid->name), address: @js($masjid->address), dkm: @js($masjid->dkm_name), marbot: @js($masjid->marbot_name), phones: @js(array_values($phoneEntries)) })">
                     <i class="fas fa-edit"></i> Edit
                 </button>
-                <button class="btn btn-sm btn-danger" onclick="confirmDelete({{ $masjid->id }}, '{{ addslashes($masjid->name) }}')">
+                <button class="btn btn-sm btn-danger" type="button" onclick="confirmDelete({{ $masjid->id }}, @js($masjid->name))">
                     <i class="fas fa-trash"></i>
                 </button>
                 @endif
             </div>
-        </div>
+        </article>
         @empty
         <div class="empty-state">
             <div class="empty-icon"><i class="fas fa-mosque"></i></div>
             <h3>Belum Ada Data Masjid</h3>
-            <p>{{ request('search') ? 'Tidak ada hasil untuk pencarian tersebut.' : 'Mulai dengan menambahkan masjid pertama.' }}</p>
+            <p>{{ $searchTerm ? 'Tidak ada hasil untuk pencarian tersebut.' : 'Mulai dengan menambahkan masjid pertama.' }}</p>
             @if(auth()->user()->isFrontdesk() && !request('search'))
             <button class="btn btn-primary" onclick="openPopup('addMasjidPopup')">
                 <i class="fas fa-plus"></i> Tambah Masjid
@@ -133,6 +218,12 @@
         </div>
         @endforelse
     </div>
+
+    @if($masjids->hasPages())
+    <div class="pagination-shell">
+        {{ $masjids->onEachSide(1)->links() }}
+    </div>
+    @endif
 </div>
 
 <!-- =============== POPUPS =============== -->
@@ -150,8 +241,8 @@
                 <div class="form-group">
                     <label class="form-label">Tipe <span class="required">*</span></label>
                     <select name="type" id="masjidType" class="form-select" required>
-                        <option value="masjid">🕌 Masjid</option>
-                        <option value="musholla">🏘️ Musholla</option>
+                        <option value="masjid">Masjid</option>
+                        <option value="musholla">Musholla</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -205,7 +296,7 @@
     <div class="popup-body">
         <div class="info-banner">
             <i class="fas fa-info-circle"></i>
-            Masjid berhasil didaftarkan! Sekarang tambahkan data AC.
+            Masjid berhasil didaftarkan. Sekarang tambahkan data AC.
         </div>
         <input type="hidden" id="acMasjidId">
         <div id="acUnitsList">

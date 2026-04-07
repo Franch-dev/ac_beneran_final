@@ -25,11 +25,13 @@ if ($domain) {
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [MasjidController::class, 'index'])->name('dashboard');
     Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring');
+    Route::get('/monitoring/status-counts', [MonitoringController::class, 'statusCounts'])->name('monitoring.status-counts');
 
     Route::get('/masjid/{masjid}', [MasjidController::class, 'detail'])->name('masjid.detail');
     Route::get('/masjid/{masjid}/history', [ServiceOrderController::class, 'history'])->name('service-order.history');
+    Route::get('/service-order/{serviceOrder}', [ServiceOrderController::class, 'show'])->name('service-order.show');
 
-    Route::middleware('role:frontdesk')->group(function () {
+    Route::middleware('role:frontdesk,admin')->group(function () {
         Route::post('/masjid', [MasjidController::class, 'store'])->name('masjid.store');
         Route::put('/masjid/{masjid}', [MasjidController::class, 'update'])->name('masjid.update');
         Route::delete('/masjid/{masjid}', [MasjidController::class, 'destroy'])->name('masjid.destroy');
@@ -41,16 +43,107 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/service-order', [ServiceOrderController::class, 'store'])->name('service-order.store');
         Route::delete('/service-order/{serviceOrder}', [ServiceOrderController::class, 'destroy'])->name('service-order.destroy');
+        Route::post('/service-order/{serviceOrder}/invoice', [ServiceOrderController::class, 'generateInvoice'])->name('service-order.invoice-generate');
     });
 
-    Route::middleware('role:manager')->group(function () {
+    Route::middleware('role:manager,admin')->group(function () {
         Route::post('/service-order/{serviceOrder}/approve', [ServiceOrderController::class, 'approve'])->name('service-order.approve');
         Route::post('/service-order/{serviceOrder}/cancel-approve', [ServiceOrderController::class, 'cancelApprove'])->name('service-order.cancel-approve');
         Route::delete('/service-order/{serviceOrder}/manager', [ServiceOrderController::class, 'destroy'])->name('service-order.destroy-manager');
+        Route::post('/service-order/{serviceOrder}/approve-invoice', [ServiceOrderController::class, 'approveInvoice'])->name('service-order.approve-invoice');
     });
 
-    Route::middleware('role:frontdesk,manager')->group(function () {
+    Route::middleware('role:frontdesk,manager,admin')->group(function () {
         Route::get('/service-order/{serviceOrder}/spk', [InvoiceController::class, 'spk'])->name('spk.print');
         Route::get('/service-order/{serviceOrder}/invoice', [InvoiceController::class, 'print'])->name('invoice.print');
     });
+});
+
+// New routes appended here
+
+use App\Http\Controllers\MasjidHistoryController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\TechnicianController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\ViewerController;
+use App\Http\Controllers\WorkflowController;
+
+/*
+|--------------------------------------------------------------------------
+| All-auth routes (profile accessible by every logged-in role)
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth')->group(function () {
+
+    // ── Profile ──────────────────────────────────────────────
+    Route::get('/profile',          [ProfileController::class, 'index'])->name('profile.index');
+    Route::put('/profile',          [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+
+    // ── Masjid Service History (dedicated page) ───────────────
+    Route::get('/masjid/{masjid}/history-page', [MasjidHistoryController::class, 'show'])
+         ->name('masjid.history.show');
+
+    // ── Workflow: timeline (read — all auth roles) ────────────
+    Route::get('/workflow/{serviceOrder}/timeline',  [WorkflowController::class, 'timeline'])
+         ->name('workflow.timeline');
+    Route::get('/workflow/technicians',              [WorkflowController::class, 'technicians'])
+         ->name('workflow.technicians');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Admin-only routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:admin'])->group(function () {
+
+    // ── User Management ───────────────────────────────────────
+    Route::get   ('/users',                  [UserController::class, 'index'])->name('users.index');
+    Route::post  ('/users',                  [UserController::class, 'store'])->name('users.store');
+    Route::put   ('/users/{user}',           [UserController::class, 'update'])->name('users.update');
+    Route::put   ('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
+    Route::delete('/users/{user}',           [UserController::class, 'destroy'])->name('users.destroy');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Manager + Admin routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:manager,admin'])->group(function () {
+
+    // ── Reports ───────────────────────────────────────────────
+    Route::get('/reports',        [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export', [ReportController::class, 'exportJson'])->name('reports.export');
+
+    // ── Workflow: assign + close ──────────────────────────────
+    Route::post('/workflow/{serviceOrder}/assign', [WorkflowController::class, 'assign'])
+         ->name('workflow.assign');
+    Route::post('/workflow/{serviceOrder}/close',  [WorkflowController::class, 'close'])
+         ->name('workflow.close');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Technician-only routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:technician'])->group(function () {
+
+    Route::get ('/technician',                          [TechnicianController::class, 'dashboard'])->name('technician.dashboard');
+    Route::get ('/technician/spk/{serviceOrder}',       [TechnicianController::class, 'spkView'])->name('technician.spk');
+    Route::post('/workflow/{serviceOrder}/progress',    [WorkflowController::class, 'updateProgress'])
+         ->name('workflow.progress');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Viewer/Auditor-only routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:viewer'])->group(function () {
+
+    Route::get('/viewer', [ViewerController::class, 'dashboard'])->name('viewer.dashboard');
 });

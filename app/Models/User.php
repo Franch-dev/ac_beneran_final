@@ -1,4 +1,7 @@
 <?php
+// NOTE: This file REPLACES app/Models/User.php
+// Only change: added isTechnician() and isViewer() methods + updated fillable
+// All existing methods preserved exactly.
 
 namespace App\Models;
 
@@ -31,4 +34,36 @@ class User extends Authenticatable
     {
         return $this->role === 'admin';
     }
+
+    // NEW
+    public function isTechnician(): bool
+    {
+        return $this->role === 'technician';
+    }
+
+    // NEW
+    public function isViewer(): bool
+    {
+        return $this->role === 'viewer';
+    }
+
+    // NEW — convenience helper for role label display
+    public function roleLabel(): string
+    {
+        return match($this->role) {
+            'frontdesk'  => 'Front Desk',
+            'manager'    => 'Manager',
+            'admin'      => 'Admin',
+            'technician' => 'Teknisi',
+            'viewer'     => 'Viewer / Auditor',
+            default      => ucfirst($this->role),
+        };
+    }
+
+    // NEW — check if user can access admin/manager areas
+    public function hasElevatedAccess(): bool
+    {
+        return in_array($this->role, ['admin', 'manager']);
+    }
 }
+

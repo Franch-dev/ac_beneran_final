@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('invoices', function (Blueprint $table) {
+        Schema::connection('ac_service')->create('invoices', function (Blueprint $table) {
             $table->id();
             $table->foreignId('service_order_id')->unique()->constrained()->onDelete('cascade');
             $table->string('invoice_number')->unique();
@@ -19,6 +19,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('invoices');
+        Schema::connection('ac_service')->dropIfExists('invoices');
     }
 };

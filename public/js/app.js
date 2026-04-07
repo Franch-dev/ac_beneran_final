@@ -5,26 +5,75 @@
 // === CSRF TOKEN ===
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
+/**
+ * Escape HTML-sensitive characters before rendering server data into templates.
+ * @param {unknown} value
+ * @returns {string}
+ */
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+window.escapeHtml = escapeHtml;
+
+function getOverlayElement() {
+    return document.getElementById('overlay');
+}
+
+function syncPopupState() {
+    const overlay = getOverlayElement();
+    const hasOpenPopup = document.querySelectorAll('.popup.active').length > 0;
+
+    if (overlay) {
+        overlay.classList.toggle('active', hasOpenPopup);
+    }
+
+    document.body.classList.toggle('popup-open', hasOpenPopup);
+    document.body.style.overflow = hasOpenPopup ? 'hidden' : '';
+}
+
 // === POPUP MANAGEMENT ===
 function openPopup(id) {
-    document.getElementById(id)?.classList.add('active');
-    document.getElementById('overlay')?.classList.add('active');
-    document.body.style.overflow = 'hidden';
+    const popup = document.getElementById(id);
+    if (!popup) {
+        return;
+    }
+
+    popup.classList.add('active');
+    syncPopupState();
 }
 
 function closePopup(id) {
-    document.getElementById(id)?.classList.remove('active');
-    const anyOpen = document.querySelectorAll('.popup.active').length > 0;
-    if (!anyOpen) {
-        document.getElementById('overlay')?.classList.remove('active');
-        document.body.style.overflow = '';
+    const popup = document.getElementById(id);
+    if (!popup) {
+        syncPopupState();
+        return;
     }
+
+    popup.classList.remove('active');
+
+    if (popup.dataset.temporaryPopup === 'true') {
+        setTimeout(() => popup.remove(), 180);
+    }
+
+    syncPopupState();
 }
 
 function closeAllPopups() {
-    document.querySelectorAll('.popup.active').forEach(p => p.classList.remove('active'));
-    document.getElementById('overlay')?.classList.remove('active');
-    document.body.style.overflow = '';
+    document.querySelectorAll('.popup').forEach((popup) => {
+        popup.classList.remove('active');
+
+        if (popup.dataset.temporaryPopup === 'true') {
+            popup.remove();
+        }
+    });
+
+    syncPopupState();
 }
 
 // === DARK MODE ===
@@ -81,15 +130,8 @@ const NavbarManager = {
         this.overlay = document.querySelector('.mobile-menu-overlay');
 
         if (!this.menu || !this.toggleBtn) {
-            console.warn('NavbarManager: Required elements not found', {
-                menu: !!this.menu,
-                toggleBtn: !!this.toggleBtn,
-                overlay: !!this.overlay
-            });
             return;
         }
-
-        console.log('NavbarManager: Initialized successfully');
 
         // Bind events
         this.toggleBtn.addEventListener('click', () => this.toggle());
@@ -118,7 +160,6 @@ const NavbarManager = {
     },
 
     toggle() {
-        console.log('NavbarManager: Toggle called, current state:', this.isOpen() ? 'open' : 'closed');
         if (this.isOpen()) {
             this.close();
         } else {
@@ -129,7 +170,6 @@ const NavbarManager = {
     open() {
         if (!this.menu) return;
 
-        console.log('NavbarManager: Opening menu');
         this.menu.classList.add('open');
         document.body.classList.add('menu-open');
 
@@ -151,10 +191,9 @@ const NavbarManager = {
         }, 100);
     },
 
-    close() {
+    close(focusToggle = true) {
         if (!this.menu) return;
 
-        console.log('NavbarManager: Closing menu');
         this.menu.classList.remove('open');
         document.body.classList.remove('menu-open');
 
@@ -168,7 +207,9 @@ const NavbarManager = {
         }
 
         // Return focus to toggle button
-        this.toggleBtn.focus();
+        if (focusToggle) {
+            this.toggleBtn.focus();
+        }
     },
 
     isOpen() {
@@ -206,6 +247,10 @@ function toggleNavbar() {
     NavbarManager.toggle();
 }
 
+window.closeGuestNavbar = function () {
+    NavbarManager.close(false);
+};
+
 // ============================================
 // SIDEBAR MANAGER
 // ============================================
@@ -238,6 +283,7 @@ const SidebarManager = {
 
         // Mobile toggle
         if (this.mobileMenuBtn) {
+            this.mobileMenuBtn.setAttribute('aria-expanded', 'false');
             this.mobileMenuBtn.addEventListener('click', () => this.toggleMobile());
         }
 
@@ -268,6 +314,7 @@ const SidebarManager = {
     openMobile() {
         this.sidebar?.classList.add('mobile-open');
         this.overlay?.classList.add('active');
+        this.mobileMenuBtn?.setAttribute('aria-expanded', 'true');
         document.body.style.overflow = 'hidden';
         window.pauseScroll?.();
 
@@ -279,6 +326,7 @@ const SidebarManager = {
     closeMobile() {
         this.sidebar?.classList.remove('mobile-open');
         this.overlay?.classList.remove('active');
+        this.mobileMenuBtn?.setAttribute('aria-expanded', 'false');
         document.body.style.overflow = '';
         window.resumeScroll?.();
 
@@ -304,12 +352,19 @@ document.addEventListener('DOMContentLoaded', () => {
     SidebarManager.init();
 
     syncDarkModeUI(localStorage.getItem('theme') || 'light');
+    initStaggerReveal();
+
+    if (document.querySelector('[data-status-badge]')) {
+        refreshStatusBadges();
+        window.setInterval(refreshStatusBadges, 20000);
+    }
 });
 
 // === FETCH HELPER ===
 async function apiFetch(url, method = 'GET', data = null) {
     const options = {
         method,
+        credentials: 'same-origin',
         headers: {
             'Content-Type':  'application/json',
             'X-CSRF-TOKEN':  csrfToken,
@@ -318,22 +373,91 @@ async function apiFetch(url, method = 'GET', data = null) {
     };
     if (data) options.body = JSON.stringify(data);
 
-    const res  = await fetch(url, options);
-    const json = await res.json();
+    const res = await fetch(url, options);
+    const contentType = res.headers.get('content-type') || '';
+    const json = contentType.includes('application/json')
+        ? await res.json()
+        : { message: 'Respons server tidak valid.' };
 
     if (!res.ok) {
-        // Attach status HTTP dan full JSON response ke error object
-        const err  = new Error(json.message || 'Terjadi kesalahan.');
+        const err = new Error(json.message || 'Terjadi kesalahan.');
         err.status = res.status;
-        err.data   = json;          // berisi has_existing, existing_order, dll
+        err.data = json;
         throw err;
     }
 
     return json;
 }
 
+/**
+ * Poll the monitoring counters used by the sidebar notification badges.
+ *
+ * @returns {Promise<void>}
+ */
+async function refreshStatusBadges() {
+    const badges = document.querySelectorAll('[data-status-badge]');
+    if (!badges.length) {
+        return;
+    }
+
+    try {
+        const counts = await apiFetch('/monitoring/status-counts');
+
+        badges.forEach((badge) => {
+            const status = badge.getAttribute('data-status-badge');
+            const label = badge.getAttribute('data-badge-label') || status || 'Status';
+            const total = Number(status ? counts?.[status] ?? 0 : 0);
+
+            badge.textContent = String(total);
+            badge.hidden = total < 1;
+            badge.setAttribute('aria-label', `${label}: ${total}`);
+        });
+    } catch (error) {
+        // Ignore polling failures to avoid noisy UX on non-monitoring flows.
+    }
+}
+
+/**
+ * Animate dashboard and monitoring surfaces with a cheap IntersectionObserver
+ * instead of per-frame scroll handlers.
+ */
+function initStaggerReveal() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.querySelectorAll('[data-stagger-item]').forEach((item) => {
+            item.classList.add('is-visible');
+        });
+        return;
+    }
+
+    const groups = document.querySelectorAll('[data-stagger-group]');
+    if (!groups.length) {
+        return;
+    }
+
+    const observer = new IntersectionObserver((entries, currentObserver) => {
+        entries.forEach((entry) => {
+            if (!entry.isIntersecting) {
+                return;
+            }
+
+            entry.target.classList.add('is-visible');
+            currentObserver.unobserve(entry.target);
+        });
+    }, {
+        threshold: 0.16,
+        rootMargin: '0px 0px -8% 0px',
+    });
+
+    groups.forEach((group) => {
+        group.querySelectorAll('[data-stagger-item]').forEach((item, index) => {
+            item.style.setProperty('--stagger-index', String(index));
+            observer.observe(item);
+        });
+    });
+}
+
 // === TOAST NOTIFICATION ===
-function showToast(message, type = 'success') {
+function legacyShowToast(message, type = 'success') {
     const existing = document.querySelector('.toast-notification');
     if (existing) existing.remove();
 
@@ -369,144 +493,55 @@ _toastStyle.textContent =
     '@keyframes slideOut { to { transform: translateX(100px); opacity: 0; } }';
 document.head.appendChild(_toastStyle);
 
+function legacyShowToast(message, type = 'success') {
+    const existing = document.querySelector('.toast-notification');
+    if (existing) {
+        existing.remove();
+    }
+
+    const tone = ['success', 'error', 'info', 'warning'].includes(type) ? type : 'info';
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${tone}`;
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
+
+    const icon = document.createElement('span');
+    icon.className = 'toast-icon';
+    icon.setAttribute('aria-hidden', 'true');
+
+    const iconGlyph = document.createElement('i');
+    iconGlyph.className = tone === 'success'
+        ? 'fas fa-circle-check'
+        : tone === 'error'
+            ? 'fas fa-circle-xmark'
+            : tone === 'warning'
+                ? 'fas fa-triangle-exclamation'
+                : 'fas fa-circle-info';
+    icon.appendChild(iconGlyph);
+
+    const content = document.createElement('div');
+    content.className = 'toast-message';
+    content.textContent = String(message ?? '');
+
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'toast-close';
+    closeButton.setAttribute('aria-label', 'Tutup notifikasi');
+    closeButton.innerHTML = '<i class="fas fa-times" aria-hidden="true"></i>';
+    closeButton.addEventListener('click', () => toast.remove());
+
+    toast.appendChild(icon);
+    toast.appendChild(content);
+    toast.appendChild(closeButton);
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add('toast-notification--exit');
+        window.setTimeout(() => toast.remove(), 220);
+    }, 4000);
+}
+
 // === ESCAPE KEY ===
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeAllPopups();
-});
-
-document.addEventListener("DOMContentLoaded", function () {
-    const links = document.querySelectorAll(".nav-link");
-
-    links.forEach(link => {
-        link.addEventListener("click", function () {
-
-            // Hapus semua active
-            links.forEach(l => l.classList.remove("active"));
-
-            // Tambah active ke yang diklik
-            this.classList.add("active");
-        });
-    });
-});
-
-
-const mobileBtn = document.getElementById("mobileMenuBtn");
-const sidebar = document.getElementById("sidebar");
-const overlay = document.getElementById("sidebarOverlay");
-
-if (mobileBtn && sidebar && overlay) {
-    mobileBtn.addEventListener("click", function () {
-        const isOpen = this.getAttribute("aria-expanded") === "true";
-
-        this.setAttribute("aria-expanded", !isOpen);
-        sidebar.classList.toggle("active");
-        overlay.classList.toggle("active");
-    });
-}
-
-/* ==========================================
-   SCROLL SPY & REFRESH TO TOP
-   ========================================== */
-
-// 1. MEMAKSA REFRESH KE ATAS
-if (history.scrollRestoration) {
-    history.scrollRestoration = 'manual';
-}
-window.scrollTo(0, 0);
-
-// 2. SCROLL SPY (Otomatis ganti menu saat scroll)
-document.addEventListener('DOMContentLoaded', () => {
-    const sections = document.querySelectorAll('section[id]');
-    const navLinks = document.querySelectorAll('.nav-link');
-    let lastActiveLink = null;
-
-    const updateActiveNav = () => {
-        const scrollPosition = window.pageYOffset + 100; // Offset for detection
-        let currentSection = null;
-
-        // Special handling for home section (at the very top)
-        const homeSection = document.getElementById('home');
-        if (homeSection && scrollPosition < homeSection.offsetHeight) {
-            currentSection = 'home';
-        } else {
-            // Find the section that matches current scroll position
-            sections.forEach((section) => {
-                const sectionId = section.getAttribute("id");
-                if (sectionId === 'home') return; // Skip home, already handled
-
-                const sectionTop = section.offsetTop;
-                const sectionBottom = sectionTop + section.offsetHeight;
-
-                // If scroll is within this section, mark it as current
-                if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
-                    currentSection = sectionId;
-                }
-            });
-
-            // If no section found, use the last one before current scroll
-            if (!currentSection) {
-                for (let i = sections.length - 1; i >= 0; i--) {
-                    const sectionId = sections[i].getAttribute("id");
-                    if (scrollPosition >= sections[i].offsetTop) {
-                        currentSection = sectionId;
-                        break;
-                    }
-                }
-            }
-        }
-
-        // Update nav links
-        if (currentSection) {
-            navLinks.forEach((link) => {
-                const href = link.getAttribute("href");
-                if (!href) return;
-
-                const linkId = href.substring(1); // Remove # from href
-
-                if (linkId === currentSection) {
-                    if (lastActiveLink !== link) {
-                        // Remove active from all links
-                        navLinks.forEach(l => l.classList.remove("active"));
-                        // Add active to current link
-                        link.classList.add("active");
-                        lastActiveLink = link;
-                    }
-                }
-            });
-
-            // Update URL
-            if (window.location.hash !== `#${currentSection}`) {
-                history.replaceState(null, null, `#${currentSection}`);
-            }
-        }
-    };
-
-    if (sections.length && navLinks.length) {
-        window.addEventListener('scroll', updateActiveNav, { passive: true });
-        setTimeout(updateActiveNav, 100);
-    }
-
-    const counters = document.querySelectorAll('.counter');
-    counters.forEach(counter => {
-        const target = parseFloat(counter.dataset.target);
-        const isDecimal = target % 1 !== 0;
-        let current = 0;
-
-        const updateCounter = () => {
-            const increment = target / 80;
-            current += increment;
-
-            if (current < target) {
-                counter.innerText = isDecimal
-                    ? current.toFixed(1)
-                    : Math.floor(current);
-
-                requestAnimationFrame(updateCounter);
-            } else {
-                counter.innerText = target;
-            }
-        };
-
-        updateCounter();
-    });
 });

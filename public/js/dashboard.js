@@ -2,6 +2,8 @@
    DASHBOARD.JS — Masjid & AC Management
    ========================================== */
 
+const dashboardSafeText = window.escapeHtml || ((value) => String(value ?? ''));
+
 // Phone fields
 function addPhoneField() {
     const container = document.getElementById('phoneList');
@@ -21,7 +23,7 @@ function addEditPhoneField(value = '') {
     const div = document.createElement('div');
     div.className = 'phone-input-row';
     div.innerHTML = `
-        <input type="text" class="form-input edit-phone" placeholder="+62..." value="${value}">
+        <input type="text" class="form-input edit-phone" placeholder="+62..." value="${dashboardSafeText(value)}">
         <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">
             <i class="fas fa-minus"></i>
         </button>
@@ -161,6 +163,8 @@ async function showDetail(masjidId) {
     try {
         const data = await apiFetch(ROUTES.masjidDetail(masjidId));
         const body = document.getElementById('detailACBody');
+        const locationName = dashboardSafeText(data.name);
+        const locationId = dashboardSafeText(data.custom_id);
 
         if (!data.ac_units || data.ac_units.length === 0) {
             body.innerHTML = `
@@ -172,7 +176,7 @@ async function showDetail(masjidId) {
         } else {
             let html = `
                 <div style="margin-bottom: 1rem">
-                    <strong>${data.name}</strong> <span class="text-muted">(${data.custom_id})</span>
+                    <strong>${locationName}</strong> <span class="text-muted">(${locationId})</span>
                 </div>
                 <div class="table-container">
                 <table class="data-table">
@@ -194,10 +198,12 @@ async function showDetail(masjidId) {
                     : '–';
                 const urgency = days === '–' ? '' : days < 90 ? 'aman' : days <= 120 ? 'harus_servis' : 'overdue';
                 const urgencyText = urgency === 'aman' ? '✅ Aman' : urgency === 'harus_servis' ? '⚠️ Harus Servis' : urgency === 'overdue' ? '🔴 Overdue' : '–';
+                const pkType = dashboardSafeText(unit.pk_type);
+                const brand = dashboardSafeText(unit.brand);
                 html += `
                     <tr>
-                        <td>${unit.pk_type}</td>
-                        <td>${unit.brand}</td>
+                        <td>${pkType}</td>
+                        <td>${brand}</td>
                         <td>${unit.quantity} unit</td>
                         <td>${unit.last_service_date ? new Date(unit.last_service_date).toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' }) : '–'}</td>
                         <td>${days}</td>
@@ -216,17 +222,22 @@ async function showDetail(masjidId) {
 }
 
 // === EDIT MASJID ===
-function openEditMasjid(id, name, address, dkm, marbot, phones) {
-    document.getElementById('editMasjidId').value = id;
-    document.getElementById('editMasjidName').value = name;
-    document.getElementById('editMasjidAddress').value = address;
-    document.getElementById('editMasjidDkm').value = dkm;
-    document.getElementById('editMasjidMarbot').value = marbot;
+function openEditMasjid(idOrPayload, name, address, dkm, marbot, phones) {
+    const payload = typeof idOrPayload === 'object' && idOrPayload !== null
+        ? idOrPayload
+        : { id: idOrPayload, name, address, dkm, marbot, phones };
+
+    document.getElementById('editMasjidId').value = payload.id ?? '';
+    document.getElementById('editMasjidName').value = payload.name ?? '';
+    document.getElementById('editMasjidAddress').value = payload.address ?? '';
+    document.getElementById('editMasjidDkm').value = payload.dkm ?? '';
+    document.getElementById('editMasjidMarbot').value = payload.marbot ?? '';
 
     const container = document.getElementById('editPhoneList');
     container.innerHTML = '';
-    (phones || []).forEach(p => addEditPhoneField(p));
-    if (!phones || !phones.length) addEditPhoneField();
+    const phoneValues = Array.isArray(payload.phones) ? payload.phones : [];
+    phoneValues.forEach(p => addEditPhoneField(p));
+    if (!phoneValues.length) addEditPhoneField();
 
     openPopup('editMasjidPopup');
 }
@@ -275,16 +286,19 @@ async function openEditAC(masjidId) {
         } else {
             let html = `<input type="hidden" id="editACMasjidId" value="${masjidId}">`;
             data.ac_units.forEach(unit => {
+                const pkType = dashboardSafeText(unit.pk_type);
+                const brand = dashboardSafeText(unit.brand);
+                const serviceDate = dashboardSafeText(unit.last_service_date || '');
                 html += `
                     <div class="ac-unit-row" data-id="${unit.id}">
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">PK</label>
-                                <input class="form-input" value="${unit.pk_type}" disabled>
+                                <input class="form-input" value="${pkType}" disabled>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Merk</label>
-                                <input class="form-input eu-brand" value="${unit.brand}">
+                                <input class="form-input eu-brand" value="${brand}">
                             </div>
                         </div>
                         <div class="form-row">
@@ -294,7 +308,7 @@ async function openEditAC(masjidId) {
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Terakhir Servis</label>
-                                <input type="date" class="form-input eu-date" value="${unit.last_service_date || ''}">
+                                <input type="date" class="form-input eu-date" value="${serviceDate}">
                             </div>
                         </div>
                         <div style="display:flex;gap:0.5rem;margin-top:0.5rem">

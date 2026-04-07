@@ -16,15 +16,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body class="login-body">
-    <nav class="navbar glass-navbar" role="navigation" aria-label="Login navigation">
-        <div class="navbar-brand">
-            <div class="brand-icon"><i class="fas fa-snowflake"></i></div>
-            <span class="brand-text">Forkis Platform</span>
-        </div>
-        <a href="{{ route('home') }}" class="btn btn-outline btn-sm">
-            <i class="fas fa-arrow-left"></i> Beranda
-        </a>
-    </nav>
     <div class="login-container">
         <div class="login-card glass-card">
             <div class="login-header">
@@ -33,6 +24,9 @@
                 </div>
                 <h1>AC Servis Masjid</h1>
                 <p>Masuk ke sistem manajemen</p>
+                <a href="{{ route('home') }}" class="btn btn-outline btn-sm" style="margin-top:0.5rem">
+                    <i class="fas fa-home"></i> Go to Home
+                </a>
             </div>
 
             @if($errors->any())
@@ -77,9 +71,6 @@
                 </button>
             </form>
 
-            <div class="login-footer">
-                <a href="{{ route('home') }}"><i class="fas fa-arrow-left"></i> Kembali ke Beranda</a>
-            </div>
         </div>
     </div>
     <script src="{{ asset('js/app.js') }}"></script>

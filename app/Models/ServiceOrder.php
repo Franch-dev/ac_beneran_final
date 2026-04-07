@@ -2,10 +2,28 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class ServiceOrder extends Model
 {
+    public const ACTIVE_STATUSES = [
+        'pending',
+        'approved',
+        'in_progress',
+        'waiting_invoice',
+        'waiting_review',
+    ];
+
+    public const STATUS_LABELS = [
+        'pending' => 'Pending',
+        'approved' => 'SPK Issued',
+        'in_progress' => 'In Progress',
+        'waiting_invoice' => 'Waiting Invoice',
+        'waiting_review' => 'Waiting Review',
+        'completed' => 'Completed',
+    ];
+
     protected $connection = 'ac_service';
 
     protected $fillable = [
@@ -28,6 +46,40 @@ class ServiceOrder extends Model
     public function invoice()
     {
         return $this->hasOne(Invoice::class);
+    }
+
+    public function workflowSteps()
+    {
+        return $this->hasMany(\App\Models\WorkflowStep::class)->orderBy('created_at');
+    }
+
+    public function technicianAssignment()
+    {
+        return $this->hasOne(\App\Models\TechnicianAssignment::class);
+    }
+
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->whereIn('status', self::activeStatuses());
+    }
+
+    public static function activeStatuses(): array
+    {
+        return self::ACTIVE_STATUSES;
+    }
+
+    public static function statusLabel(?string $status): string
+    {
+        if (! is_string($status) || $status === '') {
+            return 'Unknown';
+        }
+
+        return self::STATUS_LABELS[$status] ?? ucwords(str_replace('_', ' ', $status));
+    }
+
+    public function isActive(): bool
+    {
+        return in_array($this->status, self::activeStatuses(), true);
     }
 
     public static function generateOrderNumber(): string

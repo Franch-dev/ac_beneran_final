@@ -36,8 +36,27 @@ const HARGA_SERVIS = {
 let selectedMasjidData = null;
 let soAcData = [];
 
+const SERVICE_ORDER_STATUS_LABELS = {
+    pending: 'Pending',
+    approved: 'SPK Issued',
+    in_progress: 'In Progress',
+    waiting_invoice: 'Waiting Invoice',
+    waiting_review: 'Waiting Review',
+    completed: 'Completed',
+};
+
+const SERVICE_ORDER_STATUS_COLORS = {
+    pending: 'var(--warning)',
+    approved: 'var(--success)',
+    in_progress: 'var(--primary)',
+    waiting_invoice: 'var(--info)',
+    waiting_review: '#9c27b0',
+    completed: 'var(--success)',
+};
+
 // Simpan payload terakhir untuk dipakai saat user konfirmasi replace
 let _lastPayload = null;
+const monitoringSafeText = window.escapeHtml || ((value) => String(value ?? ''));
 
 // Ambil harga berdasarkan tipe lokasi & PK
 function getPriceByPK(pk) {
@@ -49,6 +68,33 @@ function getPriceByPK(pk) {
 // Format rupiah
 function formatRupiah(angka) {
     return 'Rp ' + parseInt(angka).toLocaleString('id-ID');
+}
+
+function labelForServiceOrderStatus(status) {
+    return SERVICE_ORDER_STATUS_LABELS[status] || String(status || '')
+        .replaceAll('_', ' ')
+        .replace(/\b\w/g, function (char) { return char.toUpperCase(); });
+}
+
+function colorForServiceOrderStatus(status) {
+    return SERVICE_ORDER_STATUS_COLORS[status] || 'var(--text-primary)';
+}
+
+function formatServiceDate(value) {
+    if (!value) {
+        return '-';
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return value;
+    }
+
+    return parsed.toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+    });
 }
 
 // === MASJID SEARCH DI SO POPUP ===
@@ -85,9 +131,13 @@ function selectMasjidForSO(el) {
 
     document.getElementById('soMasjidName').textContent    = name;
     document.getElementById('soMasjidAddress').textContent = address;
-    document.getElementById('soDkmName').textContent       = dkm;
-    document.getElementById('soMarbotName').textContent    = marbot;
     document.getElementById('soPhone').value               = phones[0] || '';
+
+    const meetingPersonSelect = document.getElementById('soMeetingPerson');
+    if (meetingPersonSelect && meetingPersonSelect.options.length >= 2) {
+        meetingPersonSelect.options[0].textContent = 'DKM (' + dkm + ')';
+        meetingPersonSelect.options[1].textContent = 'Marbot (' + marbot + ')';
+    }
 
     // Tampilkan info harga sesuai tipe
     var hargaInfo = document.getElementById('soHargaInfo');
@@ -298,8 +348,8 @@ async function submitServiceOrder() {
 // === TAMPILKAN POPUP KONFIRMASI REPLACE ===
 function showReplaceConfirm(data) {
     var existing = data.existing_order;
-    var statusLabel = existing.status === 'approved' ? 'Approved' : 'Pending';
-    var statusColor = existing.status === 'approved' ? 'var(--success)' : 'var(--warning)';
+    var statusLabel = existing.status_label || labelForServiceOrderStatus(existing.status);
+    var statusColor = colorForServiceOrderStatus(existing.status);
 
     var popup = document.getElementById('replaceConfirmPopup');
     if (!popup) return;
@@ -378,38 +428,13 @@ async function deleteOrder(id) {
     }
 }
 
-// === DETAIL ORDER ===
-async function showOrderDetail(orderId) {
-    var rowBtn = document.querySelector('tr [onclick="showOrderDetail(' + orderId + ')"]');
-    if (!rowBtn) return;
-    var row   = rowBtn.closest('tr');
-    var cells = row.querySelectorAll('td');
-    var body  = document.getElementById('orderDetailBody');
-
-    body.innerHTML =
-        '<div class="table-container" style="margin-bottom:1rem">' +
-            '<table class="data-table">' +
-                '<tr><th>No. Order</th><td>'   + (cells[0] ? cells[0].innerHTML : '') + '</td></tr>' +
-                '<tr><th>Masjid</th><td>'       + (cells[1] ? cells[1].innerHTML : '') + '</td></tr>' +
-                '<tr><th>Tgl. Servis</th><td>'  + (cells[2] ? cells[2].innerHTML : '') + '</td></tr>' +
-                '<tr><th>Detail Unit</th><td>'  + (cells[3] ? cells[3].innerHTML : '') + '</td></tr>' +
-                '<tr><th>Status</th><td>'       + (cells[4] ? cells[4].innerHTML : '') + '</td></tr>' +
-                '<tr><th>Urgensi</th><td>'      + (cells[5] ? cells[5].innerHTML : '') + '</td></tr>' +
-            '</table>' +
-        '</div>' +
-        '<div class="popup-actions">' +
-            '<button class="btn btn-secondary" onclick="closePopup(\'orderDetailPopup\')">Tutup</button>' +
-        '</div>';
-
-    openPopup('orderDetailPopup');
-}
-
 // === RIWAYAT ORDER ===
 async function showOrderHistory() {
     if (!selectedMasjidData) return;
 
     try {
         var orders = await apiFetch(ROUTES_MON.soHistory(selectedMasjidData.id));
+        var safe = window.escapeHtml || function (value) { return String(value ?? ''); };
 
         if (!orders.length) {
             document.getElementById('historyBody').innerHTML =
@@ -426,17 +451,18 @@ async function showOrderHistory() {
 
             orders.forEach(function(o) {
                 var details = (o.service_details || [])
-                    .map(function(d) { return d.pk_type + ' ' + d.brand + ' \u00d7' + d.quantity; })
+                    .map(function(d) {
+                        return safe(d.pk_type) + ' ' + safe(d.brand) + ' x' + safe(d.quantity);
+                    })
                     .join(', ');
                 var tgl = new Date(o.service_date).toLocaleDateString('id-ID', {
                     day: '2-digit', month: 'short', year: 'numeric'
                 });
-                var statusCap = o.status.charAt(0).toUpperCase() + o.status.slice(1);
                 html +=
                     '<tr>' +
-                        '<td><span class="order-num">' + o.order_number + '</span></td>' +
+                        '<td><span class="order-num">' + safe(o.order_number) + '</span></td>' +
                         '<td>' + tgl + '</td>' +
-                        '<td><span class="status-badge status-' + o.status + '">' + statusCap + '</span></td>' +
+                        '<td><span class="status-badge status-' + safe(o.status) + '">' + safe(labelForServiceOrderStatus(o.status)) + '</span></td>' +
                         '<td>' + (details || '\u2013') + '</td>' +
                     '</tr>';
             });
@@ -511,10 +537,7 @@ function openConfirmModal(config) {
     // Store callback
     _confirmCallback = config.onConfirm;
 
-    // Show modal using existing popup system
-    modal.classList.add('active');
-    document.getElementById('overlay').classList.add('active');
-    document.body.style.overflow = 'hidden';
+    openPopup('confirmModal');
 
     // Focus management for accessibility
     setTimeout(() => {
@@ -526,17 +549,7 @@ function openConfirmModal(config) {
  * Close confirmation modal
  */
 function closeConfirmModal() {
-    const modal = document.getElementById('confirmModal');
-    if (modal) {
-        modal.classList.remove('active');
-    }
-
-    // Only remove overlay if no other popups are open
-    const anyOpen = document.querySelectorAll('.popup.active').length > 0;
-    if (!anyOpen) {
-        document.getElementById('overlay').classList.remove('active');
-        document.body.style.overflow = '';
-    }
+    closePopup('confirmModal');
 
     // Clear callback
     _confirmCallback = null;
@@ -578,7 +591,7 @@ approveOrder = function(id) {
         cancelText: 'Batal',
         orderData: {
             orderNumber: getText(cells[0], '.order-num'),
-            masjidName: getText(cells[1], '.fw-bold'),
+            masjidName: getText(cells[1], '.table-entity-title'),
             serviceDate: cells[2] ? (cells[2].querySelector('div') ? cells[2].querySelector('div').textContent : '-') : '-'
         },
         onConfirm: function() {
@@ -623,7 +636,7 @@ cancelApprove = function(id) {
         cancelText: 'Tidak',
         orderData: {
             orderNumber: getText(cells[0], '.order-num'),
-            masjidName: getText(cells[1], '.fw-bold'),
+            masjidName: getText(cells[1], '.table-entity-title'),
             serviceDate: cells[2] ? (cells[2].querySelector('div') ? cells[2].querySelector('div').textContent : '-') : '-'
         },
         onConfirm: function() {
@@ -668,7 +681,7 @@ deleteOrder = function(id) {
         cancelText: 'Batal',
         orderData: {
             orderNumber: getText(cells[0], '.order-num'),
-            masjidName: getText(cells[1], '.fw-bold'),
+            masjidName: getText(cells[1], '.table-entity-title'),
             serviceDate: cells[2] ? (cells[2].querySelector('div') ? cells[2].querySelector('div').textContent : '-') : '-'
         },
         onConfirm: function() {
@@ -699,3 +712,171 @@ document.addEventListener('keydown', function(e) {
         closeConfirmModal();
     }
 });
+
+// === Workflow helpers ===
+async function markTaskDone(orderId) {
+    try {
+        await apiFetch(`/workflow/${orderId}/progress`, 'POST', { status: 'done' });
+        showToast('Tugas ditandai selesai');
+        setTimeout(() => location.reload(), 1200);
+    } catch (err) {
+        showToast(err.message || 'Gagal menandai selesai', 'error');
+    }
+}
+
+async function generateInvoice(orderId) {
+    try {
+        await apiFetch(`/service-order/${orderId}/invoice`, 'POST');
+        showToast('Invoice berhasil dibuat');
+        setTimeout(() => location.reload(), 1200);
+    } catch (err) {
+        showToast(err.message || 'Gagal membuat invoice', 'error');
+    }
+}
+
+async function approveInvoice(orderId) {
+    try {
+        await apiFetch(`/service-order/${orderId}/approve-invoice`, 'POST');
+        showToast('Invoice disetujui');
+        setTimeout(() => location.reload(), 1200);
+    } catch (err) {
+        showToast(err.message || 'Gagal menyetujui invoice', 'error');
+    }
+}
+
+async function legacyShowOrderDetail(orderId) {
+    try {
+        const res = await apiFetch(`/service-order/${orderId}`);
+        const body = document.getElementById('orderDetailBody');
+        const o = res.order;
+        const history = res.history || [];
+
+        const details = (o.service_details || []).map(d => `${d.pk_type} ${d.brand} × ${d.quantity}`).join(', ');
+        const invoiceInfo = o.invoice ? `<a href="/service-order/${o.id}/invoice" target="_blank" class="btn btn-sm btn-primary">Lihat Invoice</a>` : '<span class="text-muted">Belum ada invoice</span>';
+        const spkLink = `<a href="/service-order/${o.id}/spk" target="_blank" class="btn btn-sm btn-secondary">Lihat SPK</a>`;
+        const statusLabel = labelForServiceOrderStatus(o.status);
+        const serviceDate = formatServiceDate(o.service_date);
+
+        const historyHtml = history.length
+            ? history.map(h => `
+                <div class="timeline-item">
+                    <div class="timeline-icon" style="background:${h.color}">
+                        <i class="${h.icon}"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-label">${h.label}</div>
+                        <div class="timeline-actor">${h.actor} <span class="role-badge">${h.role}</span></div>
+                        ${h.notes ? `<div class="timeline-notes">${h.notes}</div>` : ''}
+                        <div class="timeline-time">${h.time}</div>
+                    </div>
+                </div>
+            `).join('')
+            : '<div class="empty-state"><i class="fas fa-stream"></i><p>Belum ada log</p></div>';
+
+        body.innerHTML = `
+            <div class="order-meta">
+                <div class="order-num">${o.order_number}</div>
+                <div class="text-muted">${o.masjid.name}</div>
+                <div class="status-badge status-${o.status}">${statusLabel}</div>
+            </div>
+            <div class="order-grid">
+                <div><strong>Tanggal Servis</strong><br>${serviceDate}</div>
+                <div><strong>Kontak</strong><br>${o.phone}</div>
+                <div><strong>Detail</strong><br>${details || '–'}</div>
+                <div><strong>Dokumen</strong><br>${spkLink} &nbsp; ${invoiceInfo}</div>
+            </div>
+            <div class="section-title" style="margin-top:1rem">Riwayat & Audit</div>
+            <div class="timeline-container">${historyHtml}</div>
+        `;
+
+        openPopup('orderDetailPopup');
+    } catch (err) {
+        showToast(err.message || 'Gagal memuat detail', 'error');
+    }
+}
+
+// Override legacy detail rendering with escaped, production-safe markup.
+async function showOrderDetail(orderId) {
+    try {
+        const res = await apiFetch(`/service-order/${orderId}`);
+        const body = document.getElementById('orderDetailBody');
+        const order = res.order;
+        const history = res.history || [];
+
+        const statusLabel = monitoringSafeText(labelForServiceOrderStatus(order.status));
+        const serviceDate = monitoringSafeText(formatServiceDate(order.service_date));
+        const orderNumber = monitoringSafeText(order.order_number);
+        const masjidName = monitoringSafeText(order.masjid?.name);
+        const phone = monitoringSafeText(order.phone || '-');
+        const notes = monitoringSafeText(order.notes || '');
+
+        const detailsHtml = (order.service_details || []).length
+            ? order.service_details.map((detail) => `
+                <span class="detail-chip">${monitoringSafeText(detail.pk_type)} ${monitoringSafeText(detail.brand)} x ${detail.quantity}</span>
+            `).join('')
+            : '<span class="text-muted">Belum ada detail unit.</span>';
+
+        const invoiceAction = order.invoice
+            ? `<a href="/service-order/${order.id}/invoice" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-primary">Lihat Invoice</a>`
+            : '<span class="text-muted">Belum ada invoice</span>';
+        const spkAction = `<a href="/service-order/${order.id}/spk" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-secondary">Lihat SPK</a>`;
+
+        const historyHtml = history.length
+            ? history.map((item) => `
+                <div class="timeline-item">
+                    <div class="timeline-icon" style="background:${item.color}">
+                        <i class="${item.icon}"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-label">${monitoringSafeText(item.label)}</div>
+                        <div class="timeline-actor">${monitoringSafeText(item.actor)} <span class="role-badge">${monitoringSafeText(item.role)}</span></div>
+                        ${item.notes ? `<div class="timeline-notes">${monitoringSafeText(item.notes)}</div>` : ''}
+                        <div class="timeline-time">${monitoringSafeText(item.time)}</div>
+                    </div>
+                </div>
+            `).join('')
+            : '<div class="empty-state"><i class="fas fa-stream"></i><p>Belum ada log audit.</p></div>';
+
+        body.innerHTML = `
+            <div class="order-meta">
+                <div class="popup-title-group">
+                    <span class="popup-kicker">Audit Snapshot</span>
+                    <div class="order-num">${orderNumber}</div>
+                    <div class="text-muted">${masjidName}</div>
+                </div>
+                <div class="status-badge status-${monitoringSafeText(order.status)}">${statusLabel}</div>
+            </div>
+            <div class="popup-section-grid">
+                <div class="detail-definition">
+                    <span>Tanggal servis</span>
+                    <strong>${serviceDate}</strong>
+                </div>
+                <div class="detail-definition">
+                    <span>Kontak PIC</span>
+                    <strong>${phone}</strong>
+                </div>
+                <div class="detail-definition">
+                    <span>Status</span>
+                    <strong>${statusLabel}</strong>
+                </div>
+                <div class="detail-definition">
+                    <span>Dokumen</span>
+                    <div class="action-btns action-btns--dense">${spkAction} ${invoiceAction}</div>
+                </div>
+            </div>
+            <div class="detail-definition detail-definition--full">
+                <span>Detail unit</span>
+                <div class="detail-chip-stack">${detailsHtml}</div>
+            </div>
+            ${notes ? `<div class="popup-note-card"><strong>Instruksi Tambahan</strong><br>${notes}</div>` : ''}
+            <div class="section-title" style="margin-top:1rem">
+                <h2>Riwayat dan audit trail</h2>
+            </div>
+            <div class="timeline-container">${historyHtml}</div>
+        `;
+
+        openPopup('orderDetailPopup');
+    } catch (err) {
+        showToast(err.message || 'Gagal memuat detail', 'error');
+    }
+}

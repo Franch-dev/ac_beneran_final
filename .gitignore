@@ -12,6 +12,7 @@
 /.zed
 /.kiro
 .phpactor.json
+/.cursor
 
 # Testing
 .phpunit.result.cache
@@ -21,12 +22,11 @@
 
 # Node modules
 /node_modules
-/dist
-/build
+
 
 # Public assets
 /public/build
-/public/hot
+
 /public/storage
 
 # Laravel storage (logs, sessions, cache)
@@ -37,9 +37,7 @@ storage/sessions
 storage/framework/sessions
 storage/framework/views
 storage/framework/cache
-storage/pail
-storage/debugbar
-storage/views
+
 storage/cache
 /bootstrap/cache
 
@@ -49,7 +47,6 @@ storage/cache
 
 # Logs
 *.log
-logs/
 
 # OS files
 .DS_Store
@@ -64,20 +61,18 @@ ehthumbs.db
 *.sublime-project
 *.sublime-workspace
 
-# Vagrant/Homestead
-Homestead.json
-Homestead.yaml
+
 
 # Misc development files
 .editorconfig
 .gitattributes
-npm-debug.log
-yarn-error.log
-.cache
 .env.testing
 
 # Compiled/generated files
-/bootstrap/compiled.php
 
 # Folder for update web
 Website-Update
+Skills
+.omc
+.claude
+/Docs

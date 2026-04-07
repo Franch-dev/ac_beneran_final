@@ -3,8 +3,12 @@
 @section('title', 'Forkis Platform')
 
 @section('content')
-@php($catalogCountValue = $catalogCount ?? 0)
-@php($compactCatalogClass = in_array($catalogCountValue, [1, 2], true) ? 'catalog-grid--compact catalog-grid--compact-'.$catalogCountValue : '')
+@php
+    $catalogCountValue = $catalogCount ?? 0;
+    $compactCatalogClass = in_array($catalogCountValue, [1, 2], true)
+        ? 'catalog-grid--compact catalog-grid--compact-' . $catalogCountValue
+        : '';
+@endphp
 
 
     <section class="hero glass-hero" id="home" data-aos="fade-up">
