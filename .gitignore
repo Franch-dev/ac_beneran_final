@@ -4,6 +4,7 @@
 .env.production
 .env.*.local
 
+
 # IDE and Editor files
 /.idea
 /.vscode
@@ -70,9 +71,13 @@ ehthumbs.db
 
 # Compiled/generated files
 
-# Folder for update web
-Website-Update
-Skills
-.omc
-.claude
-/Docs
+# Temp/unused project files
+usaha_masjid
+Website-Update/
+skills/
+.omc/
+.claude/
+.kiro/
+.paul/
+.cursor/
+Docs/
