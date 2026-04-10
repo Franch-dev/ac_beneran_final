@@ -52,6 +52,12 @@
             <span class="sidebar-icon"><i class="fas fa-users-cog"></i></span>
             <span class="sidebar-label">Manajemen User</span>
         </a>
+        <a href="{{ route('admin.logs.index') }}"
+           class="sidebar-link {{ request()->routeIs('admin.logs.*') ? 'active' : '' }}"
+           role="menuitem" data-tooltip="Dashboard Log">
+            <span class="sidebar-icon"><i class="fas fa-clipboard-list"></i></span>
+            <span class="sidebar-label">Dashboard Log</span>
+        </a>
         @endif
 
         {{-- Manager + Admin --}}

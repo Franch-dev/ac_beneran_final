@@ -165,6 +165,11 @@ export function registerUiRuntime() {
         getOrderProgress,
     });
 
+    window.escapeHtml = window.escapeHtml || escapeHtml;
+    window.escapeAttribute = window.escapeAttribute || escapeAttribute;
+    window.formatDisplayDate = window.formatDisplayDate || formatDisplayDate;
+    window.getOrderProgress = window.getOrderProgress || getOrderProgress;
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initRevealMotion, { once: true });
         return;

@@ -4,7 +4,12 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Console\Events\CommandStarting;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Http\Request;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\RateLimiter;
 use PDO;
 
 class AppServiceProvider extends ServiceProvider
@@ -22,6 +27,32 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('login', function (Request $request) {
+            $email = (string) $request->input('email', '');
+            $throttleKey = strtolower($email).'|'.$request->ip();
+
+            return [
+                Limit::perMinute(5)->by($throttleKey),
+            ];
+        });
+
+        RateLimiter::for('writes', function (Request $request) {
+            $userKey = auth()->check() ? 'user:'.auth()->id() : 'ip:'.$request->ip();
+            $routeKey = (string) ($request->route()?->getName() ?? $request->path());
+
+            return [
+                Limit::perMinute(90)->by($userKey.'|'.$routeKey),
+            ];
+        });
+
+        DB::whenQueryingForLongerThan(250, function ($connection, QueryExecuted $event): void {
+            logger()->warning('slow_query_detected', [
+                'connection' => $connection->getName(),
+                'time_ms' => $event->time,
+                'sql' => $event->sql,
+            ]);
+        });
+
         // Session cookie must match the browser host and protocol or it will not be stored,
         // which yields a new session on POST → CSRF token mismatch (419 Page Expired).
         if (! $this->app->runningInConsole()) {
@@ -47,23 +78,39 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(CommandStarting::class, function (CommandStarting $event) {
             if (in_array($event->command, ['migrate', 'migrate:fresh', 'migrate:refresh', 'db:seed'])) {
                 try {
-                    $host = env('DB_HOST', '127.0.0.1');
-                    $port = env('DB_PORT', '3306');
-                    $username = env('DB_USERNAME', 'root');
-                    $password = env('DB_PASSWORD', '');
+                    $connectionNames = ['main', 'ac_service', 'inventory'];
+                    $created = [];
 
-                    $databases = array_filter([
-                        env('DB_DATABASE', 'main_platform'),
-                        env('MAIN_DB_DATABASE', 'main_platform'),
-                        env('AC_SERVICE_DB_DATABASE', 'ac_masjid_db'),
-                        env('INVENTORY_DB_DATABASE', 'inventory_db')
-                    ]);
+                    foreach ($connectionNames as $name) {
+                        $config = config("database.connections.{$name}");
+                        if (! is_array($config) || ($config['driver'] ?? null) !== 'mysql') {
+                            continue;
+                        }
 
-                    $pdo = new PDO("mysql:host=$host;port=$port", $username, $password);
-                    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                        $host = (string) ($config['host'] ?? '127.0.0.1');
+                        $port = (string) ($config['port'] ?? '3306');
+                        $database = (string) ($config['database'] ?? '');
+                        $username = (string) ($config['username'] ?? 'root');
+                        $password = (string) ($config['password'] ?? '');
 
-                    foreach (array_unique($databases) as $database) {
-                        $pdo->exec("CREATE DATABASE IF NOT EXISTS `$database` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
+                        if ($database === '') {
+                            continue;
+                        }
+
+                        $pdoKey = "{$host}:{$port}:{$username}";
+                        if (! isset($created[$pdoKey])) {
+                            $created[$pdoKey] = new PDO(
+                                "mysql:host={$host};port={$port}",
+                                $username,
+                                $password,
+                                [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+                            );
+                        }
+
+                        $quotedDb = str_replace('`', '``', $database);
+                        $created[$pdoKey]->exec(
+                            "CREATE DATABASE IF NOT EXISTS `{$quotedDb}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+                        );
                     }
                 } catch (\Exception $e) {
                     // Let Laravel handle normal errors if this fails

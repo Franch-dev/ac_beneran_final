@@ -53,6 +53,11 @@ class ServiceOrder extends Model
         return $this->hasMany(\App\Models\WorkflowStep::class)->orderBy('created_at');
     }
 
+    public function latestWorkflowStep()
+    {
+        return $this->hasOne(\App\Models\WorkflowStep::class)->latestOfMany('created_at');
+    }
+
     public function technicianAssignment()
     {
         return $this->hasOne(\App\Models\TechnicianAssignment::class);

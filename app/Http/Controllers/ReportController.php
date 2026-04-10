@@ -7,6 +7,7 @@ use App\Models\Masjid;
 use App\Models\ServiceOrder;
 use App\Models\ServiceDetail;
 use App\Models\AcUnit;
+use App\Support\SqlDateExpressions;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -26,10 +27,11 @@ class ReportController extends Controller
         $totalInvoices = $invoices->count();
 
         // Revenue by month (last 6 months)
-        $monthlyRevenue = Invoice::selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month, SUM(total_price) as total')
+        $monthExpression = SqlDateExpressions::monthBucket('created_at', 'ac_service');
+        $monthlyRevenue = Invoice::selectRaw("{$monthExpression} as month, SUM(total_price) as total")
             ->where('created_at', '>=', now()->subMonths(6))
-            ->groupBy('month')
-            ->orderBy('month')
+            ->groupByRaw($monthExpression)
+            ->orderByRaw($monthExpression)
             ->get();
 
         // Service orders summary

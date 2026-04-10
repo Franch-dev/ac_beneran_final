@@ -64,7 +64,7 @@ return [
         ],
 
         'main' => [
-            'driver' => 'mysql',
+            'driver' => env('MAIN_DB_CONNECTION', 'mysql'),
             'url' => env('MAIN_DB_URL', env('DB_URL')),
             'host' => env('MAIN_DB_HOST', env('DB_HOST', '127.0.0.1')),
             'port' => env('MAIN_DB_PORT', env('DB_PORT', '3306')),
@@ -76,6 +76,7 @@ return [
             'collation' => env('MAIN_DB_COLLATION', env('DB_COLLATION', 'utf8mb4_unicode_ci')),
             'prefix' => '',
             'prefix_indexes' => true,
+            'foreign_key_constraints' => env('MAIN_DB_FOREIGN_KEYS', env('DB_FOREIGN_KEYS', true)),
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
@@ -84,7 +85,7 @@ return [
         ],
 
         'ac_service' => [
-            'driver' => 'mysql',
+            'driver' => env('AC_SERVICE_DB_CONNECTION', 'mysql'),
             'url' => env('AC_SERVICE_DB_URL', env('DB_URL')),
             'host' => env('AC_SERVICE_DB_HOST', env('DB_HOST', '127.0.0.1')),
             'port' => env('AC_SERVICE_DB_PORT', env('DB_PORT', '3306')),
@@ -96,6 +97,7 @@ return [
             'collation' => env('AC_SERVICE_DB_COLLATION', env('DB_COLLATION', 'utf8mb4_unicode_ci')),
             'prefix' => '',
             'prefix_indexes' => true,
+            'foreign_key_constraints' => env('AC_SERVICE_DB_FOREIGN_KEYS', env('DB_FOREIGN_KEYS', true)),
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
@@ -104,7 +106,7 @@ return [
         ],
 
         'inventory' => [
-            'driver' => 'mysql',
+            'driver' => env('INVENTORY_DB_CONNECTION', 'mysql'),
             'url' => env('INVENTORY_DB_URL', env('DB_URL')),
             'host' => env('INVENTORY_DB_HOST', env('DB_HOST', '127.0.0.1')),
             'port' => env('INVENTORY_DB_PORT', env('DB_PORT', '3306')),
@@ -116,6 +118,7 @@ return [
             'collation' => env('INVENTORY_DB_COLLATION', env('DB_COLLATION', 'utf8mb4_unicode_ci')),
             'prefix' => '',
             'prefix_indexes' => true,
+            'foreign_key_constraints' => env('INVENTORY_DB_FOREIGN_KEYS', env('DB_FOREIGN_KEYS', true)),
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([

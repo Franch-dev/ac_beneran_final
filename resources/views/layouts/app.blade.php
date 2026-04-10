@@ -9,7 +9,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="theme-color" content="#1a73e8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com https://cdnjs.cloudflare.com https://unpkg.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: https:; frame-ancestors 'none';">
+    <meta name="theme-color" content="#2F5D50">
     <meta name="description" content="Sistem Manajemen Servis AC untuk Masjid dan Musholla">
     <title>@yield('title', 'AC Servis Masjid')</title>
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
@@ -17,10 +18,14 @@
     <link rel="stylesheet" href="{{ asset('css/visual-enhancements.css') }}">
     <link rel="stylesheet" href="{{ asset('css/operations-ui-overhaul.css') }}">
     <link rel="stylesheet" href="{{ asset('css/ui-overhaul.css') }}">
+    <!-- Liquid Glass Design System 2026 -->
+    <link rel="stylesheet" href="{{ asset('css/liquid-glass.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/liquid-glass-components.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/liquid-glass-integration.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&display=swap">
     @stack('styles')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css">
@@ -108,8 +113,9 @@
         </div>
     </div>
 
-    {{-- Smooth scroll, AOS, and counters live in @vite resources/js/app.js (single Lenis rAF). Legacy public/*.js modules removed here to avoid duplicate engines and scroll jank. --}}
+    {{-- Vite boots the shared UI runtime; legacy public/js modules still provide page-specific globals. --}}
     <script src="{{ asset('js/app.js') }}"></script>
+    <script src="{{ asset('js/liquid-glass.js') }}" defer></script>
     @stack('scripts')
 </body>
 </html>

@@ -59,8 +59,8 @@ class DatabaseSeeder extends Seeder
     private function truncateAcServiceTables(): void
     {
         $connection = DB::connection('ac_service');
-
-        $connection->statement('SET FOREIGN_KEY_CHECKS=0');
+        $schema = $connection->getSchemaBuilder();
+        $schema->disableForeignKeyConstraints();
 
         foreach ([
             'workflow_steps',
@@ -71,9 +71,11 @@ class DatabaseSeeder extends Seeder
             'ac_units',
             'masjids',
         ] as $table) {
-            $connection->table($table)->truncate();
+            if ($schema->hasTable($table)) {
+                $connection->table($table)->truncate();
+            }
         }
 
-        $connection->statement('SET FOREIGN_KEY_CHECKS=1');
+        $schema->enableForeignKeyConstraints();
     }
 }

@@ -91,19 +91,19 @@ html {
 
 /* === GRADIENT BACKGROUNDS === */
 .gradient-primary {
-    background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
+    background: linear-gradient(135deg, #2F5D50 0%, #4C7A6B 100%);
 }
 
 .gradient-success {
-    background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+    background: linear-gradient(135deg, #4C7A6B 0%, #6E9F90 100%);
 }
 
 .gradient-danger {
-    background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+    background: linear-gradient(135deg, #B85C4A 0%, #C2A38D 100%);
 }
 
 .gradient-info {
-    background: linear-gradient(135deg, var(--info) 0%, #0891b2 100%);
+    background: linear-gradient(135deg, #6E9F90 0%, #A9BFC8 100%);
 }
 
 /* === IMPROVED BADGES === */

@@ -57,6 +57,27 @@ const SERVICE_ORDER_STATUS_COLORS = {
 // Simpan payload terakhir untuk dipakai saat user konfirmasi replace
 let _lastPayload = null;
 const monitoringSafeText = window.escapeHtml || ((value) => String(value ?? ''));
+const safeCssColor = function (value) {
+    const color = String(value ?? '').trim();
+    return /^#[0-9a-fA-F]{3,8}$/.test(color) || /^rgba?\([^)]+\)$/.test(color) ? color : '#5f6368';
+};
+
+async function refreshMonitoringSurface() {
+    if (typeof window.refreshCurrentPageSnapshot === 'function') {
+        try {
+            await window.refreshCurrentPageSnapshot();
+            return;
+        } catch (_error) {
+            // Fall back only when snapshot refresh fails.
+        }
+    }
+
+    window.location.reload();
+}
+
+async function manualRefreshMonitoring() {
+    await refreshMonitoringSurface();
+}
 
 // Ambil harga berdasarkan tipe lokasi & PK
 function getPriceByPK(pk) {
@@ -332,8 +353,7 @@ async function submitServiceOrder() {
     try {
         var res = await apiFetch(ROUTES_MON.soStore, 'POST', payload);
         closePopup('serviceOrderPopup');
-        showToast('Service Order berhasil dibuat!');
-        setTimeout(function() { location.reload(); }, 1500);
+        showToast('Service Order berhasil dibuat! Tekan tombol Refresh untuk memuat data terbaru.');
     } catch (err) {
         // Cek apakah ada order aktif (dari err.data atau err.responseData)
         var errData = err.data || err.responseData || null;
@@ -376,8 +396,7 @@ async function confirmReplaceOrder() {
     try {
         await apiFetch(ROUTES_MON.soStore, 'POST', _lastPayload);
         closePopup('serviceOrderPopup');
-        showToast('Order lama diganti, Service Order baru berhasil dibuat!');
-        setTimeout(function() { location.reload(); }, 1500);
+        showToast('Order lama diganti, Service Order baru berhasil dibuat! Tekan tombol Refresh untuk memuat data terbaru.');
     } catch (err) {
         showToast(err.message || 'Terjadi kesalahan', 'error');
     }
@@ -395,8 +414,7 @@ async function approveOrder(id) {
     // Original implementation - confirmation modal handles the prompt
     try {
         await apiFetch(ROUTES_MON.soApprove(id), 'POST');
-        showToast('Order berhasil diapprove!');
-        setTimeout(function() { location.reload(); }, 1500);
+        showToast('Order berhasil diapprove! Tekan tombol Refresh untuk memuat data terbaru.');
     } catch (err) {
         showToast(err.message, 'error');
     }
@@ -408,8 +426,7 @@ async function cancelApprove(id) {
     // Original implementation - confirmation modal handles the prompt
     try {
         await apiFetch(ROUTES_MON.soCancel(id), 'POST');
-        showToast('Approve dibatalkan, status kembali ke Pending');
-        setTimeout(function() { location.reload(); }, 1500);
+        showToast('Approve dibatalkan, status kembali ke Pending. Tekan tombol Refresh untuk memuat data terbaru.');
     } catch (err) {
         showToast(err.message, 'error');
     }
@@ -421,8 +438,7 @@ async function deleteOrder(id) {
     // Original implementation - confirmation modal handles the prompt
     try {
         await apiFetch(ROUTES_MON.soDeleteMgr(id), 'DELETE');
-        showToast('Service order dihapus');
-        setTimeout(function() { location.reload(); }, 1500);
+        showToast('Service order dihapus. Tekan tombol Refresh untuk memuat data terbaru.');
     } catch (err) {
         showToast(err.message, 'error');
     }
@@ -591,8 +607,8 @@ approveOrder = function(id) {
         cancelText: 'Batal',
         orderData: {
             orderNumber: getText(cells[0], '.order-num'),
-            masjidName: getText(cells[1], '.table-entity-title'),
-            serviceDate: cells[2] ? (cells[2].querySelector('div') ? cells[2].querySelector('div').textContent : '-') : '-'
+            masjidName: getText(cells[1], '.location-name'),
+            serviceDate: getText(cells[2], 'strong')
         },
         onConfirm: function() {
             // Execute original approve logic
@@ -606,8 +622,7 @@ approveOrder = function(id) {
 async function _executeApprove(id) {
     try {
         await apiFetch(ROUTES_MON.soApprove(id), 'POST');
-        showToast('Order berhasil diapprove!');
-        setTimeout(function() { location.reload(); }, 1500);
+        showToast('Order berhasil diapprove! Tekan tombol Refresh untuk memuat data terbaru.');
     } catch (err) {
         showToast(err.message, 'error');
     }
@@ -636,8 +651,8 @@ cancelApprove = function(id) {
         cancelText: 'Tidak',
         orderData: {
             orderNumber: getText(cells[0], '.order-num'),
-            masjidName: getText(cells[1], '.table-entity-title'),
-            serviceDate: cells[2] ? (cells[2].querySelector('div') ? cells[2].querySelector('div').textContent : '-') : '-'
+            masjidName: getText(cells[1], '.location-name'),
+            serviceDate: getText(cells[2], 'strong')
         },
         onConfirm: function() {
             // Execute original cancel logic
@@ -651,8 +666,7 @@ cancelApprove = function(id) {
 async function _executeCancelApprove(id) {
     try {
         await apiFetch(ROUTES_MON.soCancel(id), 'POST');
-        showToast('Approve dibatalkan, status kembali ke Pending');
-        setTimeout(function() { location.reload(); }, 1500);
+        showToast('Approve dibatalkan, status kembali ke Pending. Tekan tombol Refresh untuk memuat data terbaru.');
     } catch (err) {
         showToast(err.message, 'error');
     }
@@ -681,8 +695,8 @@ deleteOrder = function(id) {
         cancelText: 'Batal',
         orderData: {
             orderNumber: getText(cells[0], '.order-num'),
-            masjidName: getText(cells[1], '.table-entity-title'),
-            serviceDate: cells[2] ? (cells[2].querySelector('div') ? cells[2].querySelector('div').textContent : '-') : '-'
+            masjidName: getText(cells[1], '.location-name'),
+            serviceDate: getText(cells[2], 'strong')
         },
         onConfirm: function() {
             // Execute original delete logic
@@ -696,8 +710,7 @@ deleteOrder = function(id) {
 async function _executeDelete(id) {
     try {
         await apiFetch(ROUTES_MON.soDeleteMgr(id), 'DELETE');
-        showToast('Service order dihapus');
-        setTimeout(function() { location.reload(); }, 1500);
+        showToast('Service order dihapus. Tekan tombol Refresh untuk memuat data terbaru.');
     } catch (err) {
         showToast(err.message, 'error');
     }
@@ -717,8 +730,7 @@ document.addEventListener('keydown', function(e) {
 async function markTaskDone(orderId) {
     try {
         await apiFetch(`/workflow/${orderId}/progress`, 'POST', { status: 'done' });
-        showToast('Tugas ditandai selesai');
-        setTimeout(() => location.reload(), 1200);
+        showToast('Tugas ditandai selesai. Tekan tombol Refresh untuk memuat data terbaru.');
     } catch (err) {
         showToast(err.message || 'Gagal menandai selesai', 'error');
     }
@@ -727,8 +739,7 @@ async function markTaskDone(orderId) {
 async function generateInvoice(orderId) {
     try {
         await apiFetch(`/service-order/${orderId}/invoice`, 'POST');
-        showToast('Invoice berhasil dibuat');
-        setTimeout(() => location.reload(), 1200);
+        showToast('Invoice berhasil dibuat. Tekan tombol Refresh untuk memuat data terbaru.');
     } catch (err) {
         showToast(err.message || 'Gagal membuat invoice', 'error');
     }
@@ -737,8 +748,7 @@ async function generateInvoice(orderId) {
 async function approveInvoice(orderId) {
     try {
         await apiFetch(`/service-order/${orderId}/approve-invoice`, 'POST');
-        showToast('Invoice disetujui');
-        setTimeout(() => location.reload(), 1200);
+        showToast('Invoice disetujui. Tekan tombol Refresh untuk memuat data terbaru.');
     } catch (err) {
         showToast(err.message || 'Gagal menyetujui invoice', 'error');
     }
@@ -795,6 +805,13 @@ async function legacyShowOrderDetail(orderId) {
     }
 }
 
+// Session expiry warning removed - manual refresh encouraged via UI button only
+// if (document.querySelector('#monitoringSyncRoot')) {
+//     setTimeout(() => {
+//         showToast('Untuk performa terbaik, refresh halaman setiap 30 menit atau gunakan tombol Refresh.', 'info');
+//     }, 25 * 60 * 1000);  // 25min warning
+// }
+
 // Override legacy detail rendering with escaped, production-safe markup.
 async function showOrderDetail(orderId) {
     try {
@@ -812,7 +829,7 @@ async function showOrderDetail(orderId) {
 
         const detailsHtml = (order.service_details || []).length
             ? order.service_details.map((detail) => `
-                <span class="detail-chip">${monitoringSafeText(detail.pk_type)} ${monitoringSafeText(detail.brand)} x ${detail.quantity}</span>
+                <span class="detail-chip">${monitoringSafeText(detail.pk_type)} ${monitoringSafeText(detail.brand)} x ${monitoringSafeText(detail.quantity)}</span>
             `).join('')
             : '<span class="text-muted">Belum ada detail unit.</span>';
 
@@ -824,7 +841,7 @@ async function showOrderDetail(orderId) {
         const historyHtml = history.length
             ? history.map((item) => `
                 <div class="timeline-item">
-                    <div class="timeline-icon" style="background:${item.color}">
+                    <div class="timeline-icon" style="background:${safeCssColor(item.color)}">
                         <i class="${item.icon}"></i>
                     </div>
                     <div class="timeline-content">
@@ -880,3 +897,7 @@ async function showOrderDetail(orderId) {
         showToast(err.message || 'Gagal memuat detail', 'error');
     }
 }
+
+window.showOrderDetail = showOrderDetail;
+window.ShowOrderDetail = showOrderDetail;
+

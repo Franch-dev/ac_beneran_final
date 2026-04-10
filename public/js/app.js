@@ -354,39 +354,76 @@ document.addEventListener('DOMContentLoaded', () => {
     syncDarkModeUI(localStorage.getItem('theme') || 'light');
     initStaggerReveal();
 
+    // === STATUS BADGE REFRESH (MANUAL TRIGGER ONLY) ===
+    // Auto-polling removed. Call refreshStatusBadges() only on explicit user action.
     if (document.querySelector('[data-status-badge]')) {
+        // Initial load only - no polling
         refreshStatusBadges();
-        window.setInterval(refreshStatusBadges, 20000);
     }
+
+    PageSyncManager.init();
+    NavigationPrefetchManager.init();
 });
 
 // === FETCH HELPER ===
+const pendingWriteRequests = new Map();
+
 async function apiFetch(url, method = 'GET', data = null) {
+    const normalizedMethod = String(method || 'GET').toUpperCase();
+    const requestKey = normalizedMethod === 'GET' ? null : `${normalizedMethod}:${url}`;
+
+    if (requestKey && pendingWriteRequests.has(requestKey)) {
+        return pendingWriteRequests.get(requestKey);
+    }
+
     const options = {
-        method,
+        method: normalizedMethod,
         credentials: 'same-origin',
         headers: {
             'Content-Type':  'application/json',
             'X-CSRF-TOKEN':  csrfToken,
             'Accept':        'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
         }
     };
     if (data) options.body = JSON.stringify(data);
 
-    const res = await fetch(url, options);
-    const contentType = res.headers.get('content-type') || '';
-    const json = contentType.includes('application/json')
-        ? await res.json()
-        : { message: 'Respons server tidak valid.' };
+    const request = (async () => {
+        const res = await fetch(url, options);
+        const contentType = res.headers.get('content-type') || '';
+        const json = contentType.includes('application/json')
+            ? await res.json().catch(() => ({ message: 'Respons server tidak valid.' }))
+            : { message: 'Respons server tidak valid.' };
 
-    if (!res.ok) {
-        const err = new Error(json.message || 'Terjadi kesalahan.');
-        err.status = res.status;
-        err.data = json;
-        throw err;
+        if (!res.ok) {
+            if (res.status === 401) {
+                showToast('Sesi kadaluarsa. Memuat ulang halaman...', 'warning');
+                // Refresh CSRF token
+                await fetch('/sanctum/csrf-cookie', { credentials: 'same-origin' });
+                setTimeout(() => location.reload(), 1500);
+                throw new Error('Session expired');
+            }
+            const err = new Error(json.message || `Error ${res.status}`);
+            err.status = res.status;
+            err.data = json;
+            throw err;
+        }
+
+        return json;
+    })().catch((error) => {
+        if (error.status !== 401) throw error;  // Re-throw non-401
+        return null;  // Silently handled
+    }).finally(() => {
+        if (requestKey) {
+            pendingWriteRequests.delete(requestKey);
+        }
+    });
+
+    if (requestKey) {
+        pendingWriteRequests.set(requestKey, request);
     }
 
-    return json;
+    return request;
 }
 
 /**
@@ -416,6 +453,93 @@ async function refreshStatusBadges() {
         // Ignore polling failures to avoid noisy UX on non-monitoring flows.
     }
 }
+
+// === PAGE SYNC MANAGER (MANUAL TRIGGER ONLY) ===
+// Real-time sync via Server-Sent Events has been removed.
+// Data synchronization now occurs only via explicit user actions.
+// Manual refresh: call window.refreshCurrentPageSnapshot() from UI buttons.
+const PageSyncManager = {
+    // Kept as stub for backward compatibility - no auto-connect
+    init() {
+        // Disabled: automatic SSE connection removed
+        // Manual sync: bind to explicit user refresh buttons only
+    },
+    // Manual snapshot refresh (call from Refresh button)
+    async refreshCurrentPageSnapshot(force = false) {
+        const config = window.PAGE_SYNC_CONFIG;
+        if (!config?.snapshotRoute) {
+            return false;
+        }
+
+        const currentRoot = document.querySelector(config.rootSelector);
+        if (!currentRoot) {
+            return false;
+        }
+
+        try {
+            const snapshotUrl = new URL(config.snapshotRoute, window.location.origin);
+            const params = new URLSearchParams(window.location.search);
+            params.forEach((value, key) => snapshotUrl.searchParams.set(key, value));
+
+            const payload = await apiFetch(snapshotUrl.toString());
+            const parser = new DOMParser();
+            const nextDocument = parser.parseFromString(payload.html || '', 'text/html');
+            const nextRoot = nextDocument.querySelector(config.rootSelector);
+
+            if (!nextRoot) {
+                return false;
+            }
+
+            currentRoot.innerHTML = nextRoot.innerHTML;
+
+            if (Array.isArray(config.persistentSelectors)) {
+                config.persistentSelectors.forEach((selector) => {
+                    const currentNode = document.querySelector(selector);
+                    const nextNode = nextDocument.querySelector(selector);
+
+                    if (!currentNode || !nextNode || currentNode.classList.contains('active')) {
+                        return;
+                    }
+
+                    currentNode.innerHTML = nextNode.innerHTML;
+                });
+            }
+
+            initStaggerReveal();
+            refreshStatusBadges();
+
+            if (typeof window[config.afterRender] === 'function') {
+                window[config.afterRender]();
+            }
+
+            document.dispatchEvent(new CustomEvent('ac-sync:rendered'));
+
+            return true;
+        } catch (error) {
+            if (force) {
+                throw error;
+            }
+
+            return false;
+        }
+    },
+};
+
+window.refreshCurrentPageSnapshot = function () {
+    return PageSyncManager.refreshCurrentPageSnapshot(true);
+};
+
+window.scheduleCurrentPageSnapshot = function () {
+    // No-op: automatic scheduling removed
+};
+
+// === NAVIGATION PREFETCH MANAGER (DISABLED) ===
+// Proactive link prefetching removed. Navigation occurs on explicit user clicks only.
+const NavigationPrefetchManager = {
+    init() {
+        // Disabled: automatic prefetching removed
+    },
+};
 
 /**
  * Animate dashboard and monitoring surfaces with a cheap IntersectionObserver
@@ -457,35 +581,6 @@ function initStaggerReveal() {
 }
 
 // === TOAST NOTIFICATION ===
-function legacyShowToast(message, type = 'success') {
-    const existing = document.querySelector('.toast-notification');
-    if (existing) existing.remove();
-
-    const toast = document.createElement('div');
-    toast.className = 'toast-notification toast-' + type;
-
-    const bg = type === 'success' ? '#16a34a'
-             : type === 'error'   ? '#dc2626'
-             : type === 'info'    ? '#2563eb'
-             : '#374151';
-
-    toast.style.cssText =
-        'position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;' +
-        'background:' + bg + ';color:#fff;padding:0.75rem 1.25rem;border-radius:8px;' +
-        'box-shadow:0 4px 12px rgba(0,0,0,0.2);font-size:0.875rem;' +
-        'display:flex;align-items:center;gap:0.5rem;' +
-        'animation:slideIn 0.3s ease;max-width:360px;line-height:1.4;';
-
-    const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
-    toast.innerHTML = icon + ' ' + message;
-    document.body.appendChild(toast);
-
-    setTimeout(function() {
-        toast.style.animation = 'slideOut 0.3s ease forwards';
-        setTimeout(function() { toast.remove(); }, 300);
-    }, 4000);
-}
-
 // Animasi toast
 const _toastStyle = document.createElement('style');
 _toastStyle.textContent =
@@ -541,7 +636,11 @@ function legacyShowToast(message, type = 'success') {
     }, 4000);
 }
 
+const showToast = legacyShowToast;
+window.showToast = legacyShowToast;
+
 // === ESCAPE KEY ===
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeAllPopups();
 });
+

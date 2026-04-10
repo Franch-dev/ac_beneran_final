@@ -1,0 +1,1066 @@
+/* =====================================================================
+   LIQUID GLASS COMPONENT LIBRARY 2026
+   Reusable, modular UI components with liquid glass aesthetics.
+   Each component is self-contained + customizable via CSS variables.
+   ===================================================================== */
+
+/* ─────────────────────────────────────────────────────────────────────
+   1. LG BUTTON
+   Usage: <button class="lg-btn [lg-btn--primary|secondary|ghost|danger]">
+   ───────────────────────────────────────────────────────────────────── */
+.lg-btn {
+  --_btn-bg: var(--lg-surface-interactive);
+  --_btn-border: var(--lg-border-outer);
+  --_btn-color: var(--text, #0E0E0E);
+  --_btn-radius: 50px;
+  --_btn-px: 1.4rem;
+  --_btn-py: 0.75rem;
+  --_btn-shadow: var(--lg-shadow-surface);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: var(--_btn-py) var(--_btn-px);
+  background: var(--_btn-bg);
+  color: var(--_btn-color);
+  border: 1px solid var(--_btn-border);
+  border-radius: var(--_btn-radius);
+  backdrop-filter: saturate(160%) blur(14px);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+  box-shadow: var(--_btn-shadow), var(--lg-shadow-inset);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  transition:
+    transform var(--lg-duration-base) var(--lg-ease-liquid),
+    box-shadow var(--lg-duration-base) var(--lg-ease-liquid),
+    background var(--lg-duration-base) ease,
+    border-color var(--lg-duration-base) ease;
+  text-decoration: none;
+  letter-spacing: 0.01em;
+}
+
+/* Iridescent shimmer on buttons */
+.lg-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.18) 45%,
+    rgba(255, 255, 255, 0.05) 55%,
+    transparent 60%
+  );
+  background-size: 200% 100%;
+  opacity: 0;
+  transition: opacity var(--lg-duration-base) ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.lg-btn > * { position: relative; z-index: 1; }
+
+.lg-btn:hover {
+  transform: scale(1.03);
+  box-shadow: var(--lg-shadow-elevated), var(--lg-shadow-inset);
+  border-color: var(--lg-border-interactive);
+}
+
+.lg-btn:hover::before {
+  opacity: 1;
+  animation: lg-shimmer 1.8s ease-in-out infinite;
+}
+
+.lg-btn:active {
+  transform: scale(0.97);
+  transition-duration: var(--lg-duration-fast);
+}
+
+.lg-btn:focus-visible {
+  outline: 3px solid var(--primary, #2F5D50);
+  outline-offset: 3px;
+}
+
+.lg-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Primary variant */
+.lg-btn--primary {
+  --_btn-bg: linear-gradient(135deg, #2F5D50, #6E9F90);
+  --_btn-color: #FAF7F2;
+  --_btn-border: transparent;
+  background: var(--_btn-bg);
+}
+
+.lg-btn--primary:hover {
+  filter: brightness(1.08);
+  box-shadow: var(--lg-shadow-elevated), 0 8px 24px rgba(47, 93, 80, 0.25);
+}
+
+/* Secondary variant */
+.lg-btn--secondary {
+  --_btn-bg: var(--lg-surface-primary);
+  --_btn-border: var(--lg-border-outer);
+}
+
+/* Ghost variant */
+.lg-btn--ghost {
+  --_btn-bg: transparent;
+  --_btn-border: transparent;
+  --_btn-shadow: none;
+  --_btn-color: var(--text-muted, #7E8F6A);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.lg-btn--ghost:hover {
+  --_btn-bg: var(--lg-surface-interactive);
+  --_btn-color: var(--text, #0E0E0E);
+}
+
+/* Danger variant */
+.lg-btn--danger {
+  --_btn-bg: linear-gradient(135deg, #B85C4A, #C2A38D);
+  --_btn-color: #fff;
+  --_btn-border: transparent;
+  background: var(--_btn-bg);
+}
+
+.lg-btn--danger:hover {
+  filter: brightness(1.08);
+  box-shadow: var(--lg-shadow-elevated), 0 8px 24px rgba(184, 92, 74, 0.25);
+}
+
+/* Size modifiers */
+.lg-btn--sm { --_btn-px: 1rem; --_btn-py: 0.5rem; font-size: 0.8125rem; }
+.lg-btn--lg { --_btn-px: 1.8rem; --_btn-py: 0.9rem; font-size: 0.9375rem; }
+.lg-btn--xl { --_btn-px: 2.2rem; --_btn-py: 1.1rem; font-size: 1rem; font-weight: 700; }
+.lg-btn--block { width: 100%; }
+
+
+/* ─────────────────────────────────────────────────────────────────────
+   2. LG CARD
+   Usage: <div class="lg-card [lg-card--hoverable|lg-card--featured]">
+   ───────────────────────────────────────────────────────────────────── */
+.lg-card {
+  --_card-bg: var(--lg-surface-primary);
+  --_card-radius: 24px;
+  --_card-padding: 1.5rem;
+
+  position: relative;
+  background: var(--_card-bg);
+  backdrop-filter: var(--lg-blur-base);
+  -webkit-backdrop-filter: var(--lg-blur-base);
+  border: 1px solid var(--lg-border-outer);
+  border-radius: var(--_card-radius);
+  padding: var(--_card-padding);
+  box-shadow: var(--lg-shadow-surface), var(--lg-shadow-inset), var(--lg-border-glow);
+  overflow: hidden;
+}
+
+/* Iridescent layer */
+.lg-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--lg-refraction-gradient);
+  background-size: 200% 200%;
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity var(--lg-duration-smooth) var(--lg-ease-liquid);
+}
+
+.lg-card > * { position: relative; z-index: 1; }
+
+/* Hoverable variant */
+.lg-card--hoverable {
+  transition:
+    transform var(--lg-duration-smooth) var(--lg-ease-liquid),
+    box-shadow var(--lg-duration-smooth) var(--lg-ease-liquid),
+    border-color var(--lg-duration-base) ease;
+  cursor: pointer;
+}
+
+.lg-card--hoverable:hover {
+  transform: translateY(-6px);
+  box-shadow:
+    var(--lg-shadow-elevated),
+    var(--lg-shadow-inset),
+    0 0 0 1px var(--lg-border-interactive);
+  border-color: var(--lg-border-interactive);
+}
+
+.lg-card--hoverable:hover::before {
+  opacity: 1;
+  animation: lg-surface-breathe 5s ease infinite;
+}
+
+.lg-card--hoverable:active {
+  transform: translateY(-2px) scale(0.98);
+  transition-duration: var(--lg-duration-fast);
+}
+
+/* Featured variant (higher elevation) */
+.lg-card--featured {
+  --_card-bg: var(--lg-surface-elevated);
+  border: 2px solid var(--lg-border-interactive);
+  box-shadow: var(--lg-shadow-elevated), var(--lg-shadow-inset);
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────
+   3. LG NAVBAR
+   Usage: <nav class="lg-navbar">
+   ───────────────────────────────────────────────────────────────────── */
+.lg-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 1.5rem;
+  height: 56px;
+  background: var(--lg-surface-overlay);
+  backdrop-filter: var(--lg-blur-nav);
+  -webkit-backdrop-filter: var(--lg-blur-nav);
+  border-bottom: 1px solid var(--lg-border-outer);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.02),
+    0 4px 12px rgba(0, 0, 0, 0.03),
+    var(--lg-shadow-inset);
+  transition: background var(--lg-duration-smooth) ease, box-shadow var(--lg-duration-smooth) ease;
+}
+
+/* Scrolled state (apply via JS) */
+.lg-navbar--scrolled {
+  background: var(--lg-surface-elevated);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.04),
+    0 8px 24px rgba(0, 0, 0, 0.06),
+    var(--lg-shadow-inset);
+}
+
+.lg-navbar__link {
+  position: relative;
+  padding: 0.4rem 0.9rem;
+  border-radius: 50px;
+  color: var(--text-muted, #7E8F6A);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    color var(--lg-duration-base) ease,
+    background var(--lg-duration-base) ease;
+}
+
+.lg-navbar__link:hover {
+  color: var(--primary, #2F5D50);
+  background: rgba(47, 93, 80, 0.08);
+}
+
+.lg-navbar__link--active {
+  color: var(--primary, #2F5D50);
+  font-weight: 600;
+  background: rgba(47, 93, 80, 0.1);
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────
+   4. LG INPUT
+   Usage: <input class="lg-input" /> | <textarea class="lg-textarea">
+          <select class="lg-select">
+   ───────────────────────────────────────────────────────────────────── */
+.lg-input,
+.lg-textarea,
+.lg-select {
+  --_input-bg: var(--lg-surface-interactive);
+  --_input-border: var(--lg-border-outer);
+  --_input-radius: 16px;
+
+  width: 100%;
+  padding: 0.7rem 1rem;
+  background: var(--_input-bg);
+  border: 1.5px solid var(--_input-border);
+  border-radius: var(--_input-radius);
+  backdrop-filter: saturate(150%) blur(10px);
+  -webkit-backdrop-filter: saturate(150%) blur(10px);
+  color: var(--text, #0E0E0E);
+  font-family: inherit;
+  font-size: 0.875rem;
+  appearance: none;
+  -webkit-appearance: none;
+  transition:
+    border-color var(--lg-duration-base) ease,
+    box-shadow var(--lg-duration-base) ease,
+    background var(--lg-duration-base) ease;
+}
+
+.lg-input:focus,
+.lg-textarea:focus,
+.lg-select:focus {
+  outline: none;
+  border-color: var(--primary-mid, #BECCA3);
+  box-shadow: 0 0 0 3px rgba(47, 93, 80, 0.12), var(--lg-shadow-inset);
+  background: var(--lg-surface-primary);
+}
+
+.lg-input::placeholder {
+  color: var(--gray-400, #9A9689);
+}
+
+.lg-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Input with floating label */
+.lg-input-group {
+  position: relative;
+}
+
+.lg-input-group .lg-input {
+  padding-top: 1.4rem;
+  padding-bottom: 0.4rem;
+}
+
+.lg-input-group .lg-label {
+  position: absolute;
+  top: 50%;
+  left: 1rem;
+  transform: translateY(-50%);
+  font-size: 0.875rem;
+  color: var(--gray-400, #9A9689);
+  pointer-events: none;
+  transition:
+    top var(--lg-duration-base) var(--lg-ease-liquid),
+    font-size var(--lg-duration-base) var(--lg-ease-liquid),
+    color var(--lg-duration-base) ease;
+}
+
+.lg-input-group .lg-input:focus + .lg-label,
+.lg-input-group .lg-input:not(:placeholder-shown) + .lg-label {
+  top: 0.55rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--primary, #2F5D50);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────
+   5. LG TABS
+   Usage: <div class="lg-tabs"><button class="lg-tab [active]">Tab</button></div>
+   ───────────────────────────────────────────────────────────────────── */
+.lg-tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--lg-surface-sunken);
+  border-radius: 50px;
+  border: 1px solid var(--lg-border-inner);
+}
+
+.lg-tab {
+  flex: 1;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 50px;
+  background: transparent;
+  color: var(--text-muted, #7E8F6A);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--lg-duration-base) var(--lg-ease-liquid),
+    color var(--lg-duration-base) ease,
+    box-shadow var(--lg-duration-base) var(--lg-ease-liquid);
+}
+
+.lg-tab:hover {
+  color: var(--text, #0E0E0E);
+}
+
+.lg-tab.active {
+  background: var(--lg-surface-elevated);
+  color: var(--primary, #2F5D50);
+  box-shadow: var(--lg-shadow-surface), var(--lg-shadow-inset);
+  backdrop-filter: var(--lg-blur-base);
+  -webkit-backdrop-filter: var(--lg-blur-base);
+}
+
+.lg-tab:focus-visible {
+  outline: 2px solid var(--primary, #2F5D50);
+  outline-offset: 2px;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────
+   6. LG MODAL
+   Usage: <div class="lg-modal-backdrop"><div class="lg-modal">...</div></div>
+   ───────────────────────────────────────────────────────────────────── */
+.lg-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(14, 14, 14, 0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: lg-backdrop-in var(--lg-duration-smooth) ease;
+}
+
+@keyframes lg-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.lg-modal {
+  position: relative;
+  width: 90%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--lg-surface-overlay);
+  backdrop-filter: var(--lg-blur-overlay);
+  -webkit-backdrop-filter: var(--lg-blur-overlay);
+  border: 1px solid var(--lg-border-outer);
+  border-radius: 28px;
+  box-shadow: var(--lg-shadow-floating), var(--lg-shadow-inset);
+  animation: lg-float-up var(--lg-duration-smooth) var(--lg-ease-liquid);
+}
+
+/* Iridescent layer on modal */
+.lg-modal::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(ellipse at 30% 20%, var(--lg-iridescent-start), transparent 50%),
+    radial-gradient(ellipse at 70% 80%, var(--lg-iridescent-end), transparent 50%);
+  opacity: 0.7;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.lg-modal > * { position: relative; z-index: 1; }
+
+.lg-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 1.4rem;
+  border-bottom: 1px solid var(--lg-border-outer);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="dark"] .lg-modal__header {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.lg-modal__title {
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lg-modal__close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: var(--lg-surface-interactive);
+  color: var(--text-muted, #7E8F6A);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--lg-duration-base) ease;
+}
+
+.lg-modal__close:hover {
+  background: rgba(184, 92, 74, 0.12);
+  color: var(--danger, #B85C4A);
+}
+
+.lg-modal__body { padding: 1.4rem; }
+.lg-modal__footer {
+  padding: 1rem 1.4rem;
+  border-top: 1px solid var(--lg-border-outer);
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────
+   7. LG TOOLTIP
+   Usage: <span class="lg-tooltip" data-tip="Tooltip text">Hover me</span>
+   ───────────────────────────────────────────────────────────────────── */
+.lg-tooltip {
+  position: relative;
+  cursor: help;
+}
+
+.lg-tooltip::before {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px) scale(0.96);
+  padding: 0.5rem 0.85rem;
+  background: var(--lg-surface-overlay);
+  backdrop-filter: var(--lg-blur-base);
+  -webkit-backdrop-filter: var(--lg-blur-base);
+  border: 1px solid var(--lg-border-outer);
+  border-radius: 12px;
+  box-shadow: var(--lg-shadow-elevated);
+  color: var(--text, #0E0E0E);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1000;
+  transition:
+    opacity var(--lg-duration-base) var(--lg-ease-liquid),
+    transform var(--lg-duration-base) var(--lg-ease-liquid);
+}
+
+.lg-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--lg-surface-overlay);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--lg-duration-base) var(--lg-ease-liquid);
+}
+
+.lg-tooltip:hover::before {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+
+.lg-tooltip:hover::after {
+  opacity: 1;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────
+   8. LG SLIDER / RANGE
+   Usage: <input type="range" class="lg-slider" />
+   ───────────────────────────────────────────────────────────────────── */
+.lg-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--lg-surface-sunken);
+  border: 1px solid var(--lg-border-inner);
+  border-radius: 50px;
+  outline: none;
+  cursor: pointer;
+}
+
+.lg-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2F5D50, #6E9F90);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  box-shadow: var(--lg-shadow-surface);
+  cursor: pointer;
+  transition: transform var(--lg-duration-base) var(--lg-ease-bounce);
+}
+
+.lg-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: var(--lg-shadow-elevated);
+}
+
+.lg-slider::-webkit-slider-thumb:active {
+  transform: scale(1.1);
+}
+
+.lg-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2F5D50, #6E9F90);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  box-shadow: var(--lg-shadow-surface);
+  cursor: pointer;
+}
+
+.lg-slider:focus-visible {
+  outline: 2px solid var(--primary, #2F5D50);
+  outline-offset: 2px;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────
+   9. LG BADGE / CHIP
+   Usage: <span class="lg-badge [lg-badge--success|warning|danger|info]">Text</span>
+   ───────────────────────────────────────────────────────────────────── */
+.lg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 50px;
+  background: var(--lg-surface-interactive);
+  border: 1px solid var(--lg-border-outer);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text, #0E0E0E);
+  backdrop-filter: saturate(140%) blur(8px);
+  -webkit-backdrop-filter: saturate(140%) blur(8px);
+}
+
+.lg-badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.lg-badge--success {
+  background: rgba(76, 122, 107, 0.12);
+  border-color: rgba(76, 122, 107, 0.2);
+  color: var(--success, #4C7A6B);
+}
+
+.lg-badge--warning {
+  background: rgba(214, 199, 161, 0.18);
+  border-color: rgba(214, 199, 161, 0.3);
+  color: var(--warning, #C2A38D);
+}
+
+.lg-badge--danger {
+  background: rgba(184, 92, 74, 0.12);
+  border-color: rgba(184, 92, 74, 0.2);
+  color: var(--danger, #B85C4A);
+}
+
+.lg-badge--info {
+  background: rgba(110, 159, 144, 0.12);
+  border-color: rgba(110, 159, 144, 0.2);
+  color: var(--info, #6E9F90);
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────
+   10. LG TOAST
+   Usage: (JS-created) <div class="lg-toast [lg-toast--success|error|info]">
+   ───────────────────────────────────────────────────────────────────── */
+.lg-toast {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 9999;
+  max-width: min(380px, calc(100vw - 2rem));
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--lg-surface-overlay);
+  backdrop-filter: var(--lg-blur-elevated);
+  -webkit-backdrop-filter: var(--lg-blur-elevated);
+  border: 1px solid var(--lg-border-outer);
+  border-radius: 20px;
+  box-shadow: var(--lg-shadow-floating);
+  color: var(--text, #0E0E0E);
+  animation: lg-float-up var(--lg-duration-smooth) var(--lg-ease-liquid);
+}
+
+.lg-toast--success {
+  border-color: rgba(76, 122, 107, 0.25);
+  background:
+    linear-gradient(135deg, rgba(76, 122, 107, 0.08), transparent),
+    var(--lg-surface-overlay);
+}
+
+.lg-toast--error {
+  border-color: rgba(184, 92, 74, 0.25);
+  background:
+    linear-gradient(135deg, rgba(184, 92, 74, 0.08), transparent),
+    var(--lg-surface-overlay);
+}
+
+.lg-toast--info {
+  border-color: rgba(110, 159, 144, 0.25);
+  background:
+    linear-gradient(135deg, rgba(110, 159, 144, 0.08), transparent),
+    var(--lg-surface-overlay);
+}
+
+.lg-toast__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--lg-surface-interactive);
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+
+.lg-toast__message {
+  flex: 1;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.lg-toast__close {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: var(--lg-surface-interactive);
+  color: var(--text-muted, #7E8F6A);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--lg-duration-base) ease;
+  flex-shrink: 0;
+}
+
+.lg-toast__close:hover {
+  background: rgba(184, 92, 74, 0.12);
+  color: var(--danger, #B85C4A);
+}
+
+.lg-toast--exit {
+  animation: lg-toast-out var(--lg-duration-smooth) var(--lg-ease-liquid) forwards;
+}
+
+@keyframes lg-toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────
+   11. LG SIDEBAR
+   Usage: <aside class="lg-sidebar">
+   ───────────────────────────────────────────────────────────────────── */
+.lg-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--sidebar-w, 240px);
+  height: 100vh;
+  background: var(--lg-surface-primary);
+  backdrop-filter: var(--lg-blur-elevated);
+  -webkit-backdrop-filter: var(--lg-blur-elevated);
+  border-right: 1px solid var(--lg-border-outer);
+  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.04), var(--lg-shadow-inset);
+  display: flex;
+  flex-direction: column;
+  z-index: 500;
+  overflow: hidden;
+  transition: width var(--sidebar-transition, 0.35s cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+.lg-sidebar__link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 12px;
+  color: var(--text-muted, #7E8F6A);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    background var(--lg-duration-base) var(--lg-ease-liquid),
+    color var(--lg-duration-base) ease;
+  position: relative;
+}
+
+.lg-sidebar__link:hover {
+  background: rgba(47, 93, 80, 0.08);
+  color: var(--primary, #2F5D50);
+}
+
+.lg-sidebar__link--active {
+  color: var(--primary, #2F5D50);
+  font-weight: 600;
+  background: rgba(47, 93, 80, 0.1);
+}
+
+.lg-sidebar__link--active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 15%;
+  bottom: 15%;
+  width: 3px;
+  background: var(--primary, #2F5D50);
+  border-radius: 0 3px 3px 0;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────
+   12. LG ALERT
+   Usage: <div class="lg-alert [lg-alert--success|danger|info|warning]">
+   ───────────────────────────────────────────────────────────────────── */
+.lg-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 16px;
+  background: var(--lg-surface-interactive);
+  backdrop-filter: saturate(140%) blur(10px);
+  -webkit-backdrop-filter: saturate(140%) blur(10px);
+  border: 1px solid var(--lg-border-outer);
+  font-size: 0.875rem;
+  animation: lg-float-up var(--lg-duration-smooth) var(--lg-ease-liquid);
+}
+
+.lg-alert--success {
+  border-color: rgba(76, 122, 107, 0.25);
+  background: rgba(76, 122, 107, 0.08);
+  color: var(--success, #4C7A6B);
+}
+
+.lg-alert--danger {
+  border-color: rgba(184, 92, 74, 0.25);
+  background: rgba(184, 92, 74, 0.08);
+  color: var(--danger, #B85C4A);
+}
+
+.lg-alert--info {
+  border-color: rgba(47, 93, 80, 0.25);
+  background: rgba(47, 93, 80, 0.08);
+  color: var(--primary, #2F5D50);
+}
+
+.lg-alert--warning {
+  border-color: rgba(214, 199, 161, 0.35);
+  background: rgba(214, 199, 161, 0.1);
+  color: var(--warning, #C2A38D);
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────
+   13. LG PROGRESS BAR
+   Usage: <div class="lg-progress"><div class="lg-progress__fill" style="--progress: 65%"></div></div>
+   ───────────────────────────────────────────────────────────────────── */
+.lg-progress {
+  height: 8px;
+  background: var(--lg-surface-sunken);
+  border: 1px solid var(--lg-border-inner);
+  border-radius: 50px;
+  overflow: hidden;
+}
+
+.lg-progress__fill {
+  height: 100%;
+  width: var(--progress, 0%);
+  border-radius: 50px;
+  background: linear-gradient(90deg, var(--primary, #2F5D50), var(--primary-mid, #6E9F90));
+  box-shadow: var(--lg-shadow-inset);
+  transition: width 0.6s var(--lg-ease-liquid);
+}
+
+.lg-progress__fill--animated {
+  position: relative;
+  overflow: hidden;
+}
+
+.lg-progress__fill--animated::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.25) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: lg-shimmer 2s ease infinite;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────
+   14. LG SKELETON
+   Usage: <div class="lg-skeleton [lg-skeleton--text|lg-skeleton--card]"></div>
+   ───────────────────────────────────────────────────────────────────── */
+.lg-skeleton {
+  background:
+    linear-gradient(
+      90deg,
+      var(--lg-surface-sunken) 0%,
+      var(--lg-surface-interactive) 50%,
+      var(--lg-surface-sunken) 100%
+    );
+  background-size: 200% 100%;
+  border-radius: 12px;
+  animation: lg-shimmer 1.8s ease-in-out infinite;
+}
+
+.lg-skeleton--text { height: 1em; margin-bottom: 0.5rem; border-radius: 8px; }
+.lg-skeleton--card { height: 200px; border-radius: 24px; }
+.lg-skeleton--avatar { width: 40px; height: 40px; border-radius: 50%; }
+.lg-skeleton--btn { height: 42px; width: 120px; border-radius: 50px; }
+
+
+/* ─────────────────────────────────────────────────────────────────────
+   15. LG DIVIDER
+   Usage: <div class="lg-divider"></div>
+   ───────────────────────────────────────────────────────────────────── */
+.lg-divider {
+  height: 1px;
+  margin: 1.5rem 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--lg-border-outer) 20%,
+    var(--lg-border-outer) 80%,
+    transparent 100%
+  );
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────
+   16. LG DROPDOWN
+   Usage: <div class="lg-dropdown"><div class="lg-dropdown__menu">...</div></div>
+   ───────────────────────────────────────────────────────────────────── */
+.lg-dropdown {
+  position: relative;
+}
+
+.lg-dropdown__menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  min-width: 200px;
+  background: var(--lg-surface-overlay);
+  backdrop-filter: var(--lg-blur-overlay);
+  -webkit-backdrop-filter: var(--lg-blur-overlay);
+  border: 1px solid var(--lg-border-outer);
+  border-radius: 16px;
+  box-shadow: var(--lg-shadow-floating);
+  padding: 0.4rem;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px) scale(0.97);
+  transition:
+    opacity var(--lg-duration-base) var(--lg-ease-liquid),
+    transform var(--lg-duration-base) var(--lg-ease-liquid),
+    visibility var(--lg-duration-base);
+  z-index: 100;
+}
+
+.lg-dropdown.open .lg-dropdown__menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+}
+
+.lg-dropdown__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: 10px;
+  color: var(--text, #0E0E0E);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background var(--lg-duration-base) ease;
+}
+
+.lg-dropdown__item:hover {
+  background: var(--lg-surface-interactive);
+}
+
+
+/* ── Reduced Motion for all components ──────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .lg-btn,
+  .lg-card--hoverable,
+  .lg-tab,
+  .lg-modal,
+  .lg-toast,
+  .lg-alert {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .lg-btn:hover,
+  .lg-card--hoverable:hover {
+    transform: none;
+  }
+
+  .lg-skeleton {
+    animation: none;
+  }
+
+  .lg-btn::before {
+    animation: none !important;
+  }
+}
+
+/* ── Mobile Performance Adjustments ─────────────────────────────── */
+@media (max-width: 768px) {
+  .lg-btn {
+    backdrop-filter: saturate(140%) blur(8px);
+    -webkit-backdrop-filter: saturate(140%) blur(8px);
+  }
+
+  .lg-card {
+    backdrop-filter: saturate(150%) blur(10px);
+    -webkit-backdrop-filter: saturate(150%) blur(10px);
+  }
+
+  .lg-card::before {
+    animation: none !important;
+  }
+
+  .lg-modal {
+    border-radius: 20px;
+    width: 95%;
+  }
+
+  .lg-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}

@@ -11,6 +11,7 @@
     $searchTerm = request('search');
     $statusFilter = request('status');
 @endphp
+<div id="monitoringSyncRoot">
 <div class="page-container page-operations page-operations--monitoring">
     <section class="ops-hero ops-hero--monitoring glass-surface" data-aos="fade-down">
         <div class="ops-hero__copy">
@@ -21,7 +22,10 @@
                     <p class="page-subtitle">Pantau antrean servis, bottleneck workflow, dan urgensi lokasi secara real-time.</p>
                 </div>
                 <div class="page-actions page-actions--hero">
-                    @if(auth()->user()->isFrontdesk())
+                    <button class="btn btn-secondary" type="button" onclick="manualRefreshMonitoring()">
+                        <i class="fas fa-rotate-right"></i> Refresh Data
+                    </button>
+                    @if(auth()->user()->isFrontdesk() || auth()->user()->isAdmin())
                     <button class="btn btn-primary" onclick="openPopup('serviceOrderPopup')">
                         <i class="fas fa-plus"></i> Buat Service Order
                     </button>
@@ -177,7 +181,7 @@
             <tbody>
                 @foreach($orders as $order)
                 @php
-                    $latestStep = $order->workflowSteps->last();
+                    $latestStep = $order->latestWorkflowStep;
                     $assignment = $order->technicianAssignment;
                     $urgency = $order->masjid->urgency_status;
                     $urgencyLabel = match($urgency) {
@@ -338,7 +342,7 @@
     <div class="monitoring-mobile-list">
         @foreach($orders as $order)
         @php
-            $latestStep = $order->workflowSteps->last();
+            $latestStep = $order->latestWorkflowStep;
             $assignment = $order->technicianAssignment;
             $urgency = $order->masjid->urgency_status;
             $urgencyLabel = match($urgency) {
@@ -448,11 +452,16 @@
         <i class="fas fa-clipboard-list"></i>
         <h3>Tidak Ada Service Order</h3>
         <p>{{ request()->anyFilled(['search', 'status']) ? 'Tidak ada hasil untuk filter tersebut.' : 'Belum ada service order yang dibuat.' }}</p>
+        @if(auth()->user()->isFrontdesk() || auth()->user()->isAdmin())
+        <button class="btn btn-primary" type="button" onclick="openPopup('serviceOrderPopup')">
+            <i class="fas fa-plus"></i> Buat Service Order
+        </button>
+        @endif
     </div>
     @endif
 
     @if($orders->hasPages())
-    <div class="pagination-shell">
+    <div class="pagination-shell pagination-shell--fixed">
         {{ $orders->onEachSide(1)->links() }}
     </div>
     @endif
@@ -491,9 +500,10 @@
     </div>
     @endif
 </div>
+</div>
 
 <!-- Service Order Popup -->
-@if(auth()->user()->isFrontdesk())
+@if(auth()->user()->isFrontdesk() || auth()->user()->isAdmin())
 <div class="popup popup-xl" id="serviceOrderPopup">
     <div class="popup-header">
         <h3><i class="fas fa-clipboard-plus"></i> Buat Service Order</h3>
@@ -720,6 +730,11 @@
 
 @push('scripts')
 <script>
+window.PAGE_SYNC_CONFIG = {
+    rootSelector: '#monitoringSyncRoot',
+    snapshotRoute: '{{ route("monitoring.snapshot") }}',
+    persistentSelectors: ['#serviceOrderPopup'],
+};
 const ROUTES_MON = {
     soStore: '{{ route("service-order.store") }}',
     soApprove: (id) => `/service-order/${id}/approve`,
@@ -736,3 +751,5 @@ const isFrontdesk2 = {{ auth()->user()->isFrontdesk() ? 'true' : 'false' }};
 <script src="{{ asset('js/monitoring.js') }}"></script>
 <script src="{{ asset('js/workflow.js') }}"></script>
 @endpush
+
+

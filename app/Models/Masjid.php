@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
 
 class Masjid extends Model
 {
@@ -17,15 +17,19 @@ class Masjid extends Model
         'dkm_name',
         'marbot_name',
         'phone_numbers',
+        'setup_status',
+        'setup_completed_at',
     ];
 
     protected $casts = [
         'phone_numbers' => 'array',
+        'setup_completed_at' => 'datetime',
     ];
 
     protected $appends = [
         'urgency_status',
         'max_days_since_service',
+        'setup_status_label',
     ];
 
     public function acUnits()
@@ -40,7 +44,6 @@ class Masjid extends Model
 
     public static function generateCustomId(string $type): string
     {
-        // Prefix 001 for Masjid, 002 for Musholla (as requested).
         $prefix = $type === 'musholla' ? '002' : '001';
 
         $last = self::where('custom_id', 'like', "{$prefix}-%")
@@ -54,34 +57,62 @@ class Masjid extends Model
         return sprintf('%s-%04d', $prefix, $next);
     }
 
+    public function syncSetupStatus(): void
+    {
+        $hasUnits = $this->acUnits()->exists();
+
+        $this->forceFill([
+            'setup_status' => $hasUnits ? 'completed' : 'pending_ac',
+            'setup_completed_at' => $hasUnits ? ($this->setup_completed_at ?? now()) : null,
+        ])->save();
+    }
+
+    public function getSetupStatusLabelAttribute(): string
+    {
+        return $this->setup_status === 'completed'
+            ? 'Setup lengkap'
+            : 'Pending setup AC';
+    }
+
     public function getMaxDaysSinceServiceAttribute(): ?int
     {
-        // If there are no AC units, we can't compute urgency.
         if ($this->acUnits->isEmpty()) {
             return null;
         }
 
         $dates = $this->acUnits
             ->pluck('last_service_date')
-            ->filter(); // drop nulls
+            ->filter();
 
         if ($dates->isEmpty()) {
             return null;
         }
 
         return $dates
-            ->map(fn($d) => Carbon::parse($d)->diffInDays(now()))
+            ->map(fn ($date) => Carbon::parse($date)->diffInDays(now()))
             ->max();
     }
 
     public function getUrgencyStatusAttribute(): string
     {
         $days = $this->max_days_since_service;
-        // No units => unknown. Units without service date => treat as overdue (needs attention).
-        if ($this->acUnits->isEmpty()) return 'unknown';
-        if ($days === null) return 'overdue';
-        if ($days < 90) return 'aman';
-        if ($days < 120) return 'harus_servis';  // Changed from <= to < for exclusive range
+
+        if ($this->acUnits->isEmpty()) {
+            return 'unknown';
+        }
+
+        if ($days === null) {
+            return 'overdue';
+        }
+
+        if ($days < 90) {
+            return 'aman';
+        }
+
+        if ($days < 120) {
+            return 'harus_servis';
+        }
+
         return 'overdue';
     }
 }

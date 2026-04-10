@@ -40,8 +40,8 @@ return [
             'tag' => 'Live',
             'badge' => 'Anggota',
             'badge_variant' => null,
-            'route' => 'modules.ac-anggota.index',
-            'path' => '/modules/ac-anggota',
+            'route' => 'ac-anggota.index',
+            'path' => '/ac-anggota',
             'subdomain' => env('AC_ANGGOTA_DOMAIN'),
             'icon' => 'fas fa-users',
             'thumb_background' => 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)',
@@ -79,3 +79,5 @@ return [
         ],
     ],
 ];
+
+

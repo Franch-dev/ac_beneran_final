@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'AC Masjid & Musholla â€” Forkis')
+@section('title', 'AC Masjid & Musholla — Forkis')
 
 @section('content')
 <section class="section">
@@ -18,10 +18,10 @@
         </div>
 
         <div class="hero-actions" style="flex-wrap: wrap; gap: 12px;">
-            <a href="{{ route('login', ['redirect' => '/modules/ac-masjid-musholla/dashboard']) }}" class="btn btn-primary btn-lg">
+            <a href="{{ route('login', ['redirect' => '/dashboard']) }}" class="btn btn-primary btn-lg">
                 <i class="fas fa-th-large"></i> Dashboard
             </a>
-            <a href="{{ route('login', ['redirect' => '/modules/ac-masjid-musholla/monitoring']) }}" class="btn btn-outline btn-lg">
+            <a href="{{ route('login', ['redirect' => '/monitoring']) }}" class="btn btn-outline btn-lg">
                 <i class="fas fa-chart-line"></i> Monitoring
             </a>
             <a href="{{ route('home') }}#katalog" class="btn btn-outline btn-lg">

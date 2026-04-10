@@ -3,12 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\UserRoles;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
+    protected function usersTable(): string
+    {
+        $user = new User();
+
+        return "{$user->getConnectionName()}.{$user->getTable()}";
+    }
+
     public function index(Request $request)
     {
         $query = User::query();
@@ -31,7 +39,7 @@ class UserController extends Controller
             ->groupBy('role')
             ->pluck('total', 'role');
 
-        return view('users.index', compact('users', 'roleCounts'));
+        return view('users_table.index', compact('users', 'roleCounts'));
     }
 
     public function create()
@@ -43,9 +51,9 @@ class UserController extends Controller
     {
         $request->validate([
             'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:main.users,email',
+            'email'    => 'required|email|unique:'.$this->usersTable().',email',
             'password' => 'required|string|min:8|confirmed',
-            'role'     => 'required|in:frontdesk,manager,admin,technician,viewer',
+            'role'     => ['required', Rule::in(UserRoles::values())],
         ]);
 
         $user = User::create([
@@ -71,8 +79,8 @@ class UserController extends Controller
     {
         $request->validate([
             'name'  => 'required|string|max:255',
-            'email' => ['required', 'email', Rule::unique('main.users', 'email')->ignore($user->id)],
-            'role'  => 'required|in:frontdesk,manager,admin,technician,viewer',
+            'email' => ['required', 'email', Rule::unique($this->usersTable(), 'email')->ignore($user->id)],
+            'role'  => ['required', Rule::in(UserRoles::values())],
         ]);
 
         $user->update([
@@ -107,4 +115,3 @@ class UserController extends Controller
         return response()->json(['success' => true, 'message' => 'User berhasil dihapus.']);
     }
 }
-

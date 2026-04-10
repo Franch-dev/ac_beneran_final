@@ -1,0 +1,643 @@
+/* =====================================================================
+   LIQUID GLASS SITE INTEGRATION 2026
+   Maps existing site classes to Liquid Glass design tokens.
+   This file bridges the gap between the original component selectors
+   and the new Liquid Glass system, ensuring zero HTML changes needed.
+   ===================================================================== */
+
+/* ── GLOBAL BODY — Liquid Ambient Background ────────────────────── */
+body {
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(47, 93, 80, 0.06), transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(190, 204, 163, 0.06), transparent 50%),
+    var(--gradient-bg);
+}
+
+body::before {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(190, 204, 163, 0.18), transparent 55%),
+    radial-gradient(circle at 70% 80%, rgba(47, 93, 80, 0.08), transparent 45%);
+}
+
+[data-theme="dark"] body {
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(47, 93, 80, 0.1), transparent 45%),
+    radial-gradient(ellipse at 80% 90%, rgba(110, 159, 144, 0.06), transparent 40%),
+    linear-gradient(180deg, #0E0E0E 0%, #1A1A18 100%);
+}
+
+/* ── NAVBAR — Liquid Glass Navigation ───────────────────────────── */
+.navbar,
+.glass-navbar {
+  background: var(--lg-surface-overlay);
+  backdrop-filter: var(--lg-blur-nav);
+  -webkit-backdrop-filter: var(--lg-blur-nav);
+  border-bottom: 1px solid var(--lg-border-outer);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.02),
+    0 4px 12px rgba(0, 0, 0, 0.03),
+    var(--lg-shadow-inset);
+  transition: background var(--lg-duration-smooth) ease, box-shadow var(--lg-duration-smooth) ease;
+}
+
+[data-theme="dark"] .navbar,
+[data-theme="dark"] .glass-navbar {
+  background: var(--lg-surface-overlay);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 4px 16px rgba(0, 0, 0, 0.15), var(--lg-shadow-inset);
+}
+
+/* Nav link liquid hover */
+.nav-link {
+  transition:
+    color var(--lg-duration-base) ease,
+    background var(--lg-duration-base) ease,
+    transform var(--lg-duration-base) var(--lg-ease-liquid);
+}
+
+.nav-link:hover {
+  background: rgba(47, 93, 80, 0.08);
+  transform: translateY(-1px);
+}
+
+/* ── SIDEBAR — Liquid Glass Panel ───────────────────────────────── */
+.sidebar {
+  background: var(--lg-surface-primary);
+  backdrop-filter: var(--lg-blur-elevated);
+  -webkit-backdrop-filter: var(--lg-blur-elevated);
+  border-right: 1px solid var(--lg-border-outer);
+  box-shadow: 2px 0 24px rgba(0, 0, 0, 0.04), var(--lg-shadow-inset);
+}
+
+[data-theme="dark"] .sidebar {
+  background: var(--lg-surface-primary);
+  box-shadow: 2px 0 24px rgba(0, 0, 0, 0.2), var(--lg-shadow-inset);
+}
+
+.sidebar-link {
+  transition:
+    background var(--lg-duration-base) var(--lg-ease-liquid),
+    color var(--lg-duration-base) ease,
+    transform var(--lg-duration-base) var(--lg-ease-liquid);
+}
+
+.sidebar-link:hover {
+  background: rgba(47, 93, 80, 0.08);
+  transform: translateX(2px);
+}
+
+/* ── HERO SECTION — Iridescent Liquid Flow ──────────────────────── */
+.glass-hero {
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-hero::before {
+  background:
+    radial-gradient(ellipse at 20% 30%, rgba(47, 93, 80, 0.1), transparent 45%),
+    radial-gradient(ellipse at 80% 70%, rgba(190, 204, 163, 0.08), transparent 40%),
+    radial-gradient(ellipse at 50% 50%, rgba(110, 159, 144, 0.04), transparent 55%);
+  animation: lg-surface-breathe 8s ease infinite;
+  background-size: 200% 200%;
+}
+
+.hero-card,
+.hero-card.hero-service-card {
+  background: var(--lg-surface-elevated);
+  backdrop-filter: var(--lg-blur-elevated);
+  -webkit-backdrop-filter: var(--lg-blur-elevated);
+  border: 1px solid var(--lg-border-outer);
+  box-shadow: var(--lg-shadow-elevated), var(--lg-shadow-inset);
+  overflow: hidden;
+}
+
+/* Hero card iridescent inner glow */
+.hero-card.hero-service-card {
+  background:
+    radial-gradient(ellipse at 25% 20%, rgba(47, 93, 80, 0.08), transparent 40%),
+    radial-gradient(ellipse at 75% 80%, rgba(190, 204, 163, 0.06), transparent 35%),
+    var(--lg-surface-elevated);
+}
+
+/* Hero card rainbow gradient bar evolution */
+.hero-card::before {
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    #2F5D50,
+    #4C7A6B,
+    #6E9F90,
+    #A8B893,
+    #BECCA3,
+    #DDE6D5,
+    #6E9F90,
+    #2F5D50
+  );
+  background-size: 200% 100%;
+  animation: lg-shimmer 4s linear infinite;
+}
+
+.hero-service-core {
+  background:
+    radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.15), transparent 60%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(221, 230, 213, 0.88));
+  box-shadow:
+    0 24px 50px rgba(47, 93, 80, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 -1px 0 rgba(47, 93, 80, 0.08);
+}
+
+[data-theme="dark"] .hero-service-core {
+  background:
+    radial-gradient(circle at 50% 30%, rgba(110, 159, 144, 0.08), transparent 60%),
+    linear-gradient(180deg, rgba(26, 26, 24, 0.96), rgba(31, 61, 54, 0.8));
+  box-shadow:
+    0 24px 50px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.hero-support-card {
+  background: var(--lg-surface-elevated);
+  border: 1px solid var(--lg-border-outer);
+  box-shadow: var(--lg-shadow-surface), var(--lg-shadow-inset);
+  transition:
+    transform var(--lg-duration-smooth) var(--lg-ease-liquid),
+    box-shadow var(--lg-duration-smooth) var(--lg-ease-liquid);
+}
+
+.hero-support-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--lg-shadow-elevated), var(--lg-shadow-inset);
+}
+
+/* Hero service status bar */
+.hero-service-status {
+  background: var(--lg-surface-interactive);
+  border: 1px solid var(--lg-border-outer);
+  backdrop-filter: saturate(160%) blur(12px);
+  -webkit-backdrop-filter: saturate(160%) blur(12px);
+}
+
+/* ── GLASS CARDS — Universal Upgrade ────────────────────────────── */
+.glass-card,
+.glass {
+  background: var(--lg-surface-primary);
+  backdrop-filter: var(--lg-blur-base);
+  -webkit-backdrop-filter: var(--lg-blur-base);
+  border: 1px solid var(--lg-border-outer);
+  box-shadow: var(--lg-shadow-surface), var(--lg-shadow-inset), var(--lg-border-glow);
+}
+
+.glass-card:hover,
+.glass-card:focus-within {
+  box-shadow: var(--lg-shadow-elevated), var(--lg-shadow-inset), 0 0 0 1px var(--lg-border-interactive);
+  border-color: var(--lg-border-interactive);
+}
+
+/* ── MASJID CARDS — Liquid Glass Depth ──────────────────────────── */
+.masjid-card {
+  background: var(--lg-surface-elevated);
+  border-color: var(--lg-border-outer);
+  box-shadow: var(--lg-shadow-surface), var(--lg-shadow-inset);
+  backdrop-filter: var(--lg-blur-base);
+  -webkit-backdrop-filter: var(--lg-blur-base);
+  transition:
+    transform var(--lg-duration-smooth) var(--lg-ease-liquid),
+    box-shadow var(--lg-duration-smooth) var(--lg-ease-liquid),
+    border-color var(--lg-duration-base) ease;
+}
+
+.masjid-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--lg-shadow-elevated), var(--lg-shadow-inset), 0 0 0 1px var(--lg-border-interactive);
+  border-color: var(--lg-border-interactive);
+}
+
+.masjid-card::before {
+  background:
+    radial-gradient(ellipse at 80% 15%, rgba(47, 93, 80, 0.06), transparent 35%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 40%);
+}
+
+.card-footer {
+  background: var(--lg-surface-interactive);
+  border-top: 1px solid var(--lg-border-outer);
+}
+
+[data-theme="dark"] .card-footer {
+  background: var(--lg-surface-sunken);
+}
+
+/* ── CATALOG CARDS — Liquid Glass Catalog ───────────────────────── */
+.catalog-card {
+  backdrop-filter: var(--lg-blur-base);
+  -webkit-backdrop-filter: var(--lg-blur-base);
+  transition:
+    transform var(--lg-duration-smooth) var(--lg-ease-bounce),
+    box-shadow var(--lg-duration-smooth) var(--lg-ease-liquid),
+    border-color var(--lg-duration-base) ease;
+}
+
+.catalog-card:hover {
+  transform: translateY(-6px) scale(1.015);
+  box-shadow: var(--lg-shadow-elevated);
+  border-color: var(--lg-border-interactive);
+}
+
+.catalog-thumb-icon {
+  background: var(--lg-surface-overlay);
+  backdrop-filter: saturate(180%) blur(8px);
+  -webkit-backdrop-filter: saturate(180%) blur(8px);
+  box-shadow: var(--lg-shadow-surface);
+  transition: transform var(--lg-duration-smooth) var(--lg-ease-bounce);
+}
+
+.catalog-card:hover .catalog-thumb-icon {
+  transform: scale(1.12) rotate(-4deg);
+  box-shadow: var(--lg-shadow-elevated);
+}
+
+/* ── BUTTONS — Liquid Glass Enhancement ─────────────────────────── */
+.btn {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform var(--lg-duration-base) var(--lg-ease-liquid),
+    box-shadow var(--lg-duration-base) var(--lg-ease-liquid),
+    background var(--lg-duration-base) ease,
+    border-color var(--lg-duration-base) ease,
+    filter var(--lg-duration-base) ease;
+}
+
+.btn-primary {
+  box-shadow: 0 4px 12px rgba(47, 93, 80, 0.15);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 8px 24px rgba(47, 93, 80, 0.25);
+  transform: scale(1.03);
+}
+
+.btn-secondary {
+  backdrop-filter: saturate(160%) blur(10px);
+  -webkit-backdrop-filter: saturate(160%) blur(10px);
+}
+
+.btn-outline {
+  backdrop-filter: saturate(140%) blur(8px);
+  -webkit-backdrop-filter: saturate(140%) blur(8px);
+}
+
+/* ── PRICING CARDS — Liquid Glass Pricing ───────────────────────── */
+.pricing-card,
+.contact-card {
+  background: var(--lg-surface-primary);
+  backdrop-filter: var(--lg-blur-base);
+  -webkit-backdrop-filter: var(--lg-blur-base);
+  border: 1px solid var(--lg-border-outer);
+  box-shadow: var(--lg-shadow-surface), var(--lg-shadow-inset);
+  transition:
+    transform var(--lg-duration-smooth) var(--lg-ease-liquid),
+    box-shadow var(--lg-duration-smooth) var(--lg-ease-liquid),
+    border-color var(--lg-duration-base) ease;
+}
+
+.pricing-card:hover,
+.contact-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--lg-shadow-elevated), var(--lg-shadow-inset);
+  border-color: var(--lg-border-interactive);
+}
+
+.pricing-featured {
+  border: 2px solid var(--lg-border-interactive);
+  box-shadow: var(--lg-shadow-elevated), var(--lg-shadow-inset);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Featured card iridescent aura */
+.pricing-featured::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(47, 93, 80, 0.06), transparent 45%),
+    radial-gradient(ellipse at 70% 80%, rgba(190, 204, 163, 0.06), transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.pricing-featured > * { position: relative; z-index: 1; }
+
+/* ── FORMS — Liquid Glass Inputs ────────────────────────────────── */
+.form-input,
+.form-select,
+.form-textarea {
+  background: var(--lg-surface-interactive);
+  border: 1.5px solid var(--lg-border-outer);
+  backdrop-filter: saturate(150%) blur(8px);
+  -webkit-backdrop-filter: saturate(150%) blur(8px);
+  transition:
+    border-color var(--lg-duration-base) ease,
+    box-shadow var(--lg-duration-base) ease,
+    background var(--lg-duration-base) ease;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  border-color: var(--primary-mid, #BECCA3);
+  box-shadow: 0 0 0 3px rgba(47, 93, 80, 0.12), var(--lg-shadow-inset);
+  background: var(--lg-surface-primary);
+}
+
+.search-input {
+  backdrop-filter: saturate(160%) blur(10px);
+  -webkit-backdrop-filter: saturate(160%) blur(10px);
+}
+
+/* ── POPUPS / MODALS — Liquid Glass Floating ─────────────────────── */
+.popup {
+  background: var(--lg-surface-overlay);
+  backdrop-filter: var(--lg-blur-overlay);
+  -webkit-backdrop-filter: var(--lg-blur-overlay);
+  border: 1px solid var(--lg-border-outer);
+  box-shadow: var(--lg-shadow-floating), var(--lg-shadow-inset);
+}
+
+.popup-header {
+  background: rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid var(--lg-border-outer);
+}
+
+[data-theme="dark"] .popup-header {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.overlay {
+  background: rgba(14, 14, 14, 0.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* ── SUMMARY CARDS — Liquid Glass KPI ───────────────────────────── */
+.summary-card {
+  background: var(--lg-surface-elevated);
+  backdrop-filter: var(--lg-blur-base);
+  -webkit-backdrop-filter: var(--lg-blur-base);
+  border: 1px solid var(--lg-border-outer);
+  box-shadow: var(--lg-shadow-surface), var(--lg-shadow-inset);
+  transition:
+    transform var(--lg-duration-smooth) var(--lg-ease-liquid),
+    box-shadow var(--lg-duration-smooth) var(--lg-ease-liquid);
+}
+
+.summary-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--lg-shadow-elevated), var(--lg-shadow-inset);
+}
+
+.summary-icon {
+  box-shadow: var(--lg-shadow-inset);
+}
+
+/* ── TABLES — Liquid Glass Data ─────────────────────────────────── */
+.table-container {
+  background: var(--lg-surface-primary);
+  backdrop-filter: var(--lg-blur-base);
+  -webkit-backdrop-filter: var(--lg-blur-base);
+  border: 1px solid var(--lg-border-outer);
+  box-shadow: var(--lg-shadow-surface);
+}
+
+.data-table th {
+  background: var(--lg-surface-interactive);
+  backdrop-filter: saturate(160%) blur(12px);
+  -webkit-backdrop-filter: saturate(160%) blur(12px);
+}
+
+.data-table tbody tr {
+  transition: background var(--lg-duration-base) ease;
+}
+
+.data-table tbody tr:hover td {
+  background: var(--lg-surface-interactive);
+}
+
+/* ── FEATURE CARDS (marquee) — Liquid Glass ──────────────────────── */
+.fcard {
+  background: var(--lg-surface-primary);
+  backdrop-filter: var(--lg-blur-base);
+  -webkit-backdrop-filter: var(--lg-blur-base);
+  border: 1px solid var(--lg-border-outer);
+  box-shadow: var(--lg-shadow-surface), var(--lg-shadow-inset);
+  transition:
+    transform var(--lg-duration-smooth) var(--lg-ease-liquid),
+    box-shadow var(--lg-duration-smooth) var(--lg-ease-liquid),
+    border-color var(--lg-duration-base) ease;
+}
+
+.fcard:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--lg-shadow-elevated), var(--lg-shadow-inset);
+  border-color: var(--lg-border-interactive);
+}
+
+/* ── CTA SECTION — Liquid Glass Deep ────────────────────────────── */
+.cta-section {
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-section::before {
+  background:
+    radial-gradient(ellipse at 30% 40%, rgba(190, 204, 163, 0.2), transparent 55%),
+    radial-gradient(ellipse at 70% 30%, rgba(255, 255, 255, 0.06), transparent 40%);
+}
+
+.cta-section .btn-white {
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  box-shadow: var(--lg-shadow-elevated);
+  transition:
+    transform var(--lg-duration-base) var(--lg-ease-liquid),
+    box-shadow var(--lg-duration-base) var(--lg-ease-liquid);
+}
+
+.cta-section .btn-white:hover {
+  transform: scale(1.05);
+  box-shadow: var(--lg-shadow-floating);
+}
+
+/* ── FOOTER — Liquid Glass ──────────────────────────────────────── */
+.footer {
+  background: var(--lg-surface-primary);
+  backdrop-filter: var(--lg-blur-base);
+  -webkit-backdrop-filter: var(--lg-blur-base);
+  border-top: 1px solid var(--lg-border-outer);
+}
+
+/* ── LOGIN CARD — Liquid Glass Auth ─────────────────────────────── */
+.login-card {
+  background: var(--lg-surface-elevated);
+  backdrop-filter: var(--lg-blur-elevated);
+  -webkit-backdrop-filter: var(--lg-blur-elevated);
+  border: 1px solid var(--lg-border-outer);
+  box-shadow: var(--lg-shadow-floating), var(--lg-shadow-inset);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Login card iridescent halo */
+.login-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 25% 20%, rgba(47, 93, 80, 0.06), transparent 45%),
+    radial-gradient(ellipse at 75% 85%, rgba(190, 204, 163, 0.06), transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.login-card > * { position: relative; z-index: 1; }
+
+.login-card .form-input {
+  background: var(--lg-surface-interactive);
+  border: 1.5px solid var(--lg-border-outer);
+}
+
+.login-card .form-input:focus {
+  border-color: var(--primary-mid, #BECCA3);
+  box-shadow: 0 0 0 3px rgba(47, 93, 80, 0.12), var(--lg-shadow-inset);
+}
+
+/* ── TOAST — Liquid Glass ───────────────────────────────────────── */
+.toast-notification {
+  background: var(--lg-surface-overlay);
+  backdrop-filter: var(--lg-blur-elevated);
+  -webkit-backdrop-filter: var(--lg-blur-elevated);
+  border: 1px solid var(--lg-border-outer);
+  box-shadow: var(--lg-shadow-floating);
+}
+
+/* ── URGENCY CARDS — Liquid Glass ───────────────────────────────── */
+.urgency-card {
+  background: var(--lg-surface-primary);
+  backdrop-filter: var(--lg-blur-base);
+  -webkit-backdrop-filter: var(--lg-blur-base);
+  border-color: var(--lg-border-outer);
+  box-shadow: var(--lg-shadow-surface);
+  transition:
+    transform var(--lg-duration-smooth) var(--lg-ease-liquid),
+    box-shadow var(--lg-duration-smooth) var(--lg-ease-liquid);
+}
+
+.urgency-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--lg-shadow-elevated);
+}
+
+/* ── BADGES / CHIPS — Liquid Glass ──────────────────────────────── */
+.card-type-chip,
+.urgency-pill,
+.card-order-badge,
+.status-badge,
+.hero-pill,
+.hero-service-pill,
+.ops-chip,
+.notification-badge,
+.detail-chip,
+.role-badge,
+.fcard-tag {
+  backdrop-filter: saturate(140%) blur(6px);
+  -webkit-backdrop-filter: saturate(140%) blur(6px);
+  box-shadow: var(--lg-shadow-inset);
+}
+
+/* ── GLASS PANELS / MONITORING — Liquid Glass ───────────────────── */
+.glass-panel,
+.toolbar-panel,
+.monitoring-table-card,
+.ops-hero,
+.glass-surface,
+.ops-control-bar {
+  background: var(--lg-surface-primary);
+  backdrop-filter: var(--lg-blur-base);
+  -webkit-backdrop-filter: var(--lg-blur-base);
+  border: 1px solid var(--lg-border-outer);
+  box-shadow: var(--lg-shadow-surface), var(--lg-shadow-inset);
+}
+
+/* ── HERO STAT CARDS — Liquid Glass ─────────────────────────────── */
+.hero-stat-card,
+.status-dock-card,
+.ops-kpi-card {
+  background: var(--lg-surface-elevated);
+  border: 1px solid var(--lg-border-outer);
+  box-shadow: var(--lg-shadow-surface), var(--lg-shadow-inset);
+  transition:
+    transform var(--lg-duration-smooth) var(--lg-ease-liquid),
+    box-shadow var(--lg-duration-smooth) var(--lg-ease-liquid);
+}
+
+.hero-stat-card:hover,
+.status-dock-card:hover,
+.ops-kpi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--lg-shadow-elevated), var(--lg-shadow-inset);
+}
+
+/* ── ALERTS — Liquid Glass ──────────────────────────────────────── */
+.alert {
+  backdrop-filter: saturate(140%) blur(8px);
+  -webkit-backdrop-filter: saturate(140%) blur(8px);
+  box-shadow: var(--lg-shadow-surface);
+}
+
+/* ── MOBILE PERFORMANCE — Reduce blur on low-end ────────────────── */
+@media (max-width: 768px) {
+  .navbar,
+  .glass-navbar,
+  .sidebar {
+    backdrop-filter: saturate(170%) blur(16px);
+    -webkit-backdrop-filter: saturate(170%) blur(16px);
+  }
+
+  .glass-card,
+  .masjid-card,
+  .pricing-card,
+  .contact-card,
+  .catalog-card,
+  .fcard,
+  .summary-card {
+    backdrop-filter: saturate(150%) blur(10px);
+    -webkit-backdrop-filter: saturate(150%) blur(10px);
+  }
+
+  /* Disable iridescent breathing on mobile for perf */
+  .glass-hero::before,
+  .masjid-card::before,
+  .hero-card::before {
+    animation: none !important;
+  }
+}
+
+/* ── REDUCED MOTION ─────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .glass-hero::before,
+  .hero-card::before,
+  .pricing-featured::before {
+    animation: none !important;
+  }
+
+  .masjid-card:hover,
+  .catalog-card:hover,
+  .pricing-card:hover,
+  .contact-card:hover,
+  .fcard:hover,
+  .summary-card:hover,
+  .hero-support-card:hover {
+    transform: none;
+  }
+}

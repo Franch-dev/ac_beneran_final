@@ -5,6 +5,7 @@
 
 namespace App\Models;
 
+use App\Support\UserRoles;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -22,40 +23,40 @@ class User extends Authenticatable
 
     public function isFrontdesk(): bool
     {
-        return $this->role === 'frontdesk';
+        return $this->role === UserRoles::FRONTDESK;
     }
 
     public function isManager(): bool
     {
-        return $this->role === 'manager';
+        return $this->role === UserRoles::MANAGER;
     }
 
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->role === UserRoles::ADMIN;
     }
 
     // NEW
     public function isTechnician(): bool
     {
-        return $this->role === 'technician';
+        return $this->role === UserRoles::TECHNICIAN;
     }
 
     // NEW
     public function isViewer(): bool
     {
-        return $this->role === 'viewer';
+        return $this->role === UserRoles::VIEWER;
     }
 
     // NEW — convenience helper for role label display
     public function roleLabel(): string
     {
         return match($this->role) {
-            'frontdesk'  => 'Front Desk',
-            'manager'    => 'Manager',
-            'admin'      => 'Admin',
-            'technician' => 'Teknisi',
-            'viewer'     => 'Viewer / Auditor',
+            UserRoles::FRONTDESK => 'Front Desk',
+            UserRoles::MANAGER => 'Manager',
+            UserRoles::ADMIN => 'Admin',
+            UserRoles::TECHNICIAN => 'Teknisi',
+            UserRoles::VIEWER => 'Viewer / Auditor',
             default      => ucfirst($this->role),
         };
     }
@@ -63,7 +64,6 @@ class User extends Authenticatable
     // NEW — check if user can access admin/manager areas
     public function hasElevatedAccess(): bool
     {
-        return in_array($this->role, ['admin', 'manager']);
+        return in_array($this->role, [UserRoles::ADMIN, UserRoles::MANAGER], true);
     }
 }
-

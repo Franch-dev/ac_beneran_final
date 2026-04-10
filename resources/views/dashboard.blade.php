@@ -11,6 +11,7 @@
     $searchTerm = request('search');
 @endphp
 
+<div id="dashboardSyncRoot">
 <div class="page-container page-operations page-operations--dashboard">
     <section class="ops-hero ops-hero--dashboard glass-surface" data-aos="fade-down">
         <div class="ops-hero__copy">
@@ -21,6 +22,9 @@
                     <p class="page-subtitle">Portofolio lokasi, urgensi servis, dan kontak operasional dalam satu panel.</p>
                 </div>
                 <div class="page-actions page-actions--hero">
+                    <button class="btn btn-secondary" type="button" onclick="manualRefreshDashboard()">
+                        <i class="fas fa-rotate-right"></i> Refresh Data
+                    </button>
                     @if(auth()->user()->isFrontdesk())
                     <button class="btn btn-primary" onclick="openPopup('addMasjidPopup')">
                         <i class="fas fa-plus"></i> Tambah Masjid
@@ -47,6 +51,10 @@
                 <span class="ops-chip">
                     <i class="fas fa-bell"></i>
                     {{ $needsAttention }} lokasi perlu tindak lanjut
+                </span>
+                <span class="ops-chip">
+                    <i class="fas fa-link-slash"></i>
+                    {{ $dashboardMetrics['pending_setup_locations'] ?? 0 }} lokasi masih pending setup AC
                 </span>
             </div>
         </div>
@@ -155,6 +163,11 @@
                     <span class="card-id">{{ $masjid->custom_id }}</span>
                     <span class="card-counter">{{ $masjid->serviceOrders->count() }} order</span>
                 </div>
+                @if($masjid->setup_status === 'pending_ac')
+                <span class="notification-badge notification-badge--warning">
+                    <i class="fas fa-link-slash"></i> Pending setup AC
+                </span>
+                @endif
                 <div class="card-name">{{ $masjid->name }}</div>
                 <div class="card-address"><i class="fas fa-map-marker-alt"></i> {{ Str::limit($masjid->address, 76) }}</div>
                 <div class="masjid-contact-stack">
@@ -220,10 +233,11 @@
     </div>
 
     @if($masjids->hasPages())
-    <div class="pagination-shell">
+    <div class="pagination-shell pagination-shell--fixed">
         {{ $masjids->onEachSide(1)->links() }}
     </div>
     @endif
+</div>
 </div>
 
 <!-- =============== POPUPS =============== -->
@@ -296,7 +310,7 @@
     <div class="popup-body">
         <div class="info-banner">
             <i class="fas fa-info-circle"></i>
-            Masjid berhasil didaftarkan. Sekarang tambahkan data AC.
+            <span id="acMasjidMeta">Masjid berhasil didaftarkan.</span> Sekarang tambahkan data AC.
         </div>
         <input type="hidden" id="acMasjidId">
         <div id="acUnitsList">
@@ -309,7 +323,7 @@
             <button type="button" class="btn btn-primary" onclick="saveACUnits()">
                 <i class="fas fa-save"></i> Konfirmasi
             </button>
-            <button type="button" class="btn btn-secondary" onclick="closePopup('addACPopup'); location.reload()">
+            <button type="button" class="btn btn-secondary" onclick="skipACSetup()">
                 Lewati
             </button>
         </div>
@@ -402,6 +416,11 @@
 
 @push('scripts')
 <script>
+window.PAGE_SYNC_CONFIG = {
+    rootSelector: '#dashboardSyncRoot',
+    snapshotRoute: '{{ route("dashboard.snapshot") }}',
+    afterRender: 'dashboardRealtimeAfterRender',
+};
 const ROUTES = {
     masjidStore: '{{ route("masjid.store") }}',
     // warga.store temporarily disabled until route defined
@@ -413,6 +432,29 @@ const ROUTES = {
     acDestroy: (id) => `/ac/${id}`,
 };
 const isFrontdesk = {{ auth()->user()->isFrontdesk() ? 'true' : 'false' }};
+
+// Manual refresh function for dashboard (replaces auto-sync)
+function manualRefreshDashboard() {
+    const btn = event.currentTarget;
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-sync fa-spin"></i> Memuat...';
+    btn.disabled = true;
+
+    // Trigger manual snapshot refresh
+    window.refreshCurrentPageSnapshot()
+        .then(() => {
+            showToast('Data berhasil diperbarui!', 'success');
+        })
+        .catch((error) => {
+            showToast('Gagal memperbarui data: ' + error.message, 'error');
+            console.error('Dashboard refresh failed:', error);
+        })
+        .finally(() => {
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+        });
+}
 </script>
 <script src="{{ asset('js/dashboard.js') }}"></script>
 @endpush
+

@@ -1,0 +1,431 @@
+/* =====================================================================
+   LIQUID GLASS DESIGN SYSTEM 2026
+   Advanced glassmorphism with fluid dynamics, iridescent refractions,
+   and liquid-edge morphing. WCAG 2.2 AA compliant.
+   ===================================================================== */
+
+/* ── @property declarations for animatable CSS custom properties ─── */
+@property --liquid-hue {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@property --liquid-refraction {
+  syntax: '<percentage>';
+  initial-value: 0%;
+  inherits: false;
+}
+
+@property --liquid-edge-radius {
+  syntax: '<length>';
+  initial-value: 24px;
+  inherits: false;
+}
+
+@property --liquid-glow-opacity {
+  syntax: '<number>';
+  initial-value: 0;
+  inherits: false;
+}
+
+@property --liquid-surface-shift {
+  syntax: '<percentage>';
+  initial-value: 50%;
+  inherits: false;
+}
+
+@property --liquid-morph-x {
+  syntax: '<percentage>';
+  initial-value: 50%;
+  inherits: false;
+}
+
+@property --liquid-morph-y {
+  syntax: '<percentage>';
+  initial-value: 50%;
+  inherits: false;
+}
+
+/* ── Liquid Glass Root Tokens ───────────────────────────────────── */
+:root {
+  /* Surface tokens: 20-40% opacity range for WCAG compliance */
+  --lg-surface-primary: rgba(255, 255, 255, 0.28);
+  --lg-surface-elevated: rgba(255, 255, 255, 0.36);
+  --lg-surface-interactive: rgba(255, 255, 255, 0.22);
+  --lg-surface-overlay: rgba(255, 255, 255, 0.42);
+  --lg-surface-sunken: rgba(255, 255, 255, 0.14);
+
+  /* Liquid blur stack (multi-filter for depth) */
+  --lg-blur-base: saturate(180%) blur(20px);
+  --lg-blur-elevated: saturate(200%) blur(28px);
+  --lg-blur-nav: saturate(220%) blur(32px);
+  --lg-blur-overlay: saturate(160%) blur(40px);
+
+  /* Iridescent gradient tokens */
+  --lg-iridescent-start: hsla(152, 35%, 34%, 0.08);
+  --lg-iridescent-mid: hsla(170, 28%, 50%, 0.06);
+  --lg-iridescent-end: hsla(78, 25%, 62%, 0.08);
+  --lg-iridescent-accent: hsla(190, 40%, 60%, 0.05);
+
+  /* Border system: liquid-edge with inner glow */
+  --lg-border-outer: rgba(255, 255, 255, 0.18);
+  --lg-border-inner: rgba(255, 255, 255, 0.08);
+  --lg-border-interactive: rgba(47, 93, 80, 0.25);
+  --lg-border-glow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+
+  /* Liquid shadows: multi-layer for depth realism */
+  --lg-shadow-surface:
+    0 1px 2px rgba(0, 0, 0, 0.02),
+    0 4px 8px rgba(0, 0, 0, 0.03),
+    0 16px 32px rgba(0, 0, 0, 0.04);
+  --lg-shadow-elevated:
+    0 2px 4px rgba(0, 0, 0, 0.02),
+    0 8px 16px rgba(0, 0, 0, 0.04),
+    0 24px 48px rgba(0, 0, 0, 0.06);
+  --lg-shadow-floating:
+    0 4px 8px rgba(0, 0, 0, 0.03),
+    0 12px 24px rgba(0, 0, 0, 0.05),
+    0 32px 64px rgba(0, 0, 0, 0.08);
+  --lg-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+
+  /* Liquid refraction spectrum (iridescent animation color stops) */
+  --lg-refraction-gradient:
+    linear-gradient(
+      135deg,
+      var(--lg-iridescent-start) 0%,
+      var(--lg-iridescent-mid) 33%,
+      var(--lg-iridescent-accent) 66%,
+      var(--lg-iridescent-end) 100%
+    );
+
+  /* Motion tokens */
+  --lg-ease-liquid: cubic-bezier(0.22, 1, 0.36, 1);
+  --lg-ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --lg-ease-snap: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --lg-duration-fast: 150ms;
+  --lg-duration-base: 220ms;
+  --lg-duration-smooth: 280ms;
+
+  /* Ripple */
+  --lg-ripple-color: rgba(47, 93, 80, 0.12);
+}
+
+/* ── Dark Mode Tokens ───────────────────────────────────────────── */
+[data-theme="dark"] {
+  --lg-surface-primary: rgba(14, 14, 14, 0.55);
+  --lg-surface-elevated: rgba(26, 26, 24, 0.62);
+  --lg-surface-interactive: rgba(255, 255, 255, 0.04);
+  --lg-surface-overlay: rgba(14, 14, 14, 0.72);
+  --lg-surface-sunken: rgba(0, 0, 0, 0.3);
+
+  --lg-iridescent-start: hsla(152, 35%, 34%, 0.12);
+  --lg-iridescent-mid: hsla(170, 28%, 50%, 0.08);
+  --lg-iridescent-end: hsla(78, 25%, 62%, 0.1);
+  --lg-iridescent-accent: hsla(190, 40%, 60%, 0.06);
+
+  --lg-border-outer: rgba(255, 255, 255, 0.08);
+  --lg-border-inner: rgba(255, 255, 255, 0.04);
+  --lg-border-interactive: rgba(110, 159, 144, 0.3);
+  --lg-border-glow: 0 0 0 1px rgba(255, 255, 255, 0.03);
+
+  --lg-shadow-surface:
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    0 4px 8px rgba(0, 0, 0, 0.12),
+    0 16px 32px rgba(0, 0, 0, 0.16);
+  --lg-shadow-elevated:
+    0 2px 4px rgba(0, 0, 0, 0.1),
+    0 8px 16px rgba(0, 0, 0, 0.15),
+    0 24px 48px rgba(0, 0, 0, 0.2);
+  --lg-shadow-floating:
+    0 4px 8px rgba(0, 0, 0, 0.12),
+    0 12px 24px rgba(0, 0, 0, 0.18),
+    0 32px 64px rgba(0, 0, 0, 0.25);
+  --lg-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  --lg-ripple-color: rgba(110, 159, 144, 0.15);
+}
+
+/* ── Iridescent Flow Animation ──────────────────────────────────── */
+@keyframes lg-iridescent-flow {
+  0%   { --liquid-hue: 0deg;   --liquid-surface-shift: 30%; }
+  25%  { --liquid-hue: 90deg;  --liquid-surface-shift: 60%; }
+  50%  { --liquid-hue: 180deg; --liquid-surface-shift: 70%; }
+  75%  { --liquid-hue: 270deg; --liquid-surface-shift: 40%; }
+  100% { --liquid-hue: 360deg; --liquid-surface-shift: 30%; }
+}
+
+@keyframes lg-edge-morph {
+  0%   { --liquid-edge-radius: 24px; }
+  25%  { --liquid-edge-radius: 28px; }
+  50%  { --liquid-edge-radius: 22px; }
+  75%  { --liquid-edge-radius: 26px; }
+  100% { --liquid-edge-radius: 24px; }
+}
+
+@keyframes lg-refraction-pulse {
+  0%, 100% { --liquid-glow-opacity: 0; }
+  50%      { --liquid-glow-opacity: 0.3; }
+}
+
+@keyframes lg-ripple-out {
+  0%   { transform: translate(-50%, -50%) scale(0); opacity: 0.6; }
+  100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
+}
+
+@keyframes lg-surface-breathe {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+
+@keyframes lg-float-up {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes lg-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* ── Base Liquid Glass Surface ──────────────────────────────────── */
+.lg-surface {
+  position: relative;
+  background: var(--lg-surface-primary);
+  backdrop-filter: var(--lg-blur-base);
+  -webkit-backdrop-filter: var(--lg-blur-base);
+  border: 1px solid var(--lg-border-outer);
+  border-radius: var(--liquid-edge-radius, 24px);
+  box-shadow:
+    var(--lg-shadow-surface),
+    var(--lg-shadow-inset),
+    var(--lg-border-glow);
+  overflow: hidden;
+}
+
+/* Iridescent refraction pseudo-layer */
+.lg-surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--lg-refraction-gradient);
+  background-size: 200% 200%;
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity var(--lg-duration-smooth) var(--lg-ease-liquid);
+}
+
+/* Inner highlight edge (liquid light refraction) */
+.lg-surface::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(
+      ellipse at var(--liquid-morph-x, 50%) var(--liquid-morph-y, 30%),
+      rgba(255, 255, 255, 0.12) 0%,
+      transparent 60%
+    );
+  pointer-events: none;
+  z-index: 1;
+  opacity: var(--liquid-glow-opacity, 0);
+  transition: opacity var(--lg-duration-smooth) var(--lg-ease-liquid);
+}
+
+/* Interior content must sit above pseudo-layers */
+.lg-surface > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* ── Liquid Glass Variants ──────────────────────────────────────── */
+/* Elevated surface (cards, panels) */
+.lg-elevated {
+  background: var(--lg-surface-elevated);
+  backdrop-filter: var(--lg-blur-elevated);
+  -webkit-backdrop-filter: var(--lg-blur-elevated);
+  box-shadow:
+    var(--lg-shadow-elevated),
+    var(--lg-shadow-inset),
+    var(--lg-border-glow);
+}
+
+/* Floating surface (modals, popovers) */
+.lg-floating {
+  background: var(--lg-surface-overlay);
+  backdrop-filter: var(--lg-blur-overlay);
+  -webkit-backdrop-filter: var(--lg-blur-overlay);
+  box-shadow:
+    var(--lg-shadow-floating),
+    var(--lg-shadow-inset),
+    var(--lg-border-glow);
+}
+
+/* Navigation surface */
+.lg-nav {
+  backdrop-filter: var(--lg-blur-nav);
+  -webkit-backdrop-filter: var(--lg-blur-nav);
+}
+
+/* Sunken / inset surface */
+.lg-inset {
+  background: var(--lg-surface-sunken);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+  border-color: var(--lg-border-inner);
+}
+
+/* ── Liquid Glass Interactions ──────────────────────────────────── */
+/* Hover: edge morph + iridescent intensify */
+.lg-interactive {
+  transition:
+    transform var(--lg-duration-smooth) var(--lg-ease-liquid),
+    box-shadow var(--lg-duration-smooth) var(--lg-ease-liquid),
+    border-color var(--lg-duration-base) ease,
+    --liquid-edge-radius var(--lg-duration-smooth) var(--lg-ease-liquid);
+}
+
+.lg-interactive:hover {
+  --liquid-edge-radius: 28px;
+  transform: translateY(-4px);
+  box-shadow:
+    var(--lg-shadow-elevated),
+    var(--lg-shadow-inset),
+    0 0 0 1px var(--lg-border-interactive);
+  border-color: var(--lg-border-interactive);
+}
+
+.lg-interactive:hover::before {
+  opacity: 1;
+  animation: lg-surface-breathe 4s ease infinite;
+}
+
+.lg-interactive:hover::after {
+  --liquid-glow-opacity: 0.18;
+}
+
+.lg-interactive:active {
+  transform: scale(0.97);
+  transition-duration: var(--lg-duration-fast);
+}
+
+/* Focus-visible for keyboard nav (WCAG) */
+.lg-interactive:focus-visible {
+  outline: 3px solid var(--primary, #2F5D50);
+  outline-offset: 3px;
+}
+
+/* ── Ripple Effect Container ────────────────────────────────────── */
+.lg-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.lg-ripple__wave {
+  position: absolute;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--lg-ripple-color);
+  transform: translate(-50%, -50%) scale(0);
+  pointer-events: none;
+  z-index: 3;
+  animation: lg-ripple-out var(--lg-duration-smooth) var(--lg-ease-snap) forwards;
+}
+
+/* ── Scroll-Triggered Liquid Flow ───────────────────────────────── */
+.lg-scroll-reveal {
+  opacity: 0;
+  transform: translateY(28px) scale(0.97);
+  transition:
+    opacity 0.5s var(--lg-ease-liquid),
+    transform 0.5s var(--lg-ease-liquid);
+  transition-delay: var(--lg-reveal-delay, 0ms);
+}
+
+.lg-scroll-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* ── Liquid Edge Shimmer (on special cards) ──────────────────────── */
+.lg-shimmer::before {
+  background:
+    var(--lg-refraction-gradient),
+    linear-gradient(
+      105deg,
+      transparent 40%,
+      rgba(255, 255, 255, 0.15) 45%,
+      rgba(255, 255, 255, 0.05) 55%,
+      transparent 60%
+    );
+  background-size: 200% 200%, 200% 100%;
+  animation:
+    lg-surface-breathe 6s ease infinite,
+    lg-shimmer 3s ease-in-out infinite;
+}
+
+/* ── Fallback for browsers without backdrop-filter ──────────────── */
+@supports not (backdrop-filter: blur(1px)) {
+  .lg-surface,
+  .lg-elevated,
+  .lg-floating {
+    background: var(--bg-card, rgba(255, 255, 255, 0.92));
+  }
+
+  .lg-surface::before,
+  .lg-surface::after {
+    display: none;
+  }
+}
+
+/* ── Reduced Motion ─────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .lg-surface::before,
+  .lg-shimmer::before {
+    animation: none !important;
+  }
+
+  .lg-interactive {
+    transition-duration: 0.01ms !important;
+  }
+
+  .lg-interactive:hover {
+    --liquid-edge-radius: 24px;
+    transform: none;
+  }
+
+  .lg-scroll-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .lg-ripple__wave {
+    animation: none;
+    display: none;
+  }
+}
+
+/* ── Mobile Performance ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .lg-surface {
+    backdrop-filter: saturate(160%) blur(12px);
+    -webkit-backdrop-filter: saturate(160%) blur(12px);
+  }
+
+  .lg-elevated {
+    backdrop-filter: saturate(170%) blur(16px);
+    -webkit-backdrop-filter: saturate(170%) blur(16px);
+  }
+
+  .lg-floating {
+    backdrop-filter: saturate(150%) blur(20px);
+    -webkit-backdrop-filter: saturate(150%) blur(20px);
+  }
+
+  .lg-surface::before {
+    animation: none !important;
+  }
+}

@@ -7,6 +7,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::connection('main')->getDriverName() === 'sqlite') {
+            return;
+        }
+
         DB::connection('main')->statement(
             "ALTER TABLE users MODIFY role ENUM('frontdesk','manager','admin','technician','viewer') NOT NULL DEFAULT 'frontdesk'"
         );
@@ -14,6 +18,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::connection('main')->getDriverName() === 'sqlite') {
+            return;
+        }
+
         DB::connection('main')->statement(
             "ALTER TABLE users MODIFY role ENUM('frontdesk','manager','admin') NOT NULL DEFAULT 'frontdesk'"
         );

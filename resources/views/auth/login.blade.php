@@ -13,6 +13,10 @@
     </script>
     <title>Login - Forkis Platform</title>
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <!-- Liquid Glass Design System 2026 -->
+    <link rel="stylesheet" href="{{ asset('css/liquid-glass.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/liquid-glass-components.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/liquid-glass-integration.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body class="login-body">
@@ -74,6 +78,7 @@
         </div>
     </div>
     <script src="{{ asset('js/app.js') }}"></script>
+    <script src="{{ asset('js/liquid-glass.js') }}" defer></script>
     <script>
     function togglePassword() {
         const pwd = document.getElementById('password');

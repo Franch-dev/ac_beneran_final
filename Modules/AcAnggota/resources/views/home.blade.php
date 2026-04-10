@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'AC Anggota â€” Forkis')
+@section('title', 'AC Anggota — Forkis')
 
 @section('content')
 <section class="section">

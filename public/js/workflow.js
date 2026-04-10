@@ -108,7 +108,7 @@ async function submitAssignment(orderId) {
         closeWorkflowPopup('assignTechModal');
         if (data.success) {
             showToast(data.message, 'success');
-            setTimeout(() => location.reload(), 1500);
+            await refreshMonitoringSurface();
         } else {
             showToast(data.message, 'error');
         }
@@ -230,3 +230,4 @@ function closeWorkflowPopup(id) {
 
     document.getElementById(id)?.remove();
 }
+

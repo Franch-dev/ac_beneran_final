@@ -8,7 +8,7 @@
         <div class="section-header" style="text-align:left;">
             <div class="features-eyebrow">Anggota</div>
             <h1>Dashboard AC Anggota</h1>
-            <p>Fokus pada lokasi dengan kepadatan unit AC tertinggi â€” cocok untuk prioritas jadwal servis dan koordinasi lapangan.</p>
+            <p>Fokus pada lokasi dengan kepadatan unit AC tertinggi — cocok untuk prioritas jadwal servis dan koordinasi lapangan.</p>
         </div>
 
         <div class="stat-grid" style="max-width: 560px; margin-bottom: 28px;">
@@ -52,8 +52,8 @@
         </div>
 
         <p style="margin-top: 20px; color: var(--text-muted); font-size: 0.9rem;">
-            <a href="{{ route('modules.ac-anggota.monitoring') }}">Monitoring unit â†’</a>
-            &nbsp;Â·&nbsp;
+            <a href="{{ route('modules.ac-anggota.monitoring') }}">Monitoring unit ?</a>
+            &nbsp;·&nbsp;
             <a href="{{ route('modules.ac-anggota.index') }}">Halaman publik modul</a>
         </p>
     </div>

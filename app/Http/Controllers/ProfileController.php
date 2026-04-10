@@ -2,12 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
 class ProfileController extends Controller
 {
+    protected function usersTable(): string
+    {
+        $user = new User();
+
+        return "{$user->getConnectionName()}.{$user->getTable()}";
+    }
+
     public function index()
     {
         $user = auth()->user();
@@ -20,7 +28,7 @@ class ProfileController extends Controller
 
         $request->validate([
             'name'  => 'required|string|max:255',
-            'email' => ['required', 'email', Rule::unique('main.users', 'email')->ignore($user->id)],
+            'email' => ['required', 'email', Rule::unique($this->usersTable(), 'email')->ignore($user->id)],
         ]);
 
         $user->update([
