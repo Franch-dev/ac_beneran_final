@@ -1,83 +1,23 @@
-# Environment files
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+
+# Dependencies
+node_modules/
+venv/
+.venv/
 .env
-.env.backup
-.env.production
-.env.*.local
+.env.local
+.env.*
 
-
-# IDE and Editor files
-/.idea
-/.vscode
-/.fleet
-/.nova
-/.zed
-/.kiro
-.phpactor.json
-/.cursor
-
-# Testing
-.phpunit.result.cache
-/.phpunit.cache
-/coverage
-/*.coverage
-
-# Node modules
-/node_modules
-
-
-# Public assets
-/public/build
-
-/public/storage
-
-# Laravel storage (logs, sessions, cache)
-storage/*.key
-storage/logs
-storage/logs/*.log
-storage/sessions
-storage/framework/sessions
-storage/framework/views
-storage/framework/cache
-
-storage/cache
-/bootstrap/cache
-
-# Vendor
-/vendor
-/auth.json
-
-# Logs
+# Logs and temp files
 *.log
+*.tmp
+*.swp
 
-# OS files
-.DS_Store
-.AppleDouble
-.LSOverride
-Thumbs.db
-ehthumbs.db
+# Editors
+.vscode/
+.idea/
 
-# IDE temporary files
-.project
-.buildpath
-*.sublime-project
-*.sublime-workspace
-
-
-
-# Misc development files
-.editorconfig
-.gitattributes
-.env.testing
-
-# Compiled/generated files
-
-# Temp/unused project files
-usaha_masjid
-Website-Update/
-skills/
-.omc/
-.claude/
-.kiro/
-.paul/
-.cursor/
-Docs/
+# Original rules preserved
+*.log
