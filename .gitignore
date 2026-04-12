@@ -74,3 +74,5 @@ venv/
 # Editors extra
 .phpactor.json
 .cursor/
+.phpunit.result.cache
+/.phpunit.cache
