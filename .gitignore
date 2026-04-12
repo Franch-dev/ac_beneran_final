@@ -1,23 +1,76 @@
-# Compiled and build artifacts
+# Laravel
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/vendor
+/bootstrap/cache/.htaccess
+.env
+.env.backup
+.env.*.local
+.env.*.example
+
+# Node / Vite
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Compiled
 *.pyc
 __pycache__/
+*.rbc
+capybara-*.html
+.rspec
+/ coverage
+*.sqlite3
+/public/storage/**
 
-# Dependencies
-node_modules/
-venv/
-.venv/
-.env
-.env.local
-.env.*
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Thumbs.db?
 
-# Logs and temp files
-*.log
-*.tmp
-*.swp
-
-# Editors
+# Editors/IDEs
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
-# Original rules preserved
+# Logs / Temp
 *.log
+logs
+storage/logs/laravel.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+/vendor
+/storage/framework/cache/data/*
+/storage/logs/*.log
+/storage/framework/sessions/*
+/storage/framework/views/*
+
+# Project temps
+Website-Update/
+skills/
+useless/
+.omc/
+.claude/
+.kiro/
+.paul/
+.cursor/
+Docs/
+
+# Dependencies venv
+venv/
+.venv/
+
+# Editors extra
+.phpactor.json
+.cursor/
