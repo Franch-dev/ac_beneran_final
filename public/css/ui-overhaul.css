@@ -1178,6 +1178,106 @@ body {
     justify-content: center;
 }
 
+/* Fix overlapping Tailwind pagination and convert to clean Google-like text buttons */
+.pagination-shell .shadow-sm,
+.pagination-shell nav > div > div > span {
+    box-shadow: none !important;
+    gap: 0.35rem !important;
+    display: inline-flex !important;
+    flex-wrap: wrap;
+    justify-content: center;
+    border: none !important;
+    background: transparent !important;
+}
+
+/* Base styles for ALL pagination buttons (numbers and arrows) */
+.pagination-shell nav a,
+.pagination-shell nav span[aria-current="page"] > span,
+.pagination-shell nav span[aria-disabled="true"] > span,
+.pagination-shell nav span[aria-disabled="true"] {
+    margin-left: 0 !important;
+    border-radius: 50% !important;
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    border: none !important;
+    background: transparent !important;
+    color: var(--text-strong) !important;
+    font-weight: 500 !important;
+    font-size: 0.95rem !important;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    box-shadow: none !important;
+    position: static !important;
+    text-decoration: none !important;
+    line-height: 1 !important;
+}
+
+/* Ensure SVG arrows fit perfectly in the circle */
+.pagination-shell nav svg {
+    width: 18px !important;
+    height: 18px !important;
+    margin: 0 auto;
+}
+
+[data-theme="dark"] .pagination-shell nav a,
+[data-theme="dark"] .pagination-shell nav span[aria-disabled="true"] > span,
+[data-theme="dark"] .pagination-shell nav span[aria-disabled="true"] {
+    background: transparent !important;
+    border-color: transparent !important;
+    color: var(--text-muted) !important;
+}
+
+/* Active page styling (Google Material style) */
+.pagination-shell nav span[aria-current="page"] > span {
+    background: rgba(26, 115, 232, 0.12) !important;
+    color: #1a73e8 !important;
+    font-weight: 700 !important;
+}
+
+[data-theme="dark"] .pagination-shell nav span[aria-current="page"] > span {
+    background: rgba(138, 180, 248, 0.15) !important;
+    color: #8ab4f8 !important;
+}
+
+/* Hover effects for clickable links */
+.pagination-shell nav a:hover {
+    background: rgba(0, 0, 0, 0.05) !important;
+    color: #1a73e8 !important;
+    transform: none !important;
+}
+
+[data-theme="dark"] .pagination-shell nav a:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #8ab4f8 !important;
+}
+
+/* Fix for the ellipsis "..." span to prevent it from becoming a circle */
+.pagination-shell nav span.cursor-default:not([aria-current]):not([aria-disabled]) {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: var(--text-muted) !important;
+    width: auto !important;
+    min-width: 24px !important;
+    border-radius: 0 !important;
+}
+
+/* Hide the desktop "Showing 1 to N" text */
+.pagination-shell nav > div:first-child,
+.pagination-shell nav p.text-gray-700 {
+    display: none !important;
+}
+
+.pagination-shell nav > div:last-child {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
 .pagination-single-page {
     display: inline-flex;
     align-items: center;
