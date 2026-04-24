@@ -51,6 +51,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             MasjidSeeder::class,
+            AnggotaSeeder::class,
             AcUnitSeeder::class,
             ServiceOrderSeeder::class,
         ]);
@@ -68,8 +69,11 @@ class DatabaseSeeder extends Seeder
             'invoices',
             'service_details',
             'service_orders',
+            'anggota_service_orders',
+            'anggota_ac_units',
             'ac_units',
             'masjids',
+            'anggotas',
         ] as $table) {
             if ($schema->hasTable($table)) {
                 $connection->table($table)->truncate();
