@@ -65,10 +65,11 @@ useless/
 .kiro/
 .paul/
 .cursor/
-Docs/
 project-docs/
 TODO.md
-
+.agents
+.phpunit.result.cache
+scratch/
 # Dependencies venv
 venv/
 .venv/
