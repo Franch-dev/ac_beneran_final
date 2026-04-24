@@ -3,34 +3,49 @@
 namespace App\Http\Controllers;
 
 use App\Models\ServiceOrder;
+use App\Support\RealtimeSync;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class CloseOrderController extends Controller
 {
 
-    public function __invoke(Request $request): RedirectResponse
+    public function __invoke(Request $request): JsonResponse
     {
         $request->validate([
             'service_order_ids' => 'required|array',
-            'service_order_ids.*' => 'exists:service_orders,id',
+            'service_order_ids.*' => ['required', Rule::exists('ac_service.service_orders', 'id')],
         ]);
 
         $serviceOrderIds = $request->input('service_order_ids');
 
-        ServiceOrder::whereIn('id', $serviceOrderIds)
-            ->whereIn('status', ['waiting_invoice', 'waiting_review'])
-            ->update([
-                'status' => 'completed',
-                'completed_at' => now(),
-            ]);
+        // Delete completed orders (remove them from monitoring table)
+        $deleted = DB::connection('ac_service')->transaction(function () use ($serviceOrderIds) {
+            $orders = ServiceOrder::whereIn('id', $serviceOrderIds)
+                ->where('status', 'completed')
+                ->get();
 
-        cache()->forget('monitoring_status_totals');
-        cache()->forget('monitoring_orders_*');
+            foreach ($orders as $order) {
+                $order->invoice?->delete();
+                $order->serviceDetails()->delete();
+                $order->workflowSteps()->delete();
+                $order->technicianAssignment()?->delete();
+                $order->delete();
+            }
 
-        return redirect()->route('monitoring')->with('success', count($serviceOrderIds) . ' order berhasil ditutup dan dibersihkan dari tabel.');
+            return $orders->count();
+        });
+
+        Cache::forget('monitoring:status_counts');
+        Cache::forget('monitoring:status_totals');
+
+        return response()->json([
+            'success' => true,
+            'message' => $deleted . ' order selesai berhasil dihapus dari tabel.',
+        ]);
     }
 
 }
-

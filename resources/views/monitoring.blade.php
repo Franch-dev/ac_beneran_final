@@ -192,10 +192,10 @@
                     };
                     $progress = match($order->status) {
                         'pending' => ['value' => 18, 'label' => 'Menunggu approval', 'tone' => 'warning'],
-                        'approved' => ['value' => 42, 'label' => 'SPK sudah terbit', 'tone' => 'success'],
-                        'in_progress' => ['value' => 68, 'label' => 'Teknisi sedang bekerja', 'tone' => 'primary'],
-                        'waiting_invoice' => ['value' => 84, 'label' => 'Menunggu invoice', 'tone' => 'info'],
-                        'waiting_review' => ['value' => 92, 'label' => 'Menunggu review akhir', 'tone' => 'accent'],
+                        'waiting_invoice' => ['value' => 35, 'label' => 'Menunggu SPK & Invoice', 'tone' => 'info'],
+                        'approved' => ['value' => 50, 'label' => 'Siap Ditugaskan', 'tone' => 'success'],
+                        'in_progress' => ['value' => 75, 'label' => 'Teknisi sedang bekerja', 'tone' => 'primary'],
+                        'waiting_review' => ['value' => 90, 'label' => 'Menunggu review akhir', 'tone' => 'accent'],
                         'completed' => ['value' => 100, 'label' => 'Workflow selesai', 'tone' => 'success'],
                         default => ['value' => 12, 'label' => 'Status belum dipetakan', 'tone' => 'neutral'],
                     };
@@ -209,7 +209,9 @@
                     </td>
                     <td>
                         <div class="location-cell">
-                            <div class="location-name">{{ $order->masjid->name }}</div>
+                            <div class="location-name" style="cursor:pointer;color:var(--primary);" onclick="showMasjidSideDetail({{ $order->masjid->id }})">
+                                {{ $order->masjid->name }}
+                            </div>
                             <div class="location-meta">{{ $order->masjid->custom_id }} · {{ $order->masjid->acUnits->sum('quantity') }} unit</div>
                         </div>
                     </td>
@@ -274,7 +276,7 @@
                     </td>
                     <td class="table-cell-actions">
                         <div class="action-btns action-btns--dense">
-                            <button class="btn btn-sm btn-info" type="button" onclick="showOrderDetail({{ $order->id }})">
+                            <button class="btn btn-sm btn-info" type="button" onclick="showOrderDetail({{ $order->id }}, @js($order->order_number), @js($order->masjid->name), @js($order->service_date->format('d M Y')))">
                                 <i class="fas fa-eye"></i> Detail
                             </button>
 
@@ -378,7 +380,7 @@
             <div class="monitoring-mobile-card__header">
                 <div>
                     <div class="order-num">{{ $order->order_number }}</div>
-                    <div class="monitoring-mobile-card__site">{{ $order->masjid->name }}</div>
+                    <div class="monitoring-mobile-card__site" style="cursor:pointer;color:var(--primary);" onclick="showMasjidSideDetail({{ $order->masjid->id }})">{{ $order->masjid->name }}</div>
                 </div>
                 <span class="status-badge status-{{ $order->status }}">
                     {{ $statusLabels[$order->status] ?? \App\Models\ServiceOrder::statusLabel($order->status) }}
@@ -413,7 +415,7 @@
                 @endforeach
             </div>
             <div class="action-btns">
-                <button class="btn btn-sm btn-info" type="button" onclick="showOrderDetail({{ $order->id }})">
+                <button class="btn btn-sm btn-info" type="button" onclick="showOrderDetail({{ $order->id }}, @js($order->order_number), @js($order->masjid->name), @js($order->service_date->format('d M Y')))">
                     <i class="fas fa-eye"></i> Detail
                 </button>
 
