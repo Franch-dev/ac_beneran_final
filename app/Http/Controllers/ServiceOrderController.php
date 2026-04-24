@@ -221,7 +221,7 @@ class ServiceOrderController extends Controller
         }
 
         return DB::connection('ac_service')->transaction(function () use ($serviceOrder) {
-            $serviceOrder->update(['status' => 'approved']);
+            $serviceOrder->update(['status' => 'waiting_invoice']);
 
             WorkflowStep::create([
                 'service_order_id' => $serviceOrder->id,
@@ -229,7 +229,7 @@ class ServiceOrderController extends Controller
                 'actor_id' => auth()->id(),
                 'actor_name' => auth()->user()->name,
                 'actor_role' => auth()->user()->role,
-                'notes' => 'SPK diterbitkan',
+                'notes' => 'Menunggu pembuatan SPK & Invoice',
             ]);
 
             RealtimeSync::afterCommit('service_order.approved', [
@@ -238,7 +238,7 @@ class ServiceOrderController extends Controller
                 'masjid_id' => $serviceOrder->masjid_id,
                 'service_order_id' => $serviceOrder->id,
                 'payload' => [
-                    'status' => 'approved',
+                    'status' => 'waiting_invoice',
                 ],
             ]);
 
@@ -342,7 +342,7 @@ class ServiceOrderController extends Controller
                 'total_price' => $total,
             ]);
 
-            $serviceOrder->update(['status' => 'waiting_review']);
+            $serviceOrder->update(['status' => 'approved']);
 
             WorkflowStep::create([
                 'service_order_id' => $serviceOrder->id,
@@ -350,7 +350,7 @@ class ServiceOrderController extends Controller
                 'actor_id' => auth()->id(),
                 'actor_name' => auth()->user()->name,
                 'actor_role' => auth()->user()->role,
-                'notes' => 'Invoice diterbitkan',
+                'notes' => 'SPK & Invoice diterbitkan',
             ]);
 
             RealtimeSync::afterCommit('service_order.invoice_generated', [
@@ -359,7 +359,7 @@ class ServiceOrderController extends Controller
                 'masjid_id' => $serviceOrder->masjid_id,
                 'service_order_id' => $serviceOrder->id,
                 'payload' => [
-                    'status' => 'waiting_review',
+                    'status' => 'approved',
                 ],
             ]);
 

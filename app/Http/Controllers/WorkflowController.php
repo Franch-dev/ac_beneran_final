@@ -134,7 +134,7 @@ class WorkflowController extends Controller
             $assignment->update($updateData);
 
             $step = $validated['status'] === 'in_progress' ? 'in_progress' : 'completed';
-            $orderStatus = $validated['status'] === 'in_progress' ? 'in_progress' : 'waiting_invoice';
+            $orderStatus = $validated['status'] === 'in_progress' ? 'in_progress' : 'waiting_review';
 
             WorkflowStep::create([
                 'service_order_id' => $serviceOrder->id,
