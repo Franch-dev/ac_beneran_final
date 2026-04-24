@@ -92,7 +92,6 @@
     'masjids' => $masjids,
     'formActionRoute' => route('modules.ac-service.guest-order.store'),
     'popupTitle' => 'AC Service',
-    'entityLabel' => 'Masjid',
 ])
 
 @endsection

@@ -44,7 +44,6 @@
     'masjids' => $masjids,
     'formActionRoute' => route('modules.ac-masjid-musholla.guest-order.store'),
     'popupTitle' => 'AC Masjid & Musholla',
-    'entityLabel' => 'Masjid',
 ])
 
 <section class="section section-alt" id="harga">

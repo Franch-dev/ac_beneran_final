@@ -169,7 +169,6 @@
     'masjids' => $masjids,
     'formActionRoute' => route('modules.ac-service.guest-order.store'),
     'popupTitle' => 'Forkis Platform',
-    'entityLabel' => 'Masjid',
 ])
 
 <section class="section section-alt" id="harga">

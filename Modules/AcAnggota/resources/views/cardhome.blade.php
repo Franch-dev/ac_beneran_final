@@ -44,7 +44,6 @@
     'masjids' => $masjids ?? collect([]),
     'formActionRoute' => route('modules.ac-anggota.guest-order.store'),
     'popupTitle' => 'AC Anggota',
-    'entityLabel' => 'Anggota',
 ])
 
 <section class="section section-alt" id="harga">
