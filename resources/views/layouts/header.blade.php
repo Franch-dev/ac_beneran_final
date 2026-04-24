@@ -22,19 +22,34 @@
             <span class="sidebar-icon"><i class="fas fa-layer-group"></i></span>
             <span class="sidebar-label">Katalog</span>
         </a>
-        @foreach(($modulePageRegistry['pages'] ?? []) as $page)
-        <a href="{{ $page['url'] }}" class="sidebar-link {{ $page['active'] ? 'active' : '' }} {{ str_contains($page['label'], 'Monitoring') ? 'monitoring-link' : '' }}" role="menuitem">
-            <span class="sidebar-icon"><i class="{{ $page['icon'] }}"></i></span>
-            <span class="sidebar-label">{{ $page['label'] }}</span>
-            @if(str_contains($page['label'], 'Monitoring'))
-            <span class="sidebar-notification-stack" aria-label="Ringkasan antrean monitoring">
-                <span class="badge-lite badge-lite-pending" data-status-badge="pending" data-badge-label="Pending" hidden>0</span>
-                <span class="badge-lite badge-lite-invoice" data-status-badge="waiting_invoice" data-badge-label="Waiting Invoice" hidden>0</span>
-                <span class="badge-lite badge-lite-review" data-status-badge="waiting_review" data-badge-label="Waiting Review" hidden>0</span>
-            </span>
-            @endif
-        </a>
-        @endforeach
+        @php
+            $currentModule = session('current_module');
+            $dashboardRoute = $currentModule === 'ac-masjid-musholla' ? 'modules.ac-masjid-musholla.dashboard'
+                        : ($currentModule === 'ac-anggota' ? 'modules.ac-anggota.dashboard'
+                        : 'dashboard');
+            $monitoringRoute = $currentModule === 'ac-masjid-musholla' ? 'modules.ac-masjid-musholla.monitoring'
+                        : ($currentModule === 'ac-anggota' ? 'modules.ac-anggota.monitoring'
+                        : 'monitoring');
+            $moduleLabel = $currentModule === 'ac-masjid-musholla' ? 'AC Masjid'
+                        : ($currentModule === 'ac-anggota' ? 'AC Anggota' : 'Dashboard');
+            $moduleLabelMon = $currentModule === 'ac-masjid-musholla' ? 'AC Masjid'
+                        : ($currentModule === 'ac-anggota' ? 'AC Anggota' : 'Monitoring');
+        @endphp
+        @if(in_array($currentModule, ['ac-masjid-musholla', 'ac-anggota']))
+            <a href="{{ route($dashboardRoute) }}" class="sidebar-link {{ request()->routeIs('*dashboard*') ? 'active' : '' }}" role="menuitem">
+                <span class="sidebar-icon"><i class="fas fa-th-large"></i></span>
+                <span class="sidebar-label">{{ $moduleLabel }}</span>
+            </a>
+            <a href="{{ route($monitoringRoute) }}" class="sidebar-link monitoring-link {{ request()->routeIs('*monitoring*') ? 'active' : '' }}" role="menuitem">
+                <span class="sidebar-icon"><i class="fas fa-chart-line"></i></span>
+                <span class="sidebar-label">{{ $moduleLabelMon }}</span>
+                <span class="sidebar-notification-stack" aria-label="Ringkasan antrean monitoring">
+                    <span class="badge-lite badge-lite-pending" data-status-badge="pending" data-badge-label="Pending" hidden>0</span>
+                    <span class="badge-lite badge-lite-invoice" data-status-badge="waiting_invoice" data-badge-label="Waiting Invoice" hidden>0</span>
+                    <span class="badge-lite badge-lite-review" data-status-badge="waiting_review" data-badge-label="Waiting Review" hidden>0</span>
+                </span>
+            </a>
+        @endif
 
         {{-- Profile (all roles) --}}
         <a href="{{ route('profile.index') }}"
