@@ -4,7 +4,17 @@
  */
 
 // === ORDER DETAIL MODAL ===
-window.showOrderDetail = async function(orderId, orderNumber, MasjidName, serviceDate) {
+window.showOrderDetail = async function(orderId, orderNumber, masjidName, serviceDate) {
+    const serviceOrderId = Number(orderId);
+    if (!Number.isInteger(serviceOrderId) || serviceOrderId <= 0) {
+        showToast('Service order tidak valid', 'error');
+        return;
+    }
+
+    orderNumber = String(orderNumber ?? '-');
+    masjidName = String(masjidName ?? '-');
+    serviceDate = String(serviceDate ?? '-');
+
     const modal = document.getElementById('orderDetailPopup');
     const body = document.getElementById('orderDetailBody');
     
@@ -17,7 +27,7 @@ window.showOrderDetail = async function(orderId, orderNumber, MasjidName, servic
     modal.classList.add('active');
     
     try {
-        const order = await apiFetch(`/service-order/${orderId}`, 'GET');
+        const order = await apiFetch(`/service-order/${serviceOrderId}`, 'GET');
         const orderData = order.data || order.order || order;
         const safeText = window.escapeHtml || ((val) => String(val ?? ''));
         
@@ -385,9 +395,24 @@ window.refreshMonitoringSurface = refreshMonitoringSurface;
 
 // === OPEN ASSIGN TECHNICIAN POPUP ===
 window.openAssignTech = function(orderId, orderNumber, masjidName) {
-    document.getElementById('assignTechOrderId').value = orderId;
-    document.getElementById('assignTechOrderInfo').textContent = `Order: ${orderNumber} - ${masjidName}`;
-    document.getElementById('technicianSelect').value = '';
+    const serviceOrderId = Number(orderId);
+    if (!Number.isInteger(serviceOrderId) || serviceOrderId <= 0) {
+        showToast('Service order tidak valid', 'error');
+        return;
+    }
+
+    const orderIdField = document.getElementById('assignTechOrderId');
+    const orderInfo = document.getElementById('assignTechOrderInfo');
+    const technicianSelect = document.getElementById('technicianSelect');
+
+    if (!orderIdField || !orderInfo || !technicianSelect) {
+        showToast('Form penugasan tidak ditemukan', 'error');
+        return;
+    }
+
+    orderIdField.value = serviceOrderId;
+    orderInfo.textContent = `Order: ${String(orderNumber ?? '-')} - ${String(masjidName ?? '-')}`;
+    technicianSelect.value = '';
     openPopup('assignTechPopup');
 };
 
@@ -877,9 +902,15 @@ if (typeof window.closePopup === 'undefined') {
 // SHOW MASJID SIDE DETAIL
 // ============================================
 window.showMasjidSideDetail = async function(masjidId) {
+    const safeMasjidId = Number(masjidId);
+    if (!Number.isInteger(safeMasjidId) || safeMasjidId <= 0) {
+        showToast("Masjid tidak valid.", "warning");
+        return;
+    }
+
     try {
         showToast("Memuat detail masjid...", "info");
-        const response = await apiFetch(`/masjid/${masjidId}`, "GET");
+        const response = await apiFetch(`/masjid/${safeMasjidId}`, "GET");
         showToast("Detail masjid dimuat.", "success");
     } catch (err) {
         showToast("Gagal memuat: " + (err.message || "Error"), "error");
@@ -889,7 +920,16 @@ window.showMasjidSideDetail = async function(masjidId) {
 // ============================================
 // SHOW WORKFLOW TIMELINE
 // ============================================
-window.showWorkflowTimeline = async function(orderId, orderNumber, MasjidName) {
+window.showWorkflowTimeline = async function(orderId, orderNumber, masjidName) {
+    const serviceOrderId = Number(orderId);
+    if (!Number.isInteger(serviceOrderId) || serviceOrderId <= 0) {
+        showToast('Service order tidak valid', 'error');
+        return;
+    }
+
+    orderNumber = String(orderNumber ?? '-');
+    masjidName = String(masjidName ?? '-');
+
     const modal = document.getElementById('workflowTimelineModal');
     const body = document.getElementById('workflowTimelineBody');
     
@@ -902,7 +942,7 @@ window.showWorkflowTimeline = async function(orderId, orderNumber, MasjidName) {
     modal.classList.add('active');
     
     try {
-        const data = await apiFetch(`/workflow/${orderId}/timeline`, 'GET');
+        const data = await apiFetch(`/workflow/${serviceOrderId}/timeline`, 'GET');
         const safeText = window.escapeHtml || ((val) => String(val ?? ''));
         
         let stepsHtml = '';

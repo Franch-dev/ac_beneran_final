@@ -217,7 +217,12 @@
                 @php
                     $latestStep = $order->latestWorkflowStep;
                     $assignment = $order->technicianAssignment;
-                    $urgency = $order->masjid->urgency_status;
+                    $masjid = $order->masjid;
+                    $masjidId = optional($masjid)->id;
+                    $masjidName = optional($masjid)->name ?? '-';
+                    $masjidCustomId = optional($masjid)->custom_id ?? '-';
+                    $masjidUnitCount = $masjid?->acUnits?->sum('quantity') ?? 0;
+                    $urgency = optional($masjid)->urgency_status;
                     $urgencyLabel = match($urgency) {
                         'aman' => 'Aman',
                         'harus_servis' => 'Harus Servis',
@@ -243,10 +248,14 @@
                     </td>
                     <td>
                         <div class="location-cell">
-                            <div class="location-name" style="cursor:pointer;color:var(--primary);" onclick="showMasjidSideDetail({{ $order->masjid->id }})">
-                                {{ $order->masjid->name }}
+                            <div class="location-name" style="cursor:pointer;color:var(--primary);" onclick="showMasjidSideDetail(@json($masjidId))">
+                                {{ $masjidName }}
                             </div>
+                            @if($masjid)
                             <div class="location-meta">{{ $order->masjid->custom_id }} · {{ $order->masjid->acUnits->sum('quantity') }} unit</div>
+                            @else
+                            <div class="location-meta">{{ $masjidCustomId }} &middot; {{ $masjidUnitCount }} unit</div>
+                            @endif
                         </div>
                     </td>
                     <td>
@@ -295,7 +304,7 @@
                     </td>
                     <td>
                         @php
-                            $urgency = $order->masjid->urgency_status;
+                            $urgency = optional($masjid)->urgency_status;
                             $urgencyLabel = match($urgency) {
                                 'aman' => 'Aman',
                                 'harus_servis' => 'Harus Servis',
@@ -310,7 +319,7 @@
                     </td>
                     <td class="table-cell-actions">
                         <div class="action-btns action-btns--dense">
-                            <button class="btn btn-sm btn-info" type="button" onclick="showOrderDetail({{ $order->id }}, @js($order->order_number), @js($order->masjid->name), @js($order->service_date->format('d M Y')))">
+                            <button class="btn btn-sm btn-info" type="button" onclick='showOrderDetail(@json($order->id), @json($order->order_number), @json($masjidName), @json($order->service_date->format('d M Y')))'>
                                 <i class="fas fa-eye"></i> Detail
                             </button>
 
@@ -324,14 +333,14 @@
                             {{-- Assign technician after SPK --}}
                             @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'approved')
                             <button class="btn btn-sm btn-outline btn-accent" type="button"
-                                onclick="openAssignTech({{ $order->id }}, @js($order->order_number), @js($order->masjid->name))">
+                                onclick='openAssignTech(@json($order->id), @json($order->order_number), @json($masjidName))'>
                                 <i class="fas fa-user-hard-hat"></i> Tugaskan
                             </button>
                             @endif
 
                             {{-- Technician mark task done / submit field report --}}
                             @if(auth()->user()->isTechnician() && in_array($order->status, ['approved','in_progress']))
-                            <button class="btn btn-sm btn-warning" type="button" onclick="openFieldReport({{ $order->id }}, @js($order->order_number))">
+                            <button class="btn btn-sm btn-warning" type="button" onclick='openFieldReport(@json($order->id), @json($order->order_number))'>
                                 <i class="fas fa-clipboard-check"></i> Submit Laporan
                             </button>
                             @endif
@@ -408,7 +417,7 @@
                             @endif
 
                             {{-- Workflow timeline button (all manager/admin/frontdesk/tech) --}}
-                            <button class="btn btn-sm btn-info" type="button" onclick="showWorkflowTimeline({{ $order->id }}, @js($order->order_number), @js($order->masjid->name))">
+                            <button class="btn btn-sm btn-info" type="button" onclick='showWorkflowTimeline(@json($order->id), @json($order->order_number), @json($masjidName))'>
                                 <i class="fas fa-stream"></i> Timeline
                             </button>
 
@@ -425,7 +434,11 @@
         @php
             $latestStep = $order->latestWorkflowStep;
             $assignment = $order->technicianAssignment;
-            $urgency = $order->masjid->urgency_status;
+            $masjid = $order->masjid;
+            $masjidId = optional($masjid)->id;
+            $masjidName = optional($masjid)->name ?? '-';
+            $masjidCustomId = optional($masjid)->custom_id ?? '-';
+            $urgency = optional($masjid)->urgency_status;
             $urgencyLabel = match($urgency) {
                 'aman' => 'Aman',
                 'harus_servis' => 'Harus Servis',
@@ -438,14 +451,14 @@
             <div class="monitoring-mobile-card__header">
                 <div>
                     <div class="order-num">{{ $order->order_number }}</div>
-                    <div class="monitoring-mobile-card__site" style="cursor:pointer;color:var(--primary);" onclick="showMasjidSideDetail({{ $order->masjid->id }})">{{ $order->masjid->name }}</div>
+                    <div class="monitoring-mobile-card__site" style="cursor:pointer;color:var(--primary);" onclick="showMasjidSideDetail(@json($masjidId))">{{ $masjidName }}</div>
                 </div>
                 <span class="status-badge status-{{ $order->status }}">
                     {{ $statusLabels[$order->status] ?? \App\Models\ServiceOrder::statusLabel($order->status) }}
                 </span>
             </div>
             <div class="monitoring-mobile-card__meta">
-                <span>{{ $order->masjid->custom_id }}</span>
+                <span>{{ $masjidCustomId }}</span>
                 <span class="notification-badge {{ $order->service_date < now() ? 'notification-badge--danger' : 'notification-badge--success' }}">{{ $scheduleState }}</span>
                 <span class="notification-badge notification-badge--neutral">{{ $urgencyLabel }}</span>
             </div>
@@ -473,7 +486,7 @@
                 @endforeach
             </div>
             <div class="action-btns">
-                <button class="btn btn-sm btn-info" type="button" onclick="showOrderDetail({{ $order->id }}, @js($order->order_number), @js($order->masjid->name), @js($order->service_date->format('d M Y')))">
+                <button class="btn btn-sm btn-info" type="button" onclick='showOrderDetail(@json($order->id), @json($order->order_number), @json($masjidName), @json($order->service_date->format('d M Y')))'>
                     <i class="fas fa-eye"></i> Detail
                 </button>
 
@@ -485,7 +498,7 @@
 
                 @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'approved')
                 <button class="btn btn-sm btn-outline btn-accent" type="button"
-                    onclick="openAssignTech({{ $order->id }}, @js($order->order_number), @js($order->masjid->name))">
+                    onclick='openAssignTech(@json($order->id), @json($order->order_number), @json($masjidName))'>
                     <i class="fas fa-user-hard-hat"></i> Tugaskan
                 </button>
                 @endif
@@ -526,7 +539,7 @@
                 @endif
 
                 <button class="btn btn-sm btn-info" type="button"
-                    onclick="showWorkflowTimeline({{ $order->id }}, @js($order->order_number), @js($order->masjid->name))">
+                    onclick='showWorkflowTimeline(@json($order->id), @json($order->order_number), @json($masjidName))'>
                     <i class="fas fa-stream"></i> Timeline
                 </button>
             </div>
@@ -942,4 +955,3 @@ window.HARGA_CONFIG = {
 </script>
 @vite(['resources/js/monitoring.js'])
 @endpush
-
