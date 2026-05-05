@@ -10,6 +10,40 @@
     $waitingReviewCount = (int) ($statusTotals['waiting_review'] ?? 0);
     $searchTerm = request('search');
     $statusFilter = request('status');
+    $currentUser = auth()->user();
+    $canCreateSpkInvoice = static function ($order) use ($currentUser): bool {
+        $status = strtolower(trim((string) ($order->status ?? '')));
+        $latestStep = strtolower(trim((string) optional($order->latestWorkflowStep)->step));
+        $hasAllowedRole = $currentUser && (
+            $currentUser->isFrontdesk()
+            || $currentUser->isManager()
+            || $currentUser->isAdmin()
+        );
+
+        if (! $hasAllowedRole || $order->invoice) {
+            return false;
+        }
+
+        if (in_array($status, ['completed', 'closed', 'cancelled', 'selesai'], true)) {
+            return false;
+        }
+
+        $spkAlreadyStartedSteps = [
+            'spk_invoice_created',
+            'spk_invoice_approved',
+            'assigned',
+            'in_progress',
+            'technician_reported',
+            'invoice_edited',
+            'payment_received',
+            'printed',
+            'completed',
+            'cancelled',
+        ];
+
+        return in_array($status, ['pending', 'approved', 'waiting_invoice'], true)
+            && ! in_array($latestStep, $spkAlreadyStartedSteps, true);
+    };
 @endphp
 <div id="monitoringSyncRoot">
 <div class="page-container page-operations page-operations--monitoring">
@@ -303,7 +337,7 @@
                             @endif
 
                             {{-- Manager/Frontdesk/Admin generate invoice --}}
-                            @if((auth()->user()->isFrontdesk() || auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_invoice' && ! $order->invoice)
+                            @if($canCreateSpkInvoice($order))
                             <button class="btn btn-sm btn-primary" type="button" onclick="generateInvoice({{ $order->id }})">
                                 <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
                             </button>
@@ -462,7 +496,7 @@
                 </button>
                 @endif
 
-                @if((auth()->user()->isFrontdesk() || auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_invoice' && ! $order->invoice)
+                @if($canCreateSpkInvoice($order))
                 <button class="btn btn-sm btn-primary" type="button" onclick="generateInvoice({{ $order->id }})">
                     <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
                 </button>
@@ -908,5 +942,4 @@ window.HARGA_CONFIG = {
 </script>
 @vite(['resources/js/monitoring.js'])
 @endpush
-
 
