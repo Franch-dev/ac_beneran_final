@@ -65,6 +65,7 @@ useless/
 .kiro/
 .paul/
 .cursor/
+.codex/
 project-docs/
 project-docs-v1/
 project_explanation/
@@ -75,7 +76,10 @@ scratch/
 /debug_workflow
 /debug_workflow/blackboard
 /database/testing
-
+AI-agents-task-rule-etc/
+FILE_DOCUMENTATION.html
+my-codebase.md
+repomix-output.xml
 # Dependencies venv
 venv/
 .venv/
