@@ -40,6 +40,7 @@ class MonitoringController extends Controller
     protected function buildMonitoringViewData(Request $request): array
     {
         $query = ServiceOrder::query()
+            ->whereNull('archived_at')
             ->select(['id', 'masjid_id', 'order_number', 'service_date', 'status', 'created_at'])
             ->with([
                 'masjid:id,custom_id,name',

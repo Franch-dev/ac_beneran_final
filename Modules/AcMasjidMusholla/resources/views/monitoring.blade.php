@@ -280,10 +280,10 @@
                                 <i class="fas fa-eye"></i> Detail
                             </button>
 
-                            {{-- Manager/Admin approve to generate SPK --}}
+                            {{-- Manager/Admin create SPK & invoice --}}
                             @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'pending')
-                            <button class="btn btn-sm btn-success" type="button" onclick="approveOrder({{ $order->id }})">
-                                <i class="fas fa-check"></i> Approve SPK
+                            <button class="btn btn-sm btn-primary" type="button" onclick="createSpkInvoice({{ $order->id }})">
+                                <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
                             </button>
                             @endif
 
@@ -304,7 +304,7 @@
 
                             {{-- Manager/Frontdesk/Admin generate invoice --}}
                             @if((auth()->user()->isFrontdesk() || auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_invoice' && ! $order->invoice)
-                            <button class="btn btn-sm btn-primary" type="button" onclick="generateInvoice({{ $order->id }})">
+                            <button class="btn btn-sm btn-primary" type="button" onclick="createSpkInvoice({{ $order->id }})">
                                 <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
                             </button>
                             @endif
@@ -313,18 +313,21 @@
 
 
                             {{-- Order Selesai button for 'completed' status --}}
-                            @if($order->status == 'completed' && (auth()->user()->isFrontdesk() || auth()->user()->isManager() || auth()->user()->isAdmin() || auth()->user()->isTechnician()))
-                            <button class="btn btn-sm btn-success" type="button" onclick="handleCompletedOrder({{ $order->id }})" title="Kelola order selesai">
-                                <i class="fas fa-check-double"></i> Order Selesai
-                            </button>
-                            @endif
+                    @if($order->status == 'completed' && (auth()->user()->isFrontdesk() || auth()->user()->isManager() || auth()->user()->isAdmin() || auth()->user()->isTechnician()))
+                    <button class="btn btn-sm btn-success" type="button" onclick="archiveOrder({{ $order->id }})" title="Archive to history">
+                        <i class="fas fa-archive"></i> Order Selesai (Archive)
+                    </button>
+                    <button class="btn btn-sm btn-danger" type="button" onclick="deleteOrder({{ $order->id }})" title="Hapus permanen">
+                        <i class="fas fa-trash"></i> Hapus Permanen
+                    </button>
+                    @endif
 
 
 
                             {{-- Manager/Admin approve invoice --}}
                             @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_review')
-                            <button class="btn btn-sm btn-success" type="button" onclick="approveInvoice({{ $order->id }})">
-                                <i class="fas fa-check-circle"></i> Approve Invoice
+                            <button class="btn btn-sm btn-success" type="button" onclick="approveSpkInvoice({{ $order->id }})">
+                                <i class="fas fa-check-circle"></i> Approve SPK & Invoice
                             </button>
                             @endif
 
@@ -420,8 +423,8 @@
                 </button>
 
                 @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'pending')
-                <button class="btn btn-sm btn-success" type="button" onclick="approveOrder({{ $order->id }})">
-                    <i class="fas fa-check"></i> Approve SPK
+                <button class="btn btn-sm btn-primary" type="button" onclick="createSpkInvoice({{ $order->id }})">
+                    <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
                 </button>
                 @endif
 
@@ -439,7 +442,7 @@
                 @endif
 
                 @if((auth()->user()->isFrontdesk() || auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_invoice' && ! $order->invoice)
-                <button class="btn btn-sm btn-primary" type="button" onclick="generateInvoice({{ $order->id }})">
+                <button class="btn btn-sm btn-primary" type="button" onclick="createSpkInvoice({{ $order->id }})">
                     <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
                 </button>
                 @endif
@@ -776,5 +779,3 @@ window.HARGA_CONFIG = {
 </script>
 @vite(['resources/js/monitoring.js'])
 @endpush
-
-

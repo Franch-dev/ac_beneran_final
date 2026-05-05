@@ -323,13 +323,6 @@
                                 <i class="fas fa-eye"></i> Detail
                             </button>
 
-                            {{-- Manager/Admin approve to generate SPK --}}
-                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'pending')
-                            <button class="btn btn-sm btn-success" type="button" onclick="approveOrder({{ $order->id }})">
-                                <i class="fas fa-check"></i> Approve SPK
-                            </button>
-                            @endif
-
                             {{-- Assign technician after SPK --}}
                             @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'approved')
                             <button class="btn btn-sm btn-outline btn-accent" type="button"
@@ -345,9 +338,9 @@
                             </button>
                             @endif
 
-                            {{-- Manager/Frontdesk/Admin generate invoice --}}
+                            {{-- Manager/Frontdesk/Admin generate SPK & Invoice --}}
                             @if($canCreateSpkInvoice($order))
-                            <button class="btn btn-sm btn-primary" type="button" onclick="generateInvoice({{ $order->id }})">
+                            <button class="btn btn-sm btn-primary" type="button" onclick="createSpkInvoice({{ $order->id }})">
                                 <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
                             </button>
                             @endif
@@ -380,10 +373,10 @@
 
 
 
-                            {{-- Manager/Admin approve invoice --}}
+                            {{-- Manager/Admin approve SPK & Invoice --}}
                             @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_review')
                             <button class="btn btn-sm btn-success" type="button" onclick="approveInvoice({{ $order->id }})">
-                                <i class="fas fa-check-circle"></i> Approve Invoice
+                                <i class="fas fa-check-circle"></i> Approve SPK & Invoice
                             </button>
                             @endif
 
@@ -490,12 +483,6 @@
                     <i class="fas fa-eye"></i> Detail
                 </button>
 
-                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'pending')
-                <button class="btn btn-sm btn-success" type="button" onclick="approveOrder({{ $order->id }})">
-                    <i class="fas fa-check"></i> Approve SPK
-                </button>
-                @endif
-
                 @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'approved')
                 <button class="btn btn-sm btn-outline btn-accent" type="button"
                     onclick='openAssignTech(@json($order->id), @json($order->order_number), @json($masjidName))'>
@@ -510,14 +497,14 @@
                 @endif
 
                 @if($canCreateSpkInvoice($order))
-                <button class="btn btn-sm btn-primary" type="button" onclick="generateInvoice({{ $order->id }})">
+                <button class="btn btn-sm btn-primary" type="button" onclick="createSpkInvoice({{ $order->id }})">
                     <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
                 </button>
                 @endif
 
                 @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_review')
                 <button class="btn btn-sm btn-success" type="button" onclick="approveInvoice({{ $order->id }})">
-                    <i class="fas fa-check-circle"></i> Approve Invoice
+                    <i class="fas fa-check-circle"></i> Approve SPK & Invoice
                 </button>
                 @endif
 
@@ -735,6 +722,38 @@
     <div class="popup-body" id="historyBody"></div>
 </div>
 
+<!-- Assign Technician Popup -->
+<div class="popup popup-lg" id="assignTechPopup">
+    <div class="popup-header">
+        <h3><i class="fas fa-user-hard-hat"></i> Tugaskan Teknisi</h3>
+        <button class="popup-close" onclick="closePopup('assignTechPopup')">&times;</button>
+    </div>
+    <div class="popup-body">
+        <input type="hidden" id="assignTechOrderId">
+        <div class="info-banner">
+            <i class="fas fa-info-circle"></i>
+            <span id="assignTechOrderInfo">Order: -</span>
+        </div>
+        <div class="form-group" style="margin-top:1rem;">
+            <label class="form-label">Pilih Teknisi <span class="required">*</span></label>
+            <select id="technicianSelect" class="form-select">
+                <option value="">Memuat daftar teknisi...</option>
+            </select>
+        </div>
+        <div class="form-group" style="margin-top:0.75rem;">
+            <label class="form-label">Catatan untuk teknisi</label>
+            <textarea id="assignTechNotes" class="form-textarea" rows="3" placeholder="Instruksi tambahan..."></textarea>
+        </div>
+        <div class="popup-actions">
+            <button class="btn btn-primary" onclick="submitAssignTech()">
+                <i class="fas fa-paper-plane"></i> Tugaskan
+            </button>
+            <button class="btn btn-secondary" onclick="closePopup('assignTechPopup')">
+                Batal
+            </button>
+        </div>
+    </div>
+</div>
 
 <!-- Popup Konfirmasi Ganti Order Lama -->
 <div class="popup" id="replaceConfirmPopup" style="max-width:480px;z-index:500">

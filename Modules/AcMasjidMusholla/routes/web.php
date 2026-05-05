@@ -52,6 +52,14 @@ Route::middleware('auth')->prefix('modules/ac-masjid-musholla')->group(function 
     Route::get('/monitoring/snapshot', [AcMasjidMushollaMonitoringController::class, 'snapshot'])->name('modules.ac-masjid-musholla.monitoring.snapshot');
     Route::get('/dashboard/snapshot', [AcMasjidMushollaDashboardController::class, 'snapshot'])->name('modules.ac-masjid-musholla.dashboard.snapshot');
 
+    // Archiving and history endpoints for monitoring workflow
+    Route::get('/service-order/{serviceOrder}/history', [\App\Http\Controllers\WorkflowController::class, 'orderHistory'])
+        ->name('workflow.service-order.history');
+    Route::post('/service-order/{serviceOrder}/archive', [\App\Http\Controllers\WorkflowController::class, 'archiveOrder'])
+        ->name('service-order.archive');
+    Route::post('/workflow/{serviceOrder}/approve-spk-invoice', [\App\Http\Controllers\WorkflowController::class, 'approveSpkInvoice'])
+        ->name('workflow.approve-spk-invoice');
+
     Route::prefix('masjid')->name('masjid.')->group(function () {
         Route::post('/', [ \App\Http\Controllers\MasjidController::class, 'store' ])->name('store');
         Route::get('{masjid}', [ \App\Http\Controllers\MasjidController::class, 'detail' ])->name('detail');

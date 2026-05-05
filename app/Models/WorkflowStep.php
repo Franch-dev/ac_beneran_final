@@ -31,8 +31,7 @@ class WorkflowStep extends Model
         return match($step) {
             'guest_created' => 'Order Tamu Dibuat',
             'frontdesk_created' => 'Order Frontdesk Dibuat',
-            'spk_invoice_created' => 'SPK & Invoice Dibuat',
-            'spk_invoice_approved' => 'SPK & Invoice Disetujui Manager',
+            'spk_invoice_created_approved' => 'SPK & Invoice Dibuat & Disetujui',
             'assigned'  => 'Teknisi Ditugaskan',
             'in_progress' => 'Sedang Dikerjakan',
             'technician_reported' => 'Laporan Teknisi (Biaya Tambahan)',
@@ -50,8 +49,7 @@ class WorkflowStep extends Model
         return match($step) {
             'guest_created' => 'fas fa-user-plus',
             'frontdesk_created' => 'fas fa-user-tie',
-            'spk_invoice_created' => 'fas fa-file-invoice-dollar',
-            'spk_invoice_approved' => 'fas fa-check-circle',
+            'spk_invoice_created_approved' => 'fas fa-file-invoice-dollar',
             'assigned'    => 'fas fa-user-hard-hat',
             'in_progress' => 'fas fa-tools',
             'technician_reported' => 'fas fa-file-alt',
@@ -69,8 +67,7 @@ class WorkflowStep extends Model
         return match($step) {
             'guest_created' => '#1a73e8',
             'frontdesk_created' => '#1976d2',
-            'spk_invoice_created' => '#0288d1',
-            'spk_invoice_approved' => '#1e8e3e',
+            'spk_invoice_created_approved' => '#1e8e3e',
             'assigned'    => '#9c27b0',
             'in_progress' => '#f9ab00',
             'technician_reported' => '#ff6f00',

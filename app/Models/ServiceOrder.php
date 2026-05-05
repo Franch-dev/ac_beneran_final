@@ -82,6 +82,11 @@ class ServiceOrder extends Model
         return $this->hasOne(\App\Models\TechnicianAssignment::class);
     }
 
+    public function histories()
+    {
+        return $this->hasMany(\App\Models\ServiceOrderHistory::class, 'service_order_id');
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->whereIn('status', self::activeStatuses());

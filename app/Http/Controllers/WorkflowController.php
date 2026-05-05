@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Invoice;
+use App\Models\ServiceOrderHistory;
 use App\Models\ServiceOrder;
 use App\Models\TechnicianAssignment;
 use App\Models\User;
@@ -162,73 +164,46 @@ class WorkflowController extends Controller
 
     public function createSpkInvoice(Request $request, ServiceOrder $serviceOrder): JsonResponse
     {
-        if (!auth()->user()->isFrontdesk() && !auth()->user()->isAdmin()) {
-            return response()->json(['success' => false, 'message' => 'Hanya frontdesk/admin yang bisa membuat SPK & Invoice.'], 403);
+        if (!auth()->user()->isFrontdesk() && !auth()->user()->isManager() && !auth()->user()->isAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Hanya frontdesk, manager, atau admin yang bisa membuat SPK & Invoice.'], 403);
         }
 
-        if (!$serviceOrder->needsSpkInvoiceCreation()) {
-            return response()->json(['success' => false, 'message' => 'SPK & Invoice sudah dibuat atau tidak diperlukan.'], 422);
+        if ($serviceOrder->invoice || $serviceOrder->status === 'approved') {
+            return response()->json(['success' => false, 'message' => 'SPK & Invoice sudah dibuat dan disetujui.'], 422);
         }
 
-        // Create Invoice (simplified - assume Invoice::create logic)
+        $validated = $request->validate(['notes' => 'nullable|string|max:500']);
+
+        $total = $serviceOrder->serviceDetails->sum(fn ($detail) => ($detail->quantity ?? 0) * ($detail->price_per_unit ?? 0));
+
+        // Create Invoice
         $serviceOrder->invoice()->create([
-            'service_order_id' => $serviceOrder->id,
-            'masjid_id' => $serviceOrder->masjid_id,
-            'total_amount' => 0, // Calculate based on service details
-            'status' => 'draft',
+            'invoice_number' => Invoice::generateInvoiceNumber(),
+            'total_price' => $total,
         ]);
 
-        return DB::connection('ac_service')->transaction(function () use ($serviceOrder) {
-            $serviceOrder->update(['status' => 'spk_invoice_pending']);
+        return DB::connection('ac_service')->transaction(function () use ($validated, $serviceOrder) {
+            $serviceOrder->update(['status' => 'approved']);
 
             WorkflowStep::create([
                 'service_order_id' => $serviceOrder->id,
-                'step' => 'spk_invoice_created',
+                'step' => 'spk_invoice_created_approved',
                 'actor_id' => auth()->id(),
                 'actor_name' => auth()->user()->name,
                 'actor_role' => auth()->user()->role,
-                'notes' => 'SPK & Invoice dibuat oleh frontdesk.',
+                'notes' => $validated['notes'] ?? 'SPK & Invoice dibuat dan disetujui.',
             ]);
 
             $this->flushMonitoringCaches();
-            RealtimeSync::afterCommit('workflow.spk_invoice_created', [
+            RealtimeSync::afterCommit('workflow.spk_invoice_created_approved', [
                 'resource' => 'service_order',
                 'resource_id' => $serviceOrder->id,
                 'masjid_id' => $serviceOrder->masjid_id,
             ]);
 
-            return response()->json(['success' => true, 'message' => 'SPK & Invoice berhasil dibuat, menunggu persetujuan manager.']);
+            return response()->json(['success' => true, 'message' => 'SPK & Invoice berhasil dibuat dan disetujui.']);
         });
     }
-
-    public function approveSpkInvoice(Request $request, ServiceOrder $serviceOrder): JsonResponse
-    {
-        if (!auth()->user()->isManager() && !auth()->user()->isAdmin()) {
-            return response()->json(['success' => false, 'message' => 'Hanya manager/admin yang bisa menyetujui SPK & Invoice.'], 403);
-        }
-
-        if (!$serviceOrder->needsSpkInvoiceApproval()) {
-            return response()->json(['success' => false, 'message' => 'SPK & Invoice tidak memerlukan persetujuan atau sudah disetujui.'], 422);
-        }
-
-        $validated = $request->validate(['notes' => 'nullable|string|max:500']);
-
-        return DB::connection('ac_service')->transaction(function () use ($validated, $serviceOrder) {
-            $serviceOrder->update(['status' => 'approved']);
-            $serviceOrder->invoice->update(['status' => 'approved']);
-
-            WorkflowStep::create([
-                'service_order_id' => $serviceOrder->id,
-                'step' => 'spk_invoice_approved',
-                'actor_id' => auth()->id(),
-                'actor_name' => auth()->user()->name,
-                'actor_role' => auth()->user()->role,
-                'notes' => $validated['notes'] ?? 'SPK & Invoice disetujui manager.',
-            ]);
-
-            $this->flushMonitoringCaches();
-            RealtimeSync::afterCommit('workflow.spk_invoice_approved', [
-                'resource' => 'service_order',
 
     public function technicians(): JsonResponse
     {
@@ -238,6 +213,54 @@ class WorkflowController extends Controller
             ->get();
 
         return response()->json($techs);
+    }
+
+    // New: Retrieve history entries for a specific service order
+    public function orderHistory(ServiceOrder $serviceOrder): JsonResponse
+    {
+        $histories = $serviceOrder->histories()
+            ->orderByDesc('archived_at')
+            ->get(['archived_at', 'summary', 'order_snapshot']);
+
+        return response()->json(['histories' => $histories]);
+    }
+
+    // New: Archive a service order into the service_order_histories table
+    public function archiveOrder(Request $request, ServiceOrder $serviceOrder): JsonResponse
+    {
+        if ($serviceOrder->archived_at) {
+            return response()->json(['success' => true, 'archived' => true]);
+        }
+
+        $snapshot = [
+            'order_id' => $serviceOrder->id,
+            'masjid_name' => $serviceOrder->masjid?->name,
+            'musholla_name' => method_exists($serviceOrder, 'musholla') ? ($serviceOrder->musholla?->name) : null,
+            'status' => $serviceOrder->status,
+            'spk_id' => $serviceOrder->spk_id ?? null,
+            'invoice_id' => $serviceOrder->invoice?->id ?? null,
+        ];
+
+        ServiceOrderHistory::create([
+            'service_order_id' => $serviceOrder->id,
+            'archived_at' => now(),
+            'summary' => 'Archived to service history',
+            'order_snapshot' => $snapshot,
+            'archived_by_id' => auth()->id(),
+        ]);
+
+        $serviceOrder->update(['archived_at' => now()]);
+
+        // Clear relevant caches if any
+        $this->flushMonitoringCaches();
+
+        return response()->json(['success' => true, 'archived' => true]);
+    }
+
+    // New: Approve SPK & Invoice via existing flow (wrapper for reuse)
+    public function approveSpkInvoice(Request $request, ServiceOrder $serviceOrder): JsonResponse
+    {
+        return $this->createSpkInvoice($request, $serviceOrder);
     }
 
     protected function flushMonitoringCaches(): void

@@ -7,6 +7,7 @@ use App\Http\Controllers\MasjidController;
 use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\ServiceOrderController;
 use App\Http\Controllers\SyncController;
+use App\Http\Controllers\WorkflowController;
 use App\Models\Masjid;
 use Illuminate\Support\Facades\Route;
 use Modules\AcService\Http\Controllers\AcServiceHomeController;
@@ -71,13 +72,17 @@ Route::middleware('auth')->group(function () {
         Route::post('/service-order/{serviceOrder}/cancel-approve', [ServiceOrderController::class, 'cancelApprove'])->name('service-order.cancel-approve');
         Route::delete('/service-order/{serviceOrder}/manager', [ServiceOrderController::class, 'destroy'])->name('service-order.destroy-manager');
         Route::post('/service-order/{serviceOrder}/approve-invoice', [ServiceOrderController::class, 'approveInvoice'])->name('service-order.approve-invoice');
-        Route::post('/service-order/{serviceOrder}/create-spk-invoice', [WorkflowController::class, 'createSpkInvoice'])->name('workflow.create-spk-invoice')->middleware('role:frontdesk,admin');
         
         // New: Approve Additional Fee
         Route::post('/service-order/{serviceOrder}/approve-additional-fee', [ServiceOrderController::class, 'approveAdditionalFee'])->name('service-order.approve-additional-fee');
         
         // New: Manager Confirm Order Selesai
         Route::post('/service-order/{serviceOrder}/manager-confirm-complete', [ServiceOrderController::class, 'managerConfirmComplete'])->name('service-order.manager-confirm-complete');
+    });
+
+    Route::middleware(['role:frontdesk,manager,admin', 'throttle:writes'])->group(function () {
+        Route::post('/service-order/{serviceOrder}/create-spk-invoice', [WorkflowController::class, 'createSpkInvoice'])
+            ->name('workflow.create-spk-invoice');
     });
 
     Route::middleware('role:frontdesk,manager,admin')->group(function () {
@@ -94,7 +99,6 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TechnicianController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ViewerController;
-use App\Http\Controllers\WorkflowController;
 
 /*
 |--------------------------------------------------------------------------

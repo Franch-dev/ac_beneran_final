@@ -27,6 +27,8 @@ window.showOrderDetail = async function(orderId, orderNumber, masjidName, servic
     modal.classList.add('active');
     
     try {
+        // Track current order for history loading
+        window.__currentOrderId = serviceOrderId;
         const order = await apiFetch(`/service-order/${serviceOrderId}`, 'GET');
         const orderData = order.data || order.order || order;
         const safeText = window.escapeHtml || ((val) => String(val ?? ''));
@@ -74,6 +76,9 @@ window.showOrderDetail = async function(orderId, orderNumber, masjidName, servic
             detailsHtml = '<p class="text-muted">Tidak ada detail</p>';
         }
         
+        // After loading, fetch and render history (if any)
+        window.loadOrderHistory?.(serviceOrderId);
+
         // Build the modal content with error handling
         let modalContent = '';
         try {
@@ -127,28 +132,53 @@ window.showOrderDetail = async function(orderId, orderNumber, masjidName, servic
     }
 };
 
-// === APPROVE ORDER + BUILD SPK & INVOICE (one-click) ===
-window.approveOrder = async function(id) {
+// Load history for a given order and render in the order detail modal
+window.loadOrderHistory = async function(orderId) {
+    const oid = Number(orderId);
+    if (!Number.isInteger(oid) || oid <= 0) return;
+    try {
+        const resp = await apiFetch(`/modules/ac-masjid-musholla/service-order/${oid}/history`, 'GET');
+        const histories = resp?.histories ?? [];
+        const listEl = document.getElementById('orderHistoryList');
+        if (!listEl) return;
+        if (!histories.length) {
+            listEl.innerHTML = '<div class="text-muted" style="padding:0.5rem 0;">Tidak ada riwayat.</div>';
+            return;
+        }
+        listEl.innerHTML = histories.map(h => {
+            const when = h.archived_at ? new Date(h.archived_at).toLocaleString() : '';
+            const snapshot = h.order_snapshot || {};
+            const details = Object.entries(snapshot).map(([k,v]) => `<div><strong>${k}</strong>: ${String(v)}</div>`).join('');
+            return `<div class="history-item" style="padding:0.4rem 0;border-bottom:1px solid var(--border);">
+                        <div class="history-meta" style="font-size:0.8rem;color:var(--muted);">${when}</div>
+                        ${h.summary ? `<div class="history-summary" style="font-weight:600;margin-top:0.25rem;">${h.summary}</div>` : ''}
+                        <div class="history-snapshot" style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas; font-size:0.75rem; margin-top:0.25rem;">
+                            ${details}
+                        </div>
+                    </div>`;
+        }).join('');
+    } catch (err) {
+        console.error(err);
+        showToast('Riwayat gagal dimuat: ' + (err?.message ?? 'Error'), 'warning');
+    }
+};
+
+// Helper: ensure we have a global csrf token for fetch calls
+// === CREATE SPK & INVOICE ===
+window.createSpkInvoice = async function(id) {
     openConfirmModal({
         type: 'success',
         heading: 'Buat SPK & Invoice?',
-        message: 'Order akan disetujui, SPK dan Invoice akan dibuat sekaligus.',
-        confirmText: 'Ya, Lanjutkan',
+        message: 'Order akan diproses, SPK dan Invoice akan dibuat sekaligus.',
+        confirmText: 'Ya, Buat',
         onConfirm: async () => {
             try {
                 showToast('Membuat SPK & Invoice...', 'info');
-                const response = await apiFetch(`/service-order/${id}/approve`, 'POST');
-                if (response.success) {
-                    showToast('SPK & Invoice berhasil dibuat!', 'success');
-                    if (response.invoice_url) {
-                        window.open(response.invoice_url, '_blank');
-                    }
-                    refreshMonitoringSurface?.();
-                } else {
-                    showToast(response.message || 'Gagal membuat SPK & Invoice.', 'error');
-                }
+                await apiFetch(`/service-order/${id}/create-spk-invoice`, 'POST');
+                showToast('SPK & Invoice berhasil dibuat.', 'success');
+                refreshMonitoringSurface?.();
             } catch (err) {
-                showToast('Gagal: ' + (err.message || 'Error'), 'error');
+                showToast('Gagal membuat SPK & Invoice: ' + (err.message || 'Error'), 'error');
             }
         }
     });
@@ -175,69 +205,25 @@ window.handleCompletedOrder = function(id) {
     });
 };
 
-// === APPROVE ORDER (Generate SPK) ===
-window.approveOrder = async function(id) {
-    openConfirmModal({
-        type: 'success',
-        heading: 'Approve Order?',
-        message: 'Order akan disetujui dan SPK akan dibuat.',
-        confirmText: 'Ya, Approve',
-        onConfirm: async () => {
-            try {
-                await apiFetch(`/service-order/${id}/approve`, 'POST');
-                showToast('Order berhasil disetujui.', 'success');
-                refreshMonitoringSurface?.();
-            } catch (err) {
-                showToast('Gagal menyetujui order: ' + (err.message || 'Error'), 'error');
-            }
-        }
-    });
-};
-
 // === GENERATE SPK & INVOICE ===
 window.generateInvoice = function(id) {
-    const serviceOrderId = Number(id);
-    if (!Number.isInteger(serviceOrderId) || serviceOrderId <= 0) {
-        showToast('Service order tidak valid', 'error');
-        return;
-    }
-
-    openConfirmModal({
-        type: 'primary',
-        heading: 'Buat SPK & Invoice?',
-        message: 'Akan membuat SPK & invoice untuk order ini. Pastikan detail sudah benar.',
-        confirmText: 'Buat SPK & Invoice',
-        onConfirm: async () => {
-            try {
-                const routes = window.ROUTES_MON || (typeof ROUTES_MON !== 'undefined' ? ROUTES_MON : null);
-                const url = routes?.invoice
-                    ? routes.invoice(serviceOrderId)
-                    : `/service-order/${serviceOrderId}/invoice`;
-
-                await apiFetch(url, 'POST');
-                showToast('SPK & Invoice berhasil dibuat.', 'success');
-                refreshMonitoringSurface?.();
-            } catch (err) {
-                showToast('Gagal membuat invoice: ' + (err.message || 'Error'), 'error');
-            }
-        }
-    });
+    return createSpkInvoice(id);
 };
 
 // === APPROVE INVOICE ===
 window.approveInvoice = async function(id) {
     openConfirmModal({
         type: 'success',
-        heading: 'Setuju Invoice?',
-        message: 'Invoice akan disetujui dan dikirim ke masjid.',
+        heading: 'Approve SPK & Invoice?',
+        message: 'Invoice akan disetujui dan order akan diselesaikan.',
         confirmText: 'Ya, Setuju',
         onConfirm: async () => {
             try {
-                await apiFetch(`/service-order/${id}/approve`, 'POST');
-                showToast('Invoice berhasil disetujui.', 'success');
+                await apiFetch(`/service-order/${id}/approve-invoice`, 'POST');
+                showToast('SPK & Invoice berhasil disetujui.', 'success');
                 refreshMonitoringSurface?.();
             } catch (err) {
-                showToast('Gagal menyetujui invoice: ' + (err.message || 'Error'), 'error');
+                showToast('Gagal menyetujui SPK & Invoice: ' + (err.message || 'Error'), 'error');
             }
         }
     });
@@ -265,6 +251,33 @@ window.deleteServiceOrder = function(id, e) {
             }
         }
     });
+};
+
+// Wrapper: Archive order from UI (per plan)
+window.archiveOrder = async function(orderId) {
+    try {
+        await apiFetch(`/modules/ac-masjid-musholla/service-order/${orderId}/archive`, 'POST');
+        showToast('Order di-archive ke Riwayat.', 'success');
+        refreshMonitoringSurface?.();
+    } catch (err) {
+        showToast('Gagal meng-archive: ' + (err.message || 'Error'), 'error');
+    }
+};
+
+// Wrapper: Delete order (hard delete) via existing route
+window.deleteOrder = function(orderId) {
+    deleteServiceOrder(orderId);
+};
+
+// Wrapper: Approve SPK & Invoice using existing flow
+window.approveSpkInvoice = async function(orderId) {
+    try {
+        await apiFetch(`/modules/ac-masjid-musholla/workflow/${orderId}/approve-spk-invoice`, 'POST');
+        showToast('SPK & Invoice approved.', 'success');
+        refreshMonitoringSurface?.();
+    } catch (err) {
+        showToast('Gagal menyetujui SPK & Invoice: ' + (err.message || 'Error'), 'error');
+    }
 };
 
 // === MODAL CONFIRMATION HELPERS ===
@@ -424,7 +437,7 @@ function refreshMonitoringSurface() {
 window.refreshMonitoringSurface = refreshMonitoringSurface;
 
 // === OPEN ASSIGN TECHNICIAN POPUP ===
-window.openAssignTech = function(orderId, orderNumber, masjidName) {
+window.openAssignTech = async function(orderId, orderNumber, masjidName) {
     const serviceOrderId = Number(orderId);
     if (!Number.isInteger(serviceOrderId) || serviceOrderId <= 0) {
         showToast('Service order tidak valid', 'error');
@@ -434,28 +447,46 @@ window.openAssignTech = function(orderId, orderNumber, masjidName) {
     const orderIdField = document.getElementById('assignTechOrderId');
     const orderInfo = document.getElementById('assignTechOrderInfo');
     const technicianSelect = document.getElementById('technicianSelect');
+    const notesField = document.getElementById('assignTechNotes');
 
-    if (!orderIdField || !orderInfo || !technicianSelect) {
+    if (!orderIdField || !orderInfo || !technicianSelect || !notesField) {
         showToast('Form penugasan tidak ditemukan', 'error');
         return;
     }
 
     orderIdField.value = serviceOrderId;
     orderInfo.textContent = `Order: ${String(orderNumber ?? '-')} - ${String(masjidName ?? '-')}`;
-    technicianSelect.value = '';
+    notesField.value = '';
+    technicianSelect.innerHTML = '<option value="">Memuat daftar teknisi...</option>';
+
     openPopup('assignTechPopup');
+
+    try {
+        const technicians = await apiFetch('/workflow/technicians', 'GET');
+        technicianSelect.innerHTML = technicians.length > 0
+            ? '<option value="">- Pilih Teknisi -</option>' + technicians.map(t => `<option value="${t.id}">${t.name} (${t.email})</option>`).join('')
+            : '<option value="">Tidak ada teknisi terdaftar</option>';
+    } catch (err) {
+        technicianSelect.innerHTML = '<option value="">Gagal memuat teknisi</option>';
+        showToast('Gagal memuat daftar teknisi: ' + (err.message || 'Error'), 'warning');
+    }
 };
 
 window.submitAssignTech = async function() {
     const orderId = document.getElementById('assignTechOrderId').value;
     const technicianId = document.getElementById('technicianSelect').value;
+    const notes = document.getElementById('assignTechNotes').value;
+
     if (!technicianId) {
         showToast('Pilih teknisi terlebih dahulu.', 'warning');
         return;
     }
     try {
         showToast('Menugaskan teknisi...', 'info');
-        await apiFetch(`/service-order/${orderId}/technician`, 'POST', { technician_id: technicianId });
+        await apiFetch(`/workflow/${orderId}/assign`, 'POST', {
+            technician_id: technicianId,
+            notes: notes,
+        });
         showToast('Teknisi berhasil ditugaskan!', 'success');
         closePopup('assignTechPopup');
         refreshMonitoringSurface?.();
@@ -1031,6 +1062,11 @@ window.showWorkflowTimeline = async function(orderId, orderNumber, masjidName) {
                         ${assignmentHtml}
                         ${(!data.steps || !data.steps.length) && !data.assignment ? '<div class="empty-state" style="padding:1rem 0;min-height:auto;"><i class="fas fa-stream"></i><p>Belum ada aktivitas workflow</p></div>' : ''}
                     </div>
+                </div>
+                <!-- Riwayat (History) panel -->
+                <div class="order-history-panel" style="margin-top:1rem;border-top:1px dashed var(--border);padding-top:1rem;">
+                    <div style="font-weight:600;margin-bottom:0.5rem;color:var(--text)"><i class="fas fa-history"></i> Riwayat</div>
+                    <div id="orderHistoryList" class="order-history-list"></div>
                 </div>
             </div>
         `;
