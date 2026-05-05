@@ -59,7 +59,7 @@
                     <h3>Standar</h3>
                 </div>
                 <div class="pricing-price">
-                    <span class="price">Rp 150.000</span>
+                    <span class="price">Rp 40.000</span>
                     <span class="price-unit">/ unit</span>
                 </div>
             </div>
@@ -70,7 +70,7 @@
                     <h3>Premium</h3>
                 </div>
                 <div class="pricing-price">
-                    <span class="price">Rp 200.000</span>
+                    <span class="price">Rp 45.000</span>
                     <span class="price-unit">/ unit</span>
                 </div>
             </div>
@@ -80,7 +80,7 @@
                     <h3>Besar</h3>
                 </div>
                 <div class="pricing-price">
-                    <span class="price">Rp 350.000</span>
+                    <span class="price">Rp 80.000</span>
                     <span class="price-unit">/ unit</span>
                 </div>
             </div>

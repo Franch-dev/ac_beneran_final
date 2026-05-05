@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\DebugBfd979Log;
 use App\Support\InternalRedirectPath;
 use App\Support\PlatformNavigation;
-use App\Support\DebugBfd979Log;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -26,7 +26,8 @@ class AuthController extends Controller
         // #endregion
 
         return view('auth.login', [
-            'redirectTo' => InternalRedirectPath::normalize($request->query('redirect')),
+'redirectTo' => InternalRedirectPath::normalize($request->query('redirect')),
+            'platformHomeUrl' => PlatformNavigation::homeUrl(),
         ]);
     }
 

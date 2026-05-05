@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id" data-theme="light">
 <head>
     <meta charset="UTF-8">
@@ -30,7 +30,7 @@
                     <i class="fas fa-snowflake"></i>
                 </div>
                 <h1>Forkis Platform</h1>
-                <p>Masuk ke hub layanan dan operasional</p>
+<p>Masuk ke hub layanan dan operasional</p>
                 <a href="{{ $platformHomeUrl }}" class="btn btn-outline btn-sm" style="margin-top:0.5rem">
                     <i class="fas fa-home"></i> Kembali ke Home
                 </a>
