@@ -9,29 +9,48 @@ class ServiceOrder extends Model
 {
     public const ACTIVE_STATUSES = [
         'pending',
+        'spk_invoice_pending',
         'approved',
         'in_progress',
-        'waiting_invoice',
         'waiting_review',
+        'waiting_invoice',
     ];
 
     public const STATUS_LABELS = [
-        'pending' => 'Pending',
-        'approved' => 'SPK Issued',
-        'in_progress' => 'In Progress',
-        'waiting_invoice' => 'Waiting Invoice',
-        'waiting_review' => 'Waiting Review',
-        'completed' => 'Completed',
+        'pending' => 'Menunggu SPK & Invoice',
+        'spk_invoice_pending' => 'SPK & Invoice Menunggu Persetujuan',
+        'approved' => 'SPK & Invoice Disetujui',
+        'in_progress' => 'Sedang Dikerjakan',
+        'waiting_review' => 'Menunggu Review Biaya Tambahan',
+        'waiting_invoice' => 'Menunggu Pembayaran',
+        'completed' => 'Selesai',
     ];
 
     protected $connection = 'ac_service';
 
     protected $fillable = [
         'masjid_id', 'order_number', 'meeting_person',
-        'phone', 'service_date', 'notes', 'status'
+        'phone', 'service_date', 'notes', 'status',
+        // Field report fields
+        'field_report_notes', 'field_report_additional_fee', 'field_report_tools_materials', 'field_report_submitted_at',
+        // Additional fee approval
+        'manager_approved_additional_fee', 'additional_fee_approved_by', 'additional_fee_approved_at',
+        // Dual confirmation
+        'frontdesk_confirmed_complete', 'frontdesk_confirmed_by', 'frontdesk_confirmed_at',
+        'manager_confirmed_complete', 'manager_confirmed_by', 'manager_confirmed_at',
     ];
 
-    protected $casts = ['service_date' => 'date'];
+    protected $casts = [
+        'service_date' => 'date',
+        'field_report_additional_fee' => 'decimal:2',
+        'manager_approved_additional_fee' => 'boolean',
+        'frontdesk_confirmed_complete' => 'boolean',
+        'manager_confirmed_complete' => 'boolean',
+        'field_report_submitted_at' => 'datetime',
+        'additional_fee_approved_at' => 'datetime',
+        'frontdesk_confirmed_at' => 'datetime',
+        'manager_confirmed_at' => 'datetime',
+    ];
 
     public function masjid()
     {
@@ -101,5 +120,87 @@ class ServiceOrder extends Model
     public function isExpired(): bool
     {
         return $this->service_date < now()->toDateString() && $this->status === 'pending';
+    }
+
+    public function hasFieldReport(): bool
+    {
+        return !empty($this->field_report_notes) || !empty($this->field_report_additional_fee);
+    }
+
+    public function isReadyForDualConfirmation(): bool
+    {
+        return $this->status === 'completed' &&
+               $this->frontdesk_confirmed_complete &&
+               $this->manager_confirmed_complete;
+    }
+
+    public function needsFieldReport(): bool
+    {
+        return in_array($this->status, ['in_progress']) &&
+               is_null($this->field_report_submitted_at);
+    }
+
+    public function needsAdditionalFeeApproval(): bool
+    {
+        return !is_null($this->field_report_additional_fee) &&
+               $this->field_report_additional_fee > 0 &&
+               !$this->manager_approved_additional_fee;
+    }
+
+    public function canTechnicianSubmitReport(): bool
+    {
+        return in_array($this->status, ['in_progress']);
+    }
+
+    public function canManagerApproveFee(): bool
+    {
+        return $this->needsAdditionalFeeApproval();
+    }
+
+    public function canConfirmOrderSelesai(string $role): bool
+    {
+        if ($this->status !== 'completed') {
+            return false;
+        }
+
+        if ($role === 'frontdesk' || $role === 'admin') {
+            return !$this->frontdesk_confirmed_complete;
+        }
+
+        if ($role === 'manager' || $role === 'admin') {
+            return !$this->manager_confirmed_complete;
+        }
+
+        return false;
+    }
+
+    public function needsSpkInvoiceCreation(): bool
+    {
+        return $this->status === 'pending';
+    }
+
+    public function needsSpkInvoiceApproval(): bool
+    {
+        return $this->status === 'spk_invoice_pending';
+    }
+
+    public function needsTechnicianReport(): bool
+    {
+        return $this->status === 'in_progress' && is_null($this->field_report_submitted_at);
+    }
+
+    public function needsInvoiceEdit(): bool
+    {
+        return $this->hasFieldReport() && !$this->manager_approved_additional_fee;
+    }
+
+    public function needsPayment(): bool
+    {
+        return $this->status === 'waiting_invoice';
+    }
+
+    public function canPrintDocuments(): bool
+    {
+        return $this->status === 'completed' && $this->isReadyForDualConfirmation();
     }
 }

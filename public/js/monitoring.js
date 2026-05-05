@@ -100,7 +100,10 @@ window.deleteServiceOrder = function(id, e) {
 
 
 window.showOrderDetail = async function(orderId, orderNumber, masjidName, serviceDate) {
-    // Tampilkan state loading sementara di modal konfirmasi standar
+    // Ensure overlay exists
+    createModalOverlay();
+    
+    // Show loading state
     openConfirmModal({
         type: 'info',
         heading: 'Detail & Riwayat Workflow',
@@ -110,12 +113,16 @@ window.showOrderDetail = async function(orderId, orderNumber, masjidName, servic
     });
 
     try {
-        const data = await apiFetch(`/workflow/${orderId}/timeline`);
+        const [workflowData, orderData] = await Promise.all([
+            apiFetch(`/workflow/${orderId}/timeline`),
+            apiFetch(`/service-order/${orderId}`)
+        ]);
         const safeText = window.escapeHtml || ((val) => String(val ?? ''));
         
+        // Workflow steps
         let stepsHtml = '';
-        if (data.steps && data.steps.length > 0) {
-            stepsHtml = data.steps.map(step => `
+        if (workflowData.steps && workflowData.steps.length > 0) {
+            stepsHtml = workflowData.steps.map(step => `
                 <div class="timeline-item">
                     <div class="timeline-icon" style="background:${step.color}">
                         <i class="${step.icon}"></i>
@@ -129,26 +136,67 @@ window.showOrderDetail = async function(orderId, orderNumber, masjidName, servic
                 </div>
             `).join('');
         }
-
+        
+        // Technician assignment
         let assignmentHtml = '';
-        if (data.assignment) {
-            const statusLabel = String(data.assignment.status || '').replaceAll('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+        if (workflowData.assignment) {
+            const statusLabel = String(workflowData.assignment.status || '').replaceAll('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
             assignmentHtml = `
                 <div class="assignment-section" style="margin-top:1.5rem; border-top:1px dashed var(--border); padding-top:1rem;">
                     <div style="font-weight:600;margin-bottom:0.75rem;color:var(--primary);">
                         <i class="fas fa-user-hard-hat"></i> Teknisi Ditugaskan
                     </div>
                     <div style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem;background:var(--primary-soft);border-radius:var(--radius);margin-bottom:1rem">
-                        <div style="font-weight:600">${safeText(data.assignment.technician_name)}</div>
-                        <span class="status-badge status-${data.assignment.status}">${safeText(statusLabel)}</span>
+                        <div style="font-weight:600">${safeText(workflowData.assignment.technician_name)}</div>
+                        <span class="status-badge status-${workflowData.assignment.status}">${safeText(statusLabel)}</span>
                     </div>
-                    ${data.assignment.notes ? `<div class="timeline-notes" style="margin-bottom:0.5rem">${safeText(data.assignment.notes)}</div>` : ''}
-                    ${data.assignment.started_at ? `<div class="timeline-time" style="font-size:0.8rem">Mulai: ${safeText(data.assignment.started_at)}</div>` : ''}
-                    ${data.assignment.completed_at ? `<div class="timeline-time" style="font-size:0.8rem">Selesai: ${safeText(data.assignment.completed_at)}</div>` : ''}
+                    ${workflowData.assignment.notes ? `<div class="timeline-notes" style="margin-bottom:0.5rem">${safeText(workflowData.assignment.notes)}</div>` : ''}
+                    ${workflowData.assignment.started_at ? `<div class="timeline-time" style="font-size:0.8rem">Mulai: ${safeText(workflowData.assignment.started_at)}</div>` : ''}
+                    ${workflowData.assignment.completed_at ? `<div class="timeline-time" style="font-size:0.8rem">Selesai: ${safeText(workflowData.assignment.completed_at)}</div>` : ''}
                 </div>
             `;
         }
-
+        
+        // Order details from service order API
+        const order = orderData.data || orderData.order || orderData;
+        const statusLabel = String(order.status || '').replaceAll('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+        
+        // Process service details with comprehensive error handling and sanitization
+        let detailsHtml = '<p class="text-muted" style="padding:0.5rem 0">Tidak ada detail unit</p>';
+        try {
+            if (order.service_details && Array.isArray(order.service_details) && order.service_details.length > 0) {
+                detailsHtml = order.service_details.map(d => {
+                    try {
+                        // Sanitize service_type to remove any image references, HTML tags, or problematic content
+                        const sanitizedServiceType = safeText(d.service_type || d.service_type_name || '')
+                            .replace(/<[^>]*>/g, '') // Remove HTML tags
+                            .replace(/https?:\/\/[^\\s]*\.(png|jpg|jpeg|gif|webp|svg)/gi, '') // Remove image URLs
+                            .replace(/data:image\/[^;]+;base64,[A-Za-z0-9+\/=]+/g, '') // Remove data URIs
+                            .trim();
+                        
+                        return `
+                            <div style="display:flex;justify-content:space-between;padding:0.5rem;background:var(--bg);border-radius:4px;margin-bottom:0.5rem;">
+                                <span>${safeText(d.pk_type)} ${safeText(d.brand || '')} × ${d.quantity || 0}</span>
+                                <span style="color:var(--text-muted)">${sanitizedServiceType || '-'}</span>
+                            </div>
+                        `;
+                    } catch (error) {
+                        // Fallback for individual service detail processing errors
+                        console.warn('Error processing service detail:', error);
+                        return `
+                            <div style="display:flex;justify-content:space-between;padding:0.5rem;background:var(--bg);border-radius:4px;margin-bottom:0.5rem;">
+                                <span>${safeText(d.pk_type)} ${safeText(d.brand || '')} × ${d.quantity || 0}</span>
+                                <span style="color:var(--text-muted)">${safeText(d.service_type || d.service_type_name || '-')}</span>
+                            </div>
+                        `;
+                    }
+                }).join('');
+            }
+        } catch (detailsError) {
+            console.warn('Error processing service details:', detailsError);
+            detailsHtml = '<p class="text-muted" style="padding:0.5rem 0">Tidak ada detail unit</p>';
+        }
+        
         const combinedHtml = `
             <div class="order-detail-popup">
                 <div class="od-row" style="margin-bottom:0.5rem; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:0.5rem;">
@@ -159,19 +207,34 @@ window.showOrderDetail = async function(orderId, orderNumber, masjidName, servic
                     <span class="od-label"><i class="fas fa-mosque"></i> Masjid:</span>
                     <strong style="word-break:break-word; text-align:right;">${safeText(masjidName)}</strong>
                 </div>
-                <div class="od-row" style="margin-bottom:1.5rem; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:0.5rem;">
+                <div class="od-row" style="margin-bottom:0.5rem; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:0.5rem;">
                     <span class="od-label"><i class="fas fa-calendar"></i> Tanggal Servis:</span>
                     <strong>${safeText(serviceDate)}</strong>
                 </div>
-
-                <div class="timeline-container-wrapper" style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1rem; display:flex; flex-direction:column;">
-                    <div style="font-weight:600;margin-bottom:1rem;color:var(--text);border-bottom:1px solid var(--border);padding-bottom:0.5rem;flex-shrink:0;">
+                <div class="od-row" style="margin-bottom:1rem; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:0.5rem;">
+                    <span class="od-label"><i class="fas fa-info-circle"></i> Status:</span>
+                    <span class="status-badge status-${order.status}">${safeText(statusLabel)}</span>
+                </div>
+                
+                <div style="font-weight:600;margin-bottom:0.5rem;color:var(--text);">
+                    <i class="fas fa-list"></i> Detail Unit AC
+                </div>
+                ${detailsHtml}
+                
+                ${order.notes ? `
+                <div style="margin-top:1rem;padding:0.75rem;background:var(--info-soft);border-radius:4px;border:1px solid var(--info);font-size:0.85rem;color:var(--info);">
+                    <i class="fas fa-sticky-note"></i> <strong>Catatan:</strong> ${safeText(order.notes)}
+                </div>
+                ` : ''}
+                
+                <div style="margin-top:1.5rem; border-top:1px dashed var(--border); padding-top:1rem;">
+                    <div style="font-weight:600;margin-bottom:1rem;color:var(--text);border-bottom:1px solid var(--border);padding-bottom:0.5rem;">
                         <i class="fas fa-stream"></i> Riwayat Workflow
                     </div>
-                    <div class="timeline-scroll-area" style="overflow-y:auto; max-height:40vh; padding-right:0.5rem; padding-bottom:0.5rem;">
+                    <div style="overflow-y:auto; max-height:40vh; padding-right:0.5rem;">
                         ${stepsHtml}
                         ${assignmentHtml}
-                        ${(!data.steps || !data.steps.length) && !data.assignment ? '<div class="empty-state" style="padding:1rem 0;min-height:auto;"><i class="fas fa-stream"></i><p>Belum ada aktivitas workflow</p></div>' : ''}
+                        ${(!workflowData.steps || !workflowData.steps.length) && !workflowData.assignment ? '<div class="empty-state" style="padding:1rem 0;min-height:auto;"><i class="fas fa-stream"></i><p>Belum ada aktivitas workflow</p></div>' : ''}
                     </div>
                 </div>
             </div>
@@ -180,15 +243,12 @@ window.showOrderDetail = async function(orderId, orderNumber, masjidName, servic
         const overlay = document.getElementById('confirm-modal-overlay');
         if (overlay) {
             const container = overlay.querySelector('.modal-container');
-            container.className = 'modal-container modal-info'; // ensure size/color
-            // Inject new HTML
+            container.className = 'modal-container modal-info';
             overlay.querySelector('.modal-message').innerHTML = combinedHtml;
-            // Reposition button
             const confirmBtn = overlay.querySelector('.modal-confirm');
             confirmBtn.textContent = 'Tutup';
         }
     } catch (err) {
-        // Fallback jika gagal fetch timeline
         const overlay = document.getElementById('confirm-modal-overlay');
         if (overlay) {
             overlay.querySelector('.modal-message').innerHTML = `
@@ -206,7 +266,7 @@ window.showOrderDetail = async function(orderId, orderNumber, masjidName, servic
                         <strong>${window.escapeHtml ? window.escapeHtml(serviceDate) : serviceDate}</strong>
                     </div>
                     <div style="margin-top:1rem;padding:0.75rem;background:var(--danger-soft);color:var(--danger);border-radius:4px;font-size:0.85rem;">
-                        <i class="fas fa-exclamation-triangle"></i> Gagal memuat timeline: ${err.message}
+                        <i class="fas fa-exclamation-triangle"></i> Gagal memuat detail: ${err.message}
                     </div>
                 </div>
             `;

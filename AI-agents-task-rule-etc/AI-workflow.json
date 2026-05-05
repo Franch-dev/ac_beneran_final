@@ -1,0 +1,149 @@
+{
+  "system": "Monitoring Debug System",
+  "version": "2.0",
+
+  "execution_flow": [
+    "UI_LOGIC_AGENT",
+    "DATA_BINDING_AGENT",
+    "JS_EXECUTION_AGENT"
+  ],
+
+  "global_controls": {
+    "max_retries": 1,
+    "require_checkpoint": true,
+    "require_validation": true,
+    "strict_scope": true
+  },
+
+  "meta_control": {
+    "enforce_reasoning_loop": true,
+    "before_each_step": [
+      "Identify exact bug",
+      "Locate affected file",
+      "Predict possible side effects"
+    ],
+    "after_each_step": [
+      "Compare expected vs actual result",
+      "Check for unintended changes",
+      "Decide whether rollback is needed"
+    ]
+  },
+
+  "agents": {
+
+    "UI_LOGIC_AGENT": {
+      "scope": ["resources/views/"],
+      "goal": "Fix incorrect Blade condition for SPK & Invoice button",
+
+      "steps": [
+        "create_checkpoint",
+        "analyze_blade_condition",
+        "identify_status_and_workflow_logic",
+        "apply_correct_condition",
+        "validate_rendering",
+        "create_checkpoint"
+      ],
+
+      "rules": [
+        "Use strict comparisons",
+        "Use null-safe checks",
+        "Avoid duplicate logic",
+        "Prefer normalized values"
+      ],
+
+      "validation_cases": [
+        "approved + menunggu spk → button visible",
+        "selesai → hidden",
+        "closed → hidden"
+      ],
+
+      "self_improve": [
+        "Reduce reliance on label strings",
+        "Check workflow source consistency",
+        "Normalize casing"
+      ]
+    },
+
+    "DATA_BINDING_AGENT": {
+      "scope": [
+        "resources/views/",
+        "public/js/"
+      ],
+      "goal": "Fix unsafe parameter binding (masjidName error)",
+
+      "steps": [
+        "create_checkpoint",
+        "analyze_onclick_parameters",
+        "detect_null_or_escape_issues",
+        "replace_with_json_encoding",
+        "harden_js_function",
+        "validate_inputs",
+        "create_checkpoint"
+      ],
+
+      "rules": [
+        "Use @json() for all JS data",
+        "Use optional() for nullable relations",
+        "Validate all inputs in JS",
+        "Avoid raw Blade string injection"
+      ],
+
+      "validation_cases": [
+        "masjid exists",
+        "masjid null",
+        "string contains quotes"
+      ],
+
+      "self_improve": [
+        "Standardize data passing method",
+        "Reduce inline JS usage if unstable"
+      ]
+    },
+
+    "JS_EXECUTION_AGENT": {
+      "scope": [
+        "public/js/",
+        "resources/views/"
+      ],
+      "goal": "Fix generateInvoice not defined error",
+
+      "steps": [
+        "create_checkpoint",
+        "verify_function_definition",
+        "inspect_script_loading",
+        "fix_script_placement",
+        "add_runtime_guard",
+        "validate_execution",
+        "create_checkpoint"
+      ],
+
+      "rules": [
+        "Ensure global scope via window",
+        "Ensure correct script path",
+        "Ensure script load timing",
+        "Avoid module isolation"
+      ],
+
+      "validation_checks": [
+        "typeof generateInvoice === function",
+        "button click triggers function",
+        "API request is executed"
+      ],
+
+      "self_improve": [
+        "Check caching issues",
+        "Verify no conflicting scripts"
+      ],
+      "adaptive_learning": {
+    "enabled": true,
+    "write_to": ".AI-agents-task-rule-etc/ai-context/debug.log",
+    "rules": [
+    "Append new discovered bugs",
+    "Append successful fix patterns",
+    "Avoid duplicating existing entries",
+    "Keep entries concise"
+  ]
+}
+    }
+  }
+}

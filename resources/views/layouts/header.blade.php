@@ -3,10 +3,6 @@
 <aside class="sidebar glass" id="sidebar" aria-label="Navigasi sidebar">
     <!-- Sidebar Header -->
     <div class="sidebar-header">
-        <div class="sidebar-logo">
-            <div class="brand-icon"><i class="fas fa-snowflake"></i></div>
-            <span class="sidebar-brand-text">AC Servis</span>
-        </div>
         <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Collapse sidebar" aria-label="Toggle sidebar">
             <i class="fas fa-chevron-left" id="collapseIcon"></i>
         </button>
@@ -204,12 +200,6 @@
 
     <!-- MENU / SIDEBAR MOBILE -->
     <div class="navbar-menu" id="navbar-menu">
-
-        <!-- Brand di dalam mobile sidebar -->
-        <div class="mobile-sidebar-header">
-            <div class="brand-icon"><i class="fas fa-layer-group"></i></div>
-            <span class="brand-text">Forkis Platform</span>
-        </div>
 
         <div class="nav-sep"></div>
 

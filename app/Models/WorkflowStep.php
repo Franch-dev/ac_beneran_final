@@ -29,13 +29,17 @@ class WorkflowStep extends Model
     public static function stepLabel(string $step): string
     {
         return match($step) {
-            'created'   => 'Order Dibuat',
-            'approved'  => 'Disetujui Manager',
+            'guest_created' => 'Order Tamu Dibuat',
+            'frontdesk_created' => 'Order Frontdesk Dibuat',
+            'spk_invoice_created' => 'SPK & Invoice Dibuat',
+            'spk_invoice_approved' => 'SPK & Invoice Disetujui Manager',
             'assigned'  => 'Teknisi Ditugaskan',
             'in_progress' => 'Sedang Dikerjakan',
-            'completed' => 'Pekerjaan Selesai',
-            'invoice_generated' => 'Invoice Dibuat',
-            'closed'    => 'Ditutup / Invoice',
+            'technician_reported' => 'Laporan Teknisi (Biaya Tambahan)',
+            'invoice_edited' => 'Invoice Diedit (Biaya Tambahan)',
+            'payment_received' => 'Pembayaran Diterima',
+            'printed' => 'Invoice & Receipt Dicetak',
+            'completed' => 'Selesai',
             'cancelled' => 'Dibatalkan',
             default     => ucfirst($step),
         };
@@ -44,13 +48,17 @@ class WorkflowStep extends Model
     public static function stepIcon(string $step): string
     {
         return match($step) {
-            'created'     => 'fas fa-plus-circle',
-            'approved'    => 'fas fa-check-circle',
+            'guest_created' => 'fas fa-user-plus',
+            'frontdesk_created' => 'fas fa-user-tie',
+            'spk_invoice_created' => 'fas fa-file-invoice-dollar',
+            'spk_invoice_approved' => 'fas fa-check-circle',
             'assigned'    => 'fas fa-user-hard-hat',
             'in_progress' => 'fas fa-tools',
+            'technician_reported' => 'fas fa-file-alt',
+            'invoice_edited' => 'fas fa-edit',
+            'payment_received' => 'fas fa-credit-card',
+            'printed' => 'fas fa-print',
             'completed'   => 'fas fa-check-double',
-            'invoice_generated' => 'fas fa-file-invoice',
-            'closed'      => 'fas fa-file-invoice',
             'cancelled'   => 'fas fa-times-circle',
             default       => 'fas fa-circle',
         };
@@ -59,13 +67,17 @@ class WorkflowStep extends Model
     public static function stepColor(string $step): string
     {
         return match($step) {
-            'created'     => '#1a73e8',
-            'approved'    => '#1e8e3e',
+            'guest_created' => '#1a73e8',
+            'frontdesk_created' => '#1976d2',
+            'spk_invoice_created' => '#0288d1',
+            'spk_invoice_approved' => '#1e8e3e',
             'assigned'    => '#9c27b0',
             'in_progress' => '#f9ab00',
+            'technician_reported' => '#ff6f00',
+            'invoice_edited' => '#f57c00',
+            'payment_received' => '#388e3c',
+            'printed' => '#2e7d32',
             'completed'   => '#137333',
-            'invoice_generated' => '#0288d1',
-            'closed'      => '#0288d1',
             'cancelled'   => '#c5221f',
             default       => '#5f6368',
         };

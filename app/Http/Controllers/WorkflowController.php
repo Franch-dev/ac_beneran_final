@@ -57,10 +57,7 @@ class WorkflowController extends Controller
             return response()->json(['success' => false, 'message' => 'Order harus approved sebelum bisa ditugaskan.'], 422);
         }
 
-        // Check if invoice exists - manager must create invoice before assigning
-        if (!$serviceOrder->invoice) {
-            return response()->json(['success' => false, 'message' => 'SPK dan Invoice harus dibuat sebelum menugaskan teknisi. Silakan buat Invoice terlebih dahulu.'], 422);
-        }
+        // SPK & Invoice sudah dibuat dan disetujui sebelum assign
 
         $technician = User::findOrFail($validated['technician_id']);
 
@@ -163,40 +160,75 @@ class WorkflowController extends Controller
         });
     }
 
-    public function close(Request $request, ServiceOrder $serviceOrder): JsonResponse
+    public function createSpkInvoice(Request $request, ServiceOrder $serviceOrder): JsonResponse
     {
-        if (! auth()->user()->isManager() && ! auth()->user()->isAdmin()) {
-            return response()->json(['success' => false, 'message' => 'Akses tidak diizinkan.'], 403);
+        if (!auth()->user()->isFrontdesk() && !auth()->user()->isAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Hanya frontdesk/admin yang bisa membuat SPK & Invoice.'], 403);
+        }
+
+        if (!$serviceOrder->needsSpkInvoiceCreation()) {
+            return response()->json(['success' => false, 'message' => 'SPK & Invoice sudah dibuat atau tidak diperlukan.'], 422);
+        }
+
+        // Create Invoice (simplified - assume Invoice::create logic)
+        $serviceOrder->invoice()->create([
+            'service_order_id' => $serviceOrder->id,
+            'masjid_id' => $serviceOrder->masjid_id,
+            'total_amount' => 0, // Calculate based on service details
+            'status' => 'draft',
+        ]);
+
+        return DB::connection('ac_service')->transaction(function () use ($serviceOrder) {
+            $serviceOrder->update(['status' => 'spk_invoice_pending']);
+
+            WorkflowStep::create([
+                'service_order_id' => $serviceOrder->id,
+                'step' => 'spk_invoice_created',
+                'actor_id' => auth()->id(),
+                'actor_name' => auth()->user()->name,
+                'actor_role' => auth()->user()->role,
+                'notes' => 'SPK & Invoice dibuat oleh frontdesk.',
+            ]);
+
+            $this->flushMonitoringCaches();
+            RealtimeSync::afterCommit('workflow.spk_invoice_created', [
+                'resource' => 'service_order',
+                'resource_id' => $serviceOrder->id,
+                'masjid_id' => $serviceOrder->masjid_id,
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'SPK & Invoice berhasil dibuat, menunggu persetujuan manager.']);
+        });
+    }
+
+    public function approveSpkInvoice(Request $request, ServiceOrder $serviceOrder): JsonResponse
+    {
+        if (!auth()->user()->isManager() && !auth()->user()->isAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Hanya manager/admin yang bisa menyetujui SPK & Invoice.'], 403);
+        }
+
+        if (!$serviceOrder->needsSpkInvoiceApproval()) {
+            return response()->json(['success' => false, 'message' => 'SPK & Invoice tidak memerlukan persetujuan atau sudah disetujui.'], 422);
         }
 
         $validated = $request->validate(['notes' => 'nullable|string|max:500']);
 
         return DB::connection('ac_service')->transaction(function () use ($validated, $serviceOrder) {
-            $serviceOrder->update(['status' => 'completed']);
+            $serviceOrder->update(['status' => 'approved']);
+            $serviceOrder->invoice->update(['status' => 'approved']);
 
             WorkflowStep::create([
                 'service_order_id' => $serviceOrder->id,
-                'step' => 'closed',
+                'step' => 'spk_invoice_approved',
                 'actor_id' => auth()->id(),
                 'actor_name' => auth()->user()->name,
                 'actor_role' => auth()->user()->role,
-                'notes' => $validated['notes'] ?? 'Order ditutup.',
-            ]);
-
-            RealtimeSync::afterCommit('workflow.closed', [
-                'resource' => 'service_order',
-                'resource_id' => $serviceOrder->id,
-                'masjid_id' => $serviceOrder->masjid_id,
-                'service_order_id' => $serviceOrder->id,
-                'payload' => [
-                    'status' => 'completed',
-                ],
+                'notes' => $validated['notes'] ?? 'SPK & Invoice disetujui manager.',
             ]);
 
             $this->flushMonitoringCaches();
-            return response()->json(['success' => true, 'message' => 'Order berhasil ditutup.']);
-        });
-    }
+            RealtimeSync::afterCommit('workflow.spk_invoice_approved', [
+                'resource' => 'service_order',
 
     public function technicians(): JsonResponse
     {

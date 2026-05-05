@@ -61,7 +61,9 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/service-order', [ServiceOrderController::class, 'store'])->name('service-order.store');
         Route::delete('/service-order/{serviceOrder}', [ServiceOrderController::class, 'destroy'])->name('service-order.destroy');
-        Route::post('/service-order/{serviceOrder}/invoice', [ServiceOrderController::class, 'generateInvoice'])->name('service-order.invoice-generate');
+        
+        // New: Frontdesk Confirm Order Selesai
+        Route::post('/service-order/{serviceOrder}/frontdesk-confirm-complete', [ServiceOrderController::class, 'frontdeskConfirmComplete'])->name('service-order.frontdesk-confirm-complete');
     });
 
     Route::middleware(['role:manager,admin', 'throttle:writes'])->group(function () {
@@ -69,6 +71,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/service-order/{serviceOrder}/cancel-approve', [ServiceOrderController::class, 'cancelApprove'])->name('service-order.cancel-approve');
         Route::delete('/service-order/{serviceOrder}/manager', [ServiceOrderController::class, 'destroy'])->name('service-order.destroy-manager');
         Route::post('/service-order/{serviceOrder}/approve-invoice', [ServiceOrderController::class, 'approveInvoice'])->name('service-order.approve-invoice');
+        Route::post('/service-order/{serviceOrder}/create-spk-invoice', [WorkflowController::class, 'createSpkInvoice'])->name('workflow.create-spk-invoice')->middleware('role:frontdesk,admin');
+        
+        // New: Approve Additional Fee
+        Route::post('/service-order/{serviceOrder}/approve-additional-fee', [ServiceOrderController::class, 'approveAdditionalFee'])->name('service-order.approve-additional-fee');
+        
+        // New: Manager Confirm Order Selesai
+        Route::post('/service-order/{serviceOrder}/manager-confirm-complete', [ServiceOrderController::class, 'managerConfirmComplete'])->name('service-order.manager-confirm-complete');
     });
 
     Route::middleware('role:frontdesk,manager,admin')->group(function () {
@@ -160,6 +169,11 @@ Route::middleware(['auth', 'role:technician'])->group(function () {
     Route::post('/workflow/{serviceOrder}/progress',    [WorkflowController::class, 'updateProgress'])
          ->middleware('throttle:writes')
          ->name('workflow.progress');
+    
+    // New: Technician Submit Field Report
+    Route::post('/service-order/{serviceOrder}/field-report', [ServiceOrderController::class, 'submitFieldReport'])
+         ->middleware('throttle:writes')
+         ->name('service-order.field-report');
 });
 
 /*

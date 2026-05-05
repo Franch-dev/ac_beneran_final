@@ -72,7 +72,7 @@ class AcMasjidMushollaHomeController extends Controller
             : 'modules.ac-masjid-musholla.monitoring';
         $dashboardPath = route($dashboardRoute, [], false);
         $monitoringPath = route($monitoringRoute, [], false);
-        $landingRoute = 'modules.ac-masjid-musholla.card';
+$landingRoute = 'home';
 
         return [
             'dashboardUrl' => auth()->check() ? route($dashboardRoute) : PlatformNavigation::loginUrl($dashboardPath),

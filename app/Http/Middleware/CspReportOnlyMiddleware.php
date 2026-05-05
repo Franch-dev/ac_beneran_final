@@ -46,6 +46,7 @@ class CspReportOnlyMiddleware
 
         $policy = implode('; ', [
             "default-src 'self'",
+            "frame-src 'self' https://www.google.com",
             "base-uri 'self'",
             "form-action 'self'",
             "frame-ancestors 'self'",
@@ -55,7 +56,6 @@ class CspReportOnlyMiddleware
             'style-src '.implode(' ', $styleSrc),
             'script-src '.implode(' ', $scriptSrc),
             'connect-src '.implode(' ', $connectSrc),
-            "upgrade-insecure-requests",
         ]);
 
         $response->headers->set('Content-Security-Policy-Report-Only', $policy);
@@ -63,4 +63,3 @@ class CspReportOnlyMiddleware
         return $response;
     }
 }
-

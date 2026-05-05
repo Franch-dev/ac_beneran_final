@@ -295,10 +295,10 @@
                             </button>
                             @endif
 
-                            {{-- Technician mark task done --}}
+                            {{-- Technician mark task done / submit field report --}}
                             @if(auth()->user()->isTechnician() && in_array($order->status, ['approved','in_progress']))
-                            <button class="btn btn-sm btn-warning" type="button" onclick="markTaskDone({{ $order->id }})">
-                                <i class="fas fa-check-double"></i> Task Done
+                            <button class="btn btn-sm btn-warning" type="button" onclick="openFieldReport({{ $order->id }}, @js($order->order_number))">
+                                <i class="fas fa-clipboard-check"></i> Submit Laporan
                             </button>
                             @endif
 
@@ -311,12 +311,28 @@
 
 
 
+                            {{-- Order Selesai button for 'completed' status with dual confirmation --}}
+                            @if($order->status == 'completed')
+                                {{-- Frontdesk/Admin confirmation --}}
+                                @if((auth()->user()->isFrontdesk() || auth()->user()->isAdmin()) && !$order->frontdesk_confirmed_complete)
+                                <button class="btn btn-sm btn-success" type="button" onclick="openDualConfirmation({{ $order->id }}, 'frontdesk', 'Apakah Anda (Frontdesk) menyetujui bahwa service order ini sudah selesai?')" title="Konfirmasi Selesai">
+                                    <i class="fas fa-check"></i> Konfirmasi Selesai
+                                </button>
+                                @endif
 
-                            {{-- Order Selesai button for 'completed' status --}}
-                            @if($order->status == 'completed' && (auth()->user()->isFrontdesk() || auth()->user()->isManager() || auth()->user()->isAdmin() || auth()->user()->isTechnician()))
-                            <button class="btn btn-sm btn-success" type="button" onclick="handleCompletedOrder({{ $order->id }})" title="Kelola order selesai">
-                                <i class="fas fa-check-double"></i> Order Selesai
-                            </button>
+                                {{-- Manager/Admin confirmation --}}
+                                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && !$order->manager_confirmed_complete)
+                                <button class="btn btn-sm btn-success" type="button" onclick="openDualConfirmation({{ $order->id }}, 'manager', 'Apakah Anda (Manager) menyetujui bahwa service order ini sudah selesai?')" title="Konfirmasi Selesai">
+                                    <i class="fas fa-check"></i> Konfirmasi Selesai
+                                </button>
+                                @endif
+
+                                {{-- Show if both confirmed --}}
+                                @if($order->frontdesk_confirmed_complete && $order->manager_confirmed_complete)
+                                <span class="btn btn-sm btn-success" style="opacity:0.7">
+                                    <i class="fas fa-check-double"></i> Selesai
+                                </span>
+                                @endif
                             @endif
 
 
@@ -325,6 +341,13 @@
                             @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_review')
                             <button class="btn btn-sm btn-success" type="button" onclick="approveInvoice({{ $order->id }})">
                                 <i class="fas fa-check-circle"></i> Approve Invoice
+                            </button>
+                            @endif
+
+                            {{-- Manager: Approve Additional Fee if field report submitted --}}
+                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->field_report_additional_fee > 0 && !$order->manager_approved_additional_fee)
+                            <button class="btn btn-sm btn-warning" type="button" onclick="approveAdditionalFee({{ $order->id }})">
+                                <i class="fas fa-coins"></i> Approve Biaya Extra
                             </button>
                             @endif
 
@@ -351,8 +374,9 @@
                             @endif
 
                             {{-- Workflow timeline button (all manager/admin/frontdesk/tech) --}}
-
-                            {{-- Timeline removed, merged to detail --}}
+                            <button class="btn btn-sm btn-info" type="button" onclick="showWorkflowTimeline({{ $order->id }}, @js($order->order_number), @js($order->masjid->name))">
+                                <i class="fas fa-stream"></i> Timeline
+                            </button>
 
                         </div>
                     </td>
@@ -569,10 +593,27 @@
         <!-- Right: Order Form -->
         <div class="popup-col-right">
             <div id="soFormContent" style="display:none">
-                <h4 id="soMasjidName"></h4>
-                <p id="soMasjidAddress" class="text-muted text-sm"></p>
 
-                <div class="form-row">
+                {{-- Row 1: Masjid Info Header --}}
+                <div class="so-header-info">
+                    <h4 id="soMasjidName"></h4>
+                    <p id="soMasjidAddress" class="text-muted text-sm"></p>
+                </div>
+
+                {{-- Row 2: PK Selector Card (clickable PK type badges) --}}
+                <div class="so-pk-selector-card">
+                    <div class="so-pk-selector-label">
+                        <i class="fas fa-snowflake"></i> Pilih Unit AC — klik untuk menambahkan
+                    </div>
+                    <div class="so-pk-badges" id="soPkBadges"></div>
+                    <div class="so-ac-summary" id="soAcSummary"></div>
+                </div>
+
+                {{-- Row 3: Detail Row Groups (PK-type groupings) --}}
+                <div class="so-detail-groups" id="soDetailGroups"></div>
+
+                {{-- Row 4: Contact info + Tanggal --}}
+                <div class="form-row" style="margin-top:0.75rem">
                     <div class="form-group">
                         <label class="form-label">Ditemui oleh</label>
                         <select id="soMeetingPerson" class="form-select">
@@ -586,34 +627,27 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Rincian Unit Servis</label>
-                    <div id="soDetailsList"></div>
-                    <button type="button" class="btn btn-sm btn-outline" onclick="addSODetail()">
-                        <i class="fas fa-plus"></i> Tambah Unit
-                    </button>
-                </div>
-
-                <div class="form-group">
+                <div class="form-group" style="margin-top:0.5rem">
                     <label class="form-label">Tanggal Rencana Servis</label>
                     <input type="date" id="soServiceDate" class="form-input" min="{{ date('Y-m-d') }}">
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" style="margin-top:0.5rem">
                     <label class="form-label">Instruksi Tambahan</label>
                     <textarea id="soNotes" class="form-textarea" rows="2" placeholder="Catatan tambahan..."></textarea>
                 </div>
 
-                <!-- Info Harga -->
-                <div id="soHargaInfo" class="info-banner" style="display:none;margin-top:0.5rem;font-size:0.78rem"></div>
-
-                <!-- Total Estimasi -->
-                <div class="so-total-preview">
-                    <span><i class="fas fa-receipt"></i> Estimasi Total</span>
-                    <span id="soTotalPreview">-</span>
+                {{-- Row 5: Pricing Preview --}}
+                <div class="so-price-preview">
+                    <div class="so-price-items" id="soPriceItems"></div>
+                    <div class="so-price-total">
+                        <span><i class="fas fa-receipt"></i> Estimasi Total</span>
+                        <span id="soTotalPreview" class="so-total-amount">Rp 0</span>
+                    </div>
                 </div>
 
-                <div class="popup-actions">
+                {{-- Row 6: Action Buttons (single bar) --}}
+                <div class="popup-actions so-action-bar">
                     <button class="btn btn-secondary btn-sm" onclick="showOrderHistory()">
                         <i class="fas fa-history"></i> History
                     </button>
@@ -638,13 +672,10 @@
         <button class="popup-close" type="button" onclick="closePopup('orderDetailPopup')" aria-label="Tutup detail service order">&times;</button>
     </div>
     <div class="popup-body" id="orderDetailBody">
-        <!-- Dynamic -->
-        @if(isset($order) && !empty($order->notes))
-            <div class="order-notes" style="margin-bottom:0.8rem;padding:0.7rem 1rem;background:var(--info-soft);border-radius:var(--radius);border:1px solid var(--info);font-size:0.82rem;color:var(--info);">
-                <i class="fas fa-info-circle"></i> <strong>Instruksi Tambahan:</strong><br>
-                {{ $order->notes }}
-            </div>
-        @endif
+        <div style="text-align:center;padding:2rem;color:var(--text-muted);">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p style="margin-top:1rem;">Memuat data...</p>
+        </div>
     </div>
 </div>
 
@@ -755,6 +786,100 @@
 
 @include('monitoring.workflow_panel')
 
+<!-- Field Report Popup (Technician) -->
+<div class="popup popup-lg" id="fieldReportPopup">
+    <div class="popup-header">
+        <h3><i class="fas fa-clipboard-check"></i> Laporan Pekerjaan Lapangan</h3>
+        <button class="popup-close" onclick="closePopup('fieldReportPopup')">&times;</button>
+    </div>
+    <div class="popup-body">
+        <form id="fieldReportForm">
+            <input type="hidden" id="fieldReportOrderId">
+
+            <div class="form-group">
+                <label class="form-label">Laporan Pekerjaan <span class="required">*</span></label>
+                <textarea id="fieldReportNotes" class="form-textarea" rows="4" placeholder="Jelaskan pekerjaan yang dilakukan di lapangan..." required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Biaya Tambahan (Rp)</label>
+                <input type="number" id="fieldReportAdditionalFee" class="form-input" placeholder="0" min="0" value="0">
+                <small class="text-muted">Isi jika ada biaya ekstra (misal: perbaikan leak freon, ganti sparepart, dll)</small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Alat/Bahan Tambahan</label>
+                <div id="toolsMaterialsList">
+                    <div class="tools-material-row">
+                        <input type="text" name="tm_name[]" class="form-input" placeholder="Nama alat/bahan">
+                        <input type="number" name="tm_quantity[]" class="form-input" placeholder="Qty" min="1" value="1">
+                        <input type="number" name="tm_price[]" class="form-input" placeholder="Harga">
+                        <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('.tools-material-row').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline" onclick="addToolMaterialRow()">
+                    <i class="fas fa-plus"></i> Tambah Alat/Bahan
+                </button>
+            </div>
+
+            <div class="popup-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> Kirim Laporan
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closePopup('fieldReportPopup')">
+                    Batal
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Additional Fee Approval Popup (Manager) -->
+<div class="popup popup-lg" id="additionalFeeApprovalPopup">
+    <div class="popup-header">
+        <h3><i class="fas fa-coins"></i> Persetujuan Biaya Tambahan</h3>
+        <button class="popup-close" onclick="closePopup('additionalFeeApprovalPopup')">&times;</button>
+    </div>
+    <div class="popup-body">
+        <div id="additionalFeeInfo" class="info-banner"></div>
+
+        <div class="form-group">
+            <label class="form-label">Catatan Persetujuan</label>
+            <textarea id="approvalNotes" class="form-textarea" rows="2" placeholder="Catatan opsional..."></textarea>
+        </div>
+
+        <div class="popup-actions">
+            <button class="btn btn-success" onclick="confirmAdditionalFee()">
+                <i class="fas fa-check"></i> Setuju & Update Invoice
+            </button>
+            <button class="btn btn-secondary" onclick="closePopup('additionalFeeApprovalPopup')">
+                Batal
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Dual Confirmation Popup -->
+<div class="popup" id="dualConfirmPopup">
+    <div class="popup-header">
+        <h3><i class="fas fa-check-double"></i> Konfirmasi Order Selesai</h3>
+        <button class="popup-close" onclick="closePopup('dualConfirmPopup')">&times;</button>
+    </div>
+    <div class="popup-body">
+        <p id="dualConfirmMessage"></p>
+        <div class="popup-actions">
+            <button class="btn btn-primary" onclick="submitDualConfirmation()">
+                <i class="fas fa-check"></i> Konfirmasi
+            </button>
+            <button class="btn btn-secondary" onclick="closePopup('dualConfirmPopup')">
+                Batal
+            </button>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -776,9 +901,12 @@ const ROUTES_MON = {
 };
 const isManager = {{ auth()->user()->isManager() ? 'true' : 'false' }};
 const isFrontdesk2 = {{ auth()->user()->isFrontdesk() ? 'true' : 'false' }};
+window.HARGA_CONFIG = {
+    MASJID: { '1PK': 150000, '2PK': 200000, '5PK': 350000 },
+    MUSHOLLA: { '1PK': 120000, '2PK': 170000, '5PK': 300000 },
+};
 </script>
-<script src="{{ asset('js/monitoring.js') }}"></script>
-<script src="{{ asset('js/workflow.js') }}"></script>
+@vite(['resources/js/monitoring.js'])
 @endpush
 
 

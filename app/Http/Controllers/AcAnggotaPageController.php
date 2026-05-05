@@ -6,7 +6,6 @@ use App\Models\Anggota;
 use App\Models\AnggotaAcUnit;
 use App\Support\PlatformNavigation;
 use Illuminate\Contracts\View\View;
-use Throwable;
 
 class AcAnggotaPageController extends Controller
 {
@@ -14,12 +13,26 @@ class AcAnggotaPageController extends Controller
     {
         [$totalAnggota, $totalUnit] = $this->resolveMetrics();
 
-        $dashboardPath = route('ac-anggota.dashboard', [], false);
-        $monitoringPath = route('ac-anggota.monitoring', [], false);
-        $dashboardUrl = auth()->check() ? route('ac-anggota.dashboard') : PlatformNavigation::loginUrl($dashboardPath);
-        $monitoringUrl = auth()->check() ? route('ac-anggota.monitoring') : PlatformNavigation::loginUrl($monitoringPath);
+        $dashboardRoute = 'modules.ac-anggota.dashboard';
+        $monitoringRoute = 'modules.ac-anggota.monitoring';
+        $homeRoute = 'home';
 
-        return view('ac-anggota.home', compact('totalAnggota', 'totalUnit', 'dashboardUrl', 'monitoringUrl'));
+        $dashboardUrl = auth()->check()
+            ? route($dashboardRoute)
+            : PlatformNavigation::loginUrl(route($dashboardRoute, [], false));
+        $monitoringUrl = auth()->check()
+            ? route($monitoringRoute)
+            : PlatformNavigation::loginUrl(route($monitoringRoute, [], false));
+        $landingpageUrl = route($homeRoute);
+
+        // Use the module's view with the ac-anggota:: namespace
+        return view('ac-anggota::cardhome', compact(
+            'totalAnggota',
+            'totalUnit',
+            'dashboardUrl',
+            'monitoringUrl',
+            'landingpageUrl'
+        ));
     }
 
     public function dashboard(): View
@@ -37,7 +50,7 @@ class AcAnggotaPageController extends Controller
             $sampleAnggota = collect();
         }
 
-        return view('ac-anggota.dashboard', compact('totalAnggota', 'totalUnit', 'sampleAnggota'));
+        return view('ac-anggota::dashboard', compact('totalAnggota', 'totalUnit', 'sampleAnggota'));
     }
 
     public function monitoring(): View
@@ -53,7 +66,7 @@ class AcAnggotaPageController extends Controller
             $units = collect();
         }
 
-        return view('ac-anggota.monitoring', compact('units'));
+        return view('ac-anggota::monitoring', compact('units'));
     }
 
     protected function resolveMetrics(): array

@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600">
+  <style>
+    .actor { fill: #e0f2fe; stroke: #0369a1; stroke-width: 2; }
+    .usecase { fill: #dcfce7; stroke: #166534; stroke-width: 2; rx: 8; }
+    .arrow { stroke: #4b5563; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+    .label { font-family: Arial; font-size: 12px; fill: #1f2937; }
+    .title { font-family: Arial; font-size: 18px; font-weight: bold; fill: #1f2937; }
+  </style>
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#4b5563" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="600" y="30" text-anchor="middle" class="title">AC Beneran Use Case Diagram</text>
+
+  <!-- Actors -->
+  <rect x="50" y="100" width="100" height="40" class="actor" />
+  <text x="100" y="125" text-anchor="middle" class="label">Guest</text>
+
+  <rect x="50" y="160" width="100" height="40" class="actor" />
+  <text x="100" y="185" text-anchor="middle" class="label">Frontdesk</text>
+
+  <rect x="50" y="220" width="100" height="40" class="actor" />
+  <text x="100" y="245" text-anchor="middle" class="label">Technician</text>
+
+  <rect x="50" y="280" width="100" height="40" class="actor" />
+  <text x="100" y="305" text-anchor="middle" class="label">Manager</text>
+
+  <rect x="50" y="340" width="100" height="40" class="actor" />
+  <text x="100" y="365" text-anchor="middle" class="label">Admin</text>
+
+  <rect x="50" y="400" width="100" height="40" class="actor" />
+  <text x="100" y="425" text-anchor="middle" class="label">Viewer</text>
+
+  <!-- Use Cases -->
+  <rect x="300" y="100" width="180" height="40" class="usecase" />
+  <text x="390" y="125" text-anchor="middle" class="label">Submit Service Order</text>
+
+  <rect x="300" y="160" width="180" height="40" class="usecase" />
+  <text x="390" y="185" text-anchor="middle" class="label">View Service Info</text>
+
+  <rect x="300" y="220" width="180" height="40" class="usecase" />
+  <text x="390" y="245" text-anchor="middle" class="label">Create Order/SPK/Invoice</text>
+
+  <rect x="300" y="280" width="180" height="40" class="usecase" />
+  <text x="390" y="305" text-anchor="middle" class="label">Edit Invoice</text>
+
+  <rect x="500" y="100" width="180" height="40" class="usecase" />
+  <text x="590" y="125" text-anchor="middle" class="label">Approve Order</text>
+
+  <rect x="500" y="160" width="180" height="40" class="usecase" />
+  <text x="590" y="185" text-anchor="middle" class="label">Approve Invoice</text>
+
+  <rect x="500" y="220" width="180" height="40" class="usecase" />
+  <text x="590" y="245" text-anchor="middle" class="label">View Reports</text>
+
+  <rect x="500" y="280" width="180" height="40" class="usecase" />
+  <text x="590" y="305" text-anchor="middle" class="label">Manage Users</text>
+
+  <rect x="700" y="100" width="180" height="40" class="usecase" />
+  <text x="790" y="125" text-anchor="middle" class="label">Submit Technician Report</text>
+
+  <rect x="700" y="160" width="180" height="40" class="usecase" />
+  <text x="790" y="185" text-anchor="middle" class="label">View Assignments</text>
+
+  <rect x="700" y="220" width="180" height="40" class="usecase" />
+  <text x="790" y="245" text-anchor="middle" class="label">View Data (Read-only)</text>
+
+  <rect x="700" y="280" width="180" height="40" class="usecase" />
+  <text x="790" y="305" text-anchor="middle" class="label">Full System Access</text>
+
+  <!-- Connections -->
+  <!-- Guest -->
+  <path d="M150 120 L300 120" class="arrow" />
+  <path d="M150 120 L300 180" class="arrow" />
+
+  <!-- Frontdesk -->
+  <path d="M150 180 L300 240" class="arrow" />
+  <path d="M150 180 L300 300" class="arrow" />
+
+  <!-- Technician -->
+  <path d="M150 240 L700 120" class="arrow" />
+  <path d="M150 240 L700 180" class="arrow" />
+
+  <!-- Manager -->
+  <path d="M150 300 L500 120" class="arrow" />
+  <path d="M150 300 L500 180" class="arrow" />
+  <path d="M150 300 L500 240" class="arrow" />
+
+  <!-- Admin -->
+  <path d="M150 360 L500 300" class="arrow" />
+  <path d="M150 360 L700 300" class="arrow" />
+
+  <!-- Viewer -->
+  <path d="M150 420 L700 240" class="arrow" />
+</svg>

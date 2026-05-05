@@ -15,7 +15,7 @@
             : '';
     @endphp
     <meta http-equiv="Content-Security-Policy"
-          content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com {{ $viteCsp }}; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com https://cdnjs.cloudflare.com https://unpkg.com {{ $viteCsp }}; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: https;">
+          content="default-src 'self'; frame-src 'self' https://www.google.com; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com {{ $viteCsp }}; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com https://cdnjs.cloudflare.com https://unpkg.com {{ $viteCsp }}; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: https;">
     <meta name="theme-color" content="#2F5D50">
     <meta name="description" content="Sistem Manajemen Servis AC untuk Masjid dan Musholla">
     <title>@yield('title', 'AC Servis Masjid')</title>
@@ -32,12 +32,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&display=swap">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
-    @php $viteManifestExists = file_exists(public_path('build/manifest.json')); @endphp
-    @if ($viteManifestExists)
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @endif
-    <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css">
     <style>
         :root {
             scroll-padding-top: 5rem;
@@ -142,10 +138,6 @@
         </div>
     </div>
 
-    {{-- Vite boots the shared UI runtime; legacy public/js modules still provide page-specific globals. --}}
-    @unless ($viteManifestExists)
-        <script src="{{ asset('js/core-application-runtime.js') }}"></script>
-    @endunless
     <script src="{{ asset('js/liquid-glass.js') }}" defer></script>
     @stack('scripts')
 </body>

@@ -66,10 +66,16 @@ useless/
 .paul/
 .cursor/
 project-docs/
+project-docs-v1/
+project_explanation/
 TODO.md
 .agents
 .phpunit.result.cache
 scratch/
+/debug_workflow
+/debug_workflow/blackboard
+/database/testing
+
 # Dependencies venv
 venv/
 .venv/

@@ -565,10 +565,23 @@
         <!-- Right: Order Form -->
         <div class="popup-col-right">
             <div id="soFormContent" style="display:none">
-                <h4 id="soMasjidName"></h4>
-                <p id="soMasjidAddress" class="text-muted text-sm"></p>
 
-                <div class="form-row">
+                <div class="so-header-info">
+                    <h4 id="soMasjidName"></h4>
+                    <p id="soMasjidAddress" class="text-muted text-sm"></p>
+                </div>
+
+                <div class="so-pk-selector-card">
+                    <div class="so-pk-selector-label">
+                        <i class="fas fa-snowflake"></i> Pilih Unit AC — klik untuk menambahkan
+                    </div>
+                    <div class="so-pk-badges" id="soPkBadges"></div>
+                    <div class="so-ac-summary" id="soAcSummary"></div>
+                </div>
+
+                <div class="so-detail-groups" id="soDetailGroups"></div>
+
+                <div class="form-row" style="margin-top:0.75rem">
                     <div class="form-group">
                         <label class="form-label">Ditemui oleh</label>
                         <select id="soMeetingPerson" class="form-select">
@@ -582,34 +595,25 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Rincian Unit Servis</label>
-                    <div id="soDetailsList"></div>
-                    <button type="button" class="btn btn-sm btn-outline" onclick="addSODetail()">
-                        <i class="fas fa-plus"></i> Tambah Unit
-                    </button>
-                </div>
-
-                <div class="form-group">
+                <div class="form-group" style="margin-top:0.5rem">
                     <label class="form-label">Tanggal Rencana Servis</label>
                     <input type="date" id="soServiceDate" class="form-input" min="{{ date('Y-m-d') }}">
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" style="margin-top:0.5rem">
                     <label class="form-label">Instruksi Tambahan</label>
                     <textarea id="soNotes" class="form-textarea" rows="2" placeholder="Catatan tambahan..."></textarea>
                 </div>
 
-                <!-- Info Harga -->
-                <div id="soHargaInfo" class="info-banner" style="display:none;margin-top:0.5rem;font-size:0.78rem"></div>
-
-                <!-- Total Estimasi -->
-                <div class="so-total-preview">
-                    <span><i class="fas fa-receipt"></i> Estimasi Total</span>
-                    <span id="soTotalPreview">-</span>
+                <div class="so-price-preview">
+                    <div class="so-price-items" id="soPriceItems"></div>
+                    <div class="so-price-total">
+                        <span><i class="fas fa-receipt"></i> Estimasi Total</span>
+                        <span id="soTotalPreview" class="so-total-amount">Rp 0</span>
+                    </div>
                 </div>
 
-                <div class="popup-actions">
+                <div class="popup-actions so-action-bar">
                     <button class="btn btn-secondary btn-sm" onclick="showOrderHistory()">
                         <i class="fas fa-history"></i> History
                     </button>
@@ -617,10 +621,6 @@
                         <i class="fas fa-paper-plane"></i> Kirim Order
                     </button>
                 </div>
-            </div>
-            <div id="soEmptyState" class="empty-state">
-                <i class="fas fa-hand-pointer"></i>
-                <p>Pilih masjid dari daftar kiri</p>
             </div>
         </div>
     </div>
@@ -634,13 +634,10 @@
         <button class="popup-close" type="button" onclick="closePopup('orderDetailPopup')" aria-label="Tutup detail service order">&times;</button>
     </div>
     <div class="popup-body" id="orderDetailBody">
-        <!-- Dynamic -->
-        @if(isset($order) && !empty($order->notes))
-            <div class="order-notes" style="margin-bottom:0.8rem;padding:0.7rem 1rem;background:var(--info-soft);border-radius:var(--radius);border:1px solid var(--info);font-size:0.82rem;color:var(--info);">
-                <i class="fas fa-info-circle"></i> <strong>Instruksi Tambahan:</strong><br>
-                {{ $order->notes }}
-            </div>
-        @endif
+        <div style="text-align:center;padding:2rem;color:var(--text-muted);">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p style="margin-top:1rem;">Memuat data...</p>
+        </div>
     </div>
 </div>
 
@@ -772,9 +769,12 @@ const ROUTES_MON = {
 };
 const isManager = {{ auth()->user()->isManager() ? 'true' : 'false' }};
 const isFrontdesk2 = {{ auth()->user()->isFrontdesk() ? 'true' : 'false' }};
+window.HARGA_CONFIG = {
+    MASJID: { '1PK': 150000, '2PK': 200000, '5PK': 350000 },
+    MUSHOLLA: { '1PK': 120000, '2PK': 170000, '5PK': 300000 },
+};
 </script>
-<script src="{{ asset('js/monitoring.js') }}"></script>
-<script src="{{ asset('js/workflow.js') }}"></script>
+@vite(['resources/js/monitoring.js'])
 @endpush
 
 

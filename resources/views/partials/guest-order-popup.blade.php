@@ -6,18 +6,21 @@
         $oldDetails = [[]];
     }
 
-    $guestMasjidPayloads = $masjids->mapWithKeys(function ($masjid) {
-        return [$masjid->id => [
+    $guestMasjidPayloads = collect();
+    foreach ($masjids as $masjid) {
+        $acUnitsArray = [];
+        foreach ($masjid->acUnits as $unit) {
+            $acUnitsArray[] = [
+                'pk_type' => $unit->pk_type,
+                'brand' => $unit->brand,
+                'quantity' => $unit->quantity,
+            ];
+        }
+        $guestMasjidPayloads[$masjid->id] = [
             'phones' => $masjid->phone_numbers,
-            'ac_units' => $masjid->acUnits->map(function ($unit) {
-                return [
-                    'pk_type' => $unit->pk_type,
-                    'brand' => $unit->brand,
-                    'quantity' => $unit->quantity,
-                ];
-            })->values(),
-        ]];
-    });
+            'ac_units' => $acUnitsArray,
+        ];
+    }
 @endphp
 
 <div class="popup popup-xl" id="guestOrderPopup" style="max-width: 1080px;">

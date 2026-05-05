@@ -35,7 +35,7 @@
     --gray-800: #3A3A38;
     --gray-900: #0E0E0E;
 
-    --text: #0E0E0E;
+    --text: #111111;
     --text-muted: #7E8F6A;
     --bg: #F5F1E8;
     --bg-card: rgba(255,255,255,0.4);
@@ -75,6 +75,27 @@
     --gradient-button-premium: linear-gradient(135deg, #2F5D50, #6E9F90);
     --gradient-ambient: radial-gradient(circle at 30% 20%, rgba(190,204,163,0.25), transparent 60%);
     --warning-soft: rgba(214,199,161,0.15);
+    /* Dark mode enhancements for accessibility / contrast */
+    --gradient-bg: linear-gradient(135deg, #0a0f14 0%, #0e141a 100%);
+    --bg: #0f1115;
+    --bg-card: rgba(25,25,25,0.95);
+    --bg-alt: #0a0d11;
+    --text: #e6f0f5;
+    --text-muted: #b8ccd6;
+    --border: rgba(255,255,255,0.18);
+    --border-light: rgba(255,255,255,0.25);
+    --shadow-xs: 0 1px 2px rgba(0,0,0,0.6);
+    --shadow-sm: 0 2px 6px rgba(0,0,0,0.55);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.6);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.65);
+    --glass-bg: rgba(20,20,20,0.7);
+    --gradient-ambient: radial-gradient(circle at 30% 20%, rgba(0,0,0,0.25), transparent 60%);
+    --gradient-button-premium: linear-gradient(135deg, #2f5d50, #4e9b72);
+    --primary: #7bd389;
+    --primary-hover: #5fae75;
+    --primary-soft: rgba(123,211,137,0.15);
+    --info-soft: rgba(169,191,200,0.15);
+    --warning-soft: rgba(214,199,161,0.25);
 }
 
 /* Glass base */
@@ -158,6 +179,51 @@
     --shadow-glass: 0 20px 40px rgba(0, 0, 0, 0.2);
     --gradient-bg: linear-gradient(135deg, #0E0E0E 0%, #1A1A18 40%, #1F3D36 100%);
 }
+
+/* Light theme explicit overrides (optional to ensure light mode tokens) */
+[data-theme="light"] {
+  --primary: #2F5D50;
+  --primary-hover: #1F3D36;
+  --primary-soft: rgba(110,159,144,0.15);
+  --bg: #F5F1E8;
+  --bg-card: rgba(255,255,255,0.4);
+  --bg-alt: #FAF7F2;
+  --border: rgba(255,255,255,0.1);
+  --border-light: rgba(207,199,187,0.3);
+  --text: #0a0a0a;
+  --text-muted: #7E8F6A;
+  --shadow-xs: 0 1px 2px rgba(14,14,14,0.04);
+  --shadow-sm: 0 2px 8px rgba(14,14,14,0.05);
+  --shadow-md: 0 8px 20px rgba(14,14,14,0.06);
+  --shadow-lg: 0 16px 32px rgba(14,14,14,0.07);
+  --glass-bg: rgba(255, 255, 255, 0.6);
+  --gradient-bg: linear-gradient(135deg, #F5F1E8 0%, #EAE3D9 40%, #DDE6D5 100%);
+  --gradient-button-premium: linear-gradient(135deg, #2F5D50, #6E9F90);
+  --info-soft: rgba(169,191,200,0.12);
+  --warning-soft: rgba(214,199,161,0.15);
+}
+
+/* Toast / alert readability: ensure light mode text is readable on light bg */
+[data-theme="light"] .toast,
+[data-theme="light"] .toast-header,
+[data-theme="light"] .toast-body,
+[data-theme="light"] .alert {
+  color: var(--text) !important;
+  background-color: #fff !important;
+  border-color: var(--border) !important;
+}
+
+/* Robust fallback: if toast is rendered outside the light-theme container (e.g., appended to body),
+   ensure readability in non-dark contexts as well. */
+html:not([data-theme="dark"]) .toast,
+html:not([data-theme="dark"]) .toast-header,
+html:not([data-theme="dark"]) .toast-body,
+html:not([data-theme="dark"]) .alert {
+  color: var(--text) !important;
+  background-color: #fff !important;
+  border-color: var(--border) !important;
+}
+
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html {
@@ -797,6 +863,68 @@ body.menu-open {
 .ac-unit-row .remove-btn { position: absolute; top: 8px; right: 8px; }
 .info-banner { background: var(--primary-soft); border: 1px solid var(--primary-mid); border-radius: var(--radius); padding: 10px 14px; font-size: 0.8125rem; color: var(--primary); margin-bottom: 16px; display: flex; gap: 6px; font-weight: 500; }
 
+/* MASJID SELECTION LIST */
+.masjid-select-list { max-height: 380px; overflow-y: auto; padding-right: 4px; }
+.masjid-select-item { display: block; padding: 12px 14px; background: var(--gray-50); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; cursor: pointer; transition: all var(--t); border-left: 3px solid transparent; }
+.masjid-select-item:hover { background: var(--primary-soft); border-color: var(--primary); border-left-color: var(--primary); }
+.masjid-select-item.selected { background: var(--primary-soft); border-color: var(--primary); border-left-color: var(--primary); border-left-width: 3px; }
+.masjid-select-item[data-id] { cursor: pointer; }
+.masjid-select-item .msi-id { font-family: monospace; font-size: 0.75rem; color: var(--primary); font-weight: 600; margin-bottom: 2px; }
+.masjid-select-item .msi-name { font-size: 0.875rem; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.masjid-select-item .msi-units { font-size: 0.75rem; color: var(--text-muted); }
+.masjid-select-item.selected .msi-name { color: var(--primary); }
+
+/* SERVICE ORDER FORM — PK SELECTOR ARCHITECTURE */
+.so-pk-selector-card { background: var(--gray-50); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 12px; margin-bottom: 10px; border-left: 3px solid var(--primary); }
+.so-pk-selector-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.so-pk-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.pk-badge { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; background: var(--bg-card); border: 2px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-weight: 700; color: var(--text); transition: all var(--t); min-width: 52px; justify-content: center; }
+.pk-badge:hover { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); }
+.pk-badge:active { transform: scale(0.97); }
+.pk-badge__type { color: var(--primary); }
+.pk-badge__qty { font-size: 0.75rem; font-weight: 400; color: var(--text-muted); }
+.so-ac-summary { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+.so-ac-summary strong { color: var(--text); }
+
+.pk-row-group { background: var(--gray-50); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; }
+.pk-row-group__header { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-card); border-bottom: 1px solid var(--border); }
+.pk-row-group__title { font-size: 0.875rem; color: var(--primary); font-weight: 600; }
+.pk-row-group__body { padding: 12px; }
+
+.so-detail-groups { margin-bottom: 4px; }
+.so-empty-groups { text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.8125rem; }
+.so-empty-groups i { font-size: 1.25rem; margin-bottom: 4px; display: block; }
+
+.so-price-preview { margin-top: 12px; }
+.so-price-items { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 6px; }
+.so-price-item { display: flex; justify-content: space-between; padding: 6px 10px; font-size: 0.8rem; border-bottom: 1px solid var(--gray-50); }
+.so-price-item:last-child { border-bottom: none; }
+.so-price-item span:first-child { color: var(--text); }
+.so-price-item span:last-child { color: var(--primary); font-weight: 600; font-family: monospace; }
+.so-price-total { display: flex; justify-content: space-between; padding: 12px 10px; background: var(--primary-soft); border-radius: var(--radius); font-weight: 700; }
+.so-total-amount { color: var(--primary); font-size: 1.1rem; }
+
+.so-action-bar { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); justify-content: space-between; }
+
+/* DETAIL ITEM (legacy, keeping for compatibility) */
+.so-detail-item { background: var(--gray-50); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
+.so-total-preview { display: flex; justify-content: space-between; padding: 14px; background: var(--primary-soft); border-radius: var(--radius); font-weight: 600; margin-top: 12px; }
+.so-total-preview span:last-child { color: var(--primary); font-size: 1.1rem; }
+
+/* FIELD REPORT STYLES */
+.tools-material-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.tools-material-row .form-input { flex: 1; }
+.field-report-popup .form-group { margin-bottom: 1rem; }
+.field-report-popup .form-textarea { min-height: 100px; }
+.field-report-popup .info-banner { margin-bottom: 1rem; }
+
+/* DUAL CONFIRMATION */
+.dual-confirm-status { display: flex; gap: 1rem; margin-bottom: 1rem; }
+.dual-confirm-status-item { flex: 1; padding: 1rem; background: var(--gray-50); border-radius: var(--radius); text-align: center; }
+.dual-confirm-status-item.confirmed { background: var(--success-bg); color: var(--success); }
+.dual-confirm-status-item.pending { background: var(--warning-bg); color: var(--warning); }
+.dual-confirm-status-item i { display: block; font-size: 1.5rem; margin-bottom: 0.5rem; }
+
 /* SUMMARY CARDS */
 .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
 @media (min-width: 1024px) { .summary-grid { grid-template-columns: repeat(4, 1fr); } }
@@ -1299,15 +1427,15 @@ body.menu-open {
 @media (max-width: 1024px) {
     .navbar-menu {
         position: fixed;
-        top: 0; left: 0;
+        top: 55px; left: 0;
         width: min(320px, 85vw);
-        height: 100vh;
-        height: 100dvh;
+        height: calc(100vh - 55px);
+        height: calc(100dvh - 55px);
         background: var(--bg-card);
         border-right: 1px solid var(--border);
         flex-direction: column;
         align-items: stretch;
-        padding: calc(var(--navbar-h) + 20px) 20px 20px;
+        padding: 20px;
         gap: 4px;
         z-index: 1000;
         transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1342,8 +1470,24 @@ body.menu-open {
     .hero-actions { flex-direction: column; width: 100%; }
     .hero-actions .btn { width: 100%; justify-content: center; }
     .form-row { grid-template-columns: 1fr; }
-    .popup-two-col { grid-template-columns: 1fr; }
-    .popup-col-left { border-right: none; border-bottom: 1px solid var(--border); max-height: 180px; }
+    
+    /* Popup responsive fixes */
+    .popup { width: 96%; max-width: 96%; left: 2%; top: 2%; transform: none; max-height: 96vh; }
+    .popup.active { transform: none; animation: popInMobile 0.22s ease; }
+    @keyframes popInMobile { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    .popup-lg { max-width: 96%; }
+    .popup-xl { max-width: 98%; width: 98%; }
+    .popup-header { padding: 12px 14px; flex-shrink: 0; }
+    .popup-header h3 { font-size: 0.875rem; }
+    .popup-close { width: 28px; height: 28px; font-size: 0.875rem; }
+    .popup-body { padding: 12px; max-height: calc(96vh - 60px); overflow-y: auto; }
+    .popup-two-col { grid-template-columns: 265px 1fr; min-height: auto; }
+    .popup-col-left { border-right: none; border-bottom: 1px solid var(--border); padding: 12px; }
+    .popup-col-right { padding: 12px; }
+    .popup-col-right.active { max-height: calc(96vh - 280px); }
+    .popup-actions { flex-direction: column; }
+    .popup-actions .btn { width: 100%; justify-content: center; }
+    
     .cards-grid { grid-template-columns: 1fr; }
     .so-detail-row { grid-template-columns: 1fr 1fr; }
     .summary-grid { grid-template-columns: 1fr 1fr; }
@@ -1360,6 +1504,11 @@ body.menu-open {
     .section { padding: 48px 16px; }
     .section-header h2 { font-size: 1.5rem; }
     .cta-section h2 { font-size: 1.5rem; }
+    
+    /* Masjid selection list on mobile */
+    .masjid-select-list { max-height: 130px; overflow-y: auto; display: block; }
+    .masjid-select-item { padding: 10px 12px; margin-bottom: 4px; }
+    .masjid-select-item.selected { border-left-width: 3px; }
 }
 
 @media (max-width: 480px) {
@@ -1377,7 +1526,14 @@ body.menu-open {
     .summary-grid { grid-template-columns: 1fr; }
     .page-container { padding: 16px 14px; }
     .popup { width: 95%; max-width: none; border-radius: var(--radius); }
+    .popup-xl { max-width: 95%; }
     .popup-body { padding: 16px; }
+    .popup-col-left { max-height: 150px; }
+    .popup-col-right { max-height: calc(90vh - 200px); }
+    .masjid-select-list { display: flex; flex-direction: column; gap: 6px; }
+    .masjid-select-item { padding: 10px 12px; }
+    .so-detail-item { padding: 12px; }
+    .so-detail-row { grid-template-columns: 1fr; }
     .confirm-modal { max-width: none; width: 95%; }
     .btn { min-height: 44px; }
     .btn-sm { min-height: 40px; padding: 8px 12px; }

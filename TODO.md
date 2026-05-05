@@ -1,18 +1,34 @@
-# Conventional Commits for All Changes
+# Service Order Workflow Refactor TODO
 
-Status: In progress
+## Current Status: [ ] Planning → [ ] Implementation → [ ] Testing
 
-## Steps (will update [x] after each):
+## Step 1: Extend WorkflowStep model [x]
+- Add new steps: `spk_invoice_created`, `spk_invoice_approved`, `technician_reported`, `invoice_edited`, `payment_received`, `printed`
+- Update stepLabel, stepIcon, stepColor methods
 
-[x] 1. feat: Add AcAnggota module foundation (models, controllers, views, migrations/seeders) - 2024-04-01
-[x] 2. feat: Update AcAnggota/AcMasjidMusholla dashboards, monitoring, routes - 2024-04-03  
-[x] 3. feat: Enhance AcService/FutureModule/Inventory modules - 2024-04-05
-[x] 4. refactor: Update core controllers, middleware, providers - 2024-04-07
-[x] 5. style: UI/JS/CSS overhauls and view layouts - 2024-04-09
-[x] 6. chore: Dependencies, composer/package updates, config - 2024-04-11
-[x] 7. chore: Remove legacy tests/views/phpunit - 2024-04-13
-[x] 8. docs: Update README/TODO/.gitignore/COMPLETE_FILE_DOCUMENTATION - 2024-04-15
-[ ] 9. Push to origin/debugging
-[ ] 10. Verify git log
+## Step 2: Update ServiceOrder model [x]
+- Extend STATUS_LABELS if needed
+- Add methods: `needsSpkInvoiceCreation()`, `needsSpkInvoiceApproval()`, etc.
 
-Completed: 0/10
+## Step 3: Update WorkflowController [ ]
+- Modify `assign()`: remove invoice requirement (frontdesk creates together)
+- Add `createSpkInvoice()` for frontdesk (one action)
+- Add `approveSpkInvoice()` for manager (one action)
+- Add `submitTechnicianReport()`, `editInvoice()`, `recordPayment()`, `printDocuments()`
+
+## Step 4: ServiceOrderController updates [ ]
+- Update `approve()` to handle guest vs frontdesk paths
+- Add `createSpkAndInvoice()` endpoint
+
+## Step 5: Routes [Modules/AcService/routes/web.php] [ ]
+- Add routes: create-spk-invoice, approve-spk-invoice, technician-report, etc.
+
+## Step 6: Update seeders/views [ ]
+- ServiceOrderSeeder.php: new step examples
+- Monitoring views: new step support
+
+## Step 7: Test complete flow [ ]
+- Guest order → frontdesk create SPK+Invoice → manager approve → assign → technician report → edit → payment → print
+- Frontdesk direct order → same flow
+
+**Next Action:** Implement Step 1 (WorkflowStep.php)
