@@ -5,7 +5,9 @@
   "execution_flow": [
     "UI_LOGIC_AGENT",
     "DATA_BINDING_AGENT",
-    "JS_EXECUTION_AGENT"
+    "JS_EXECUTION_AGENT",
+    "BACKEND_TEST_AGENT",
+    "FRONTEND_VALIDATION_AGENT"
   ],
 
   "global_controls": {
@@ -134,6 +136,66 @@
         "Check caching issues",
         "Verify no conflicting scripts"
       ],
+      "BACKEND_TEST_AGENT": {
+  "scope": ["app/", "routes/", "tests/"],
+  "goal": "Verify backend integrity after fixes",
+
+  "steps": [
+    "create_checkpoint",
+    "run_laravel_tests",
+    "analyze_failures",
+    "attempt_minimal_fix_if_needed",
+    "re-run_tests",
+    "create_checkpoint"
+  ],
+
+  "rules": [
+    "Run: php artisan test",
+    "Do not create new features",
+    "Only fix errors caused by previous agents"
+  ],
+
+  "validation_checks": [
+    "All tests pass",
+    "No new errors introduced"
+  ],
+
+  "self_improve": [
+    "Identify failing test patterns",
+    "Avoid modifying unrelated test cases"
+  ]
+},
+"FRONTEND_VALIDATION_AGENT": {
+  "scope": ["resources/views/", "public/js/"],
+  "goal": "Validate UI behavior and JS execution",
+
+  "steps": [
+    "create_checkpoint",
+    "scan_for_js_errors",
+    "simulate_user_actions",
+    "verify_dom_behavior",
+    "log_results",
+    "create_checkpoint"
+  ],
+
+  "rules": [
+    "Check console for errors",
+    "Validate button visibility logic",
+    "Validate onclick execution"
+  ],
+
+  "validation_checks": [
+    "No JS runtime errors",
+    "generateInvoice executes",
+    "showOrderDetail receives correct data",
+    "Correct button appears for correct status"
+  ],
+
+  "self_improve": [
+    "Add missing guards",
+    "Improve logging for traceability"
+  ]
+},
       "adaptive_learning": {
     "enabled": true,
     "write_to": ".AI-agents-task-rule-etc/ai-context/debug.log",

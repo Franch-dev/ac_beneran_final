@@ -37,3 +37,15 @@
   - files changed
   - reason
   - validation result
+
+## Validation Priority Rule
+
+- A fix is NOT considered successful until:
+  - No backend errors
+  - No frontend JS errors
+  - UI behaves correctly
+
+- If validation is incomplete:
+  → Treat as failure
+
+  
