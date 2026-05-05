@@ -936,7 +936,7 @@ window.PAGE_SYNC_CONFIG = {
     snapshotRoute: '{{ route("monitoring.snapshot") }}',
     persistentSelectors: ['#serviceOrderPopup'],
 };
-const ROUTES_MON = {
+window.ROUTES_MON = {
     soStore: '{{ route("service-order.store") }}',
     soApprove: (id) => `/service-order/${id}/approve`,
     soCancel: (id) => `/service-order/${id}/cancel-approve`,
@@ -945,6 +945,15 @@ const ROUTES_MON = {
     soHistory: (id) => `/masjid/${id}/history`,
     spk: (id) => `/service-order/${id}/spk`,
     invoice: (id) => `/service-order/${id}/invoice`,
+};
+const ROUTES_MON = window.ROUTES_MON;
+window.generateInvoice = window.generateInvoice || function () {
+    if (typeof window.showToast === 'function') {
+        window.showToast('Fitur invoice masih dimuat. Coba lagi.', 'warning');
+        return;
+    }
+
+    console.warn('generateInvoice handler is not loaded yet.');
 };
 const isManager = {{ auth()->user()->isManager() ? 'true' : 'false' }};
 const isFrontdesk2 = {{ auth()->user()->isFrontdesk() ? 'true' : 'false' }};

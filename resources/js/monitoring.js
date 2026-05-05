@@ -194,6 +194,36 @@ window.approveOrder = async function(id) {
     });
 };
 
+// === GENERATE SPK & INVOICE ===
+window.generateInvoice = function(id) {
+    const serviceOrderId = Number(id);
+    if (!Number.isInteger(serviceOrderId) || serviceOrderId <= 0) {
+        showToast('Service order tidak valid', 'error');
+        return;
+    }
+
+    openConfirmModal({
+        type: 'primary',
+        heading: 'Buat SPK & Invoice?',
+        message: 'Akan membuat SPK & invoice untuk order ini. Pastikan detail sudah benar.',
+        confirmText: 'Buat SPK & Invoice',
+        onConfirm: async () => {
+            try {
+                const routes = window.ROUTES_MON || (typeof ROUTES_MON !== 'undefined' ? ROUTES_MON : null);
+                const url = routes?.invoice
+                    ? routes.invoice(serviceOrderId)
+                    : `/service-order/${serviceOrderId}/invoice`;
+
+                await apiFetch(url, 'POST');
+                showToast('SPK & Invoice berhasil dibuat.', 'success');
+                refreshMonitoringSurface?.();
+            } catch (err) {
+                showToast('Gagal membuat invoice: ' + (err.message || 'Error'), 'error');
+            }
+        }
+    });
+};
+
 // === APPROVE INVOICE ===
 window.approveInvoice = async function(id) {
     openConfirmModal({
