@@ -964,6 +964,8 @@ window.ROUTES_MON = {
     soHistory: (id) => `/masjid/${id}/history`,
     spk: (id) => `/service-order/${id}/spk`,
     invoice: (id) => `/service-order/${id}/invoice`,
+    workflowBase: "{{ url('/workflow') }}",
+    workflowTechnicians: "{{ route('workflow.technicians') }}",
 };
 const ROUTES_MON = window.ROUTES_MON;
 window.generateInvoice = window.generateInvoice || function () {

@@ -174,7 +174,10 @@ window.createSpkInvoice = async function(id) {
         onConfirm: async () => {
             try {
                 showToast('Membuat SPK & Invoice...', 'info');
-                await apiFetch(`/service-order/${id}/create-spk-invoice`, 'POST');
+                const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.workflowCreateSpkInvoice)
+                    ? ROUTES_MON.workflowCreateSpkInvoice(id)
+                    : `/service-order/${id}/create-spk-invoice`;
+                await apiFetch(url, 'POST');
                 showToast('SPK & Invoice berhasil dibuat.', 'success');
                 refreshMonitoringSurface?.();
             } catch (err) {
@@ -219,7 +222,10 @@ window.approveInvoice = async function(id) {
         confirmText: 'Ya, Setuju',
         onConfirm: async () => {
             try {
-                await apiFetch(`/service-order/${id}/approve-invoice`, 'POST');
+                const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.workflowApproveInvoice)
+                    ? ROUTES_MON.workflowApproveInvoice(id)
+                    : `/service-order/${id}/approve-invoice`;
+                await apiFetch(url, 'POST');
                 showToast('SPK & Invoice berhasil disetujui.', 'success');
                 refreshMonitoringSurface?.();
             } catch (err) {
@@ -228,6 +234,8 @@ window.approveInvoice = async function(id) {
         }
     });
 };
+
+window.approveSpkInvoice = window.approveInvoice;
 
 // === DELETE SERVICE ORDER ===
 window.deleteServiceOrder = function(id, e) {
@@ -256,7 +264,10 @@ window.deleteServiceOrder = function(id, e) {
 // Wrapper: Archive order from UI (per plan)
 window.archiveOrder = async function(orderId) {
     try {
-        await apiFetch(`/modules/ac-masjid-musholla/service-order/${orderId}/archive`, 'POST');
+        const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.serviceOrderArchive)
+            ? ROUTES_MON.serviceOrderArchive(orderId)
+            : `/modules/ac-masjid-musholla/service-order/${orderId}/archive`;
+        await apiFetch(url, 'POST');
         showToast('Order di-archive ke Riwayat.', 'success');
         refreshMonitoringSurface?.();
     } catch (err) {
@@ -271,13 +282,7 @@ window.deleteOrder = function(orderId) {
 
 // Wrapper: Approve SPK & Invoice using existing flow
 window.approveSpkInvoice = async function(orderId) {
-    try {
-        await apiFetch(`/modules/ac-masjid-musholla/workflow/${orderId}/approve-spk-invoice`, 'POST');
-        showToast('SPK & Invoice approved.', 'success');
-        refreshMonitoringSurface?.();
-    } catch (err) {
-        showToast('Gagal menyetujui SPK & Invoice: ' + (err.message || 'Error'), 'error');
-    }
+    return window.approveInvoice(orderId);
 };
 
 // === MODAL CONFIRMATION HELPERS ===
@@ -403,8 +408,10 @@ function showToast(message, type = 'info') {
 async function apiFetch(url, method = 'GET', body = null) {
     const options = {
         method: method,
+        credentials: 'same-origin',
         headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
         }
     };
@@ -462,12 +469,27 @@ window.openAssignTech = async function(orderId, orderNumber, masjidName) {
     openPopup('assignTechPopup');
 
     try {
-        const technicians = await apiFetch('/workflow/technicians', 'GET');
-        technicianSelect.innerHTML = technicians.length > 0
-            ? '<option value="">- Pilih Teknisi -</option>' + technicians.map(t => `<option value="${t.id}">${t.name} (${t.email})</option>`).join('')
-            : '<option value="">Tidak ada teknisi terdaftar</option>';
+        const techniciansUrl = (window.ROUTES_MON && window.ROUTES_MON.workflowTechnicians)
+            ? window.ROUTES_MON.workflowTechnicians
+            : `${window.ROUTES_MON?.workflowBase ?? '/workflow'}/technicians`;
+        const techniciansResponse = await apiFetch(techniciansUrl, 'GET');
+        const technicians = Array.isArray(techniciansResponse)
+            ? techniciansResponse
+            : Array.isArray(techniciansResponse.data)
+                ? techniciansResponse.data
+                : [];
+
+        if (technicians.length > 0) {
+            technicianSelect.innerHTML = '<option value="">- Pilih Teknisi -</option>' + technicians.map(t => {
+                const label = [t.name, t.email].filter(Boolean).join(' - ');
+                return `<option value="${t.id}">${label}</option>`;
+            }).join('');
+        } else {
+            technicianSelect.innerHTML = '<option value="">Tidak ada teknisi terdaftar</option>';
+        }
     } catch (err) {
         technicianSelect.innerHTML = '<option value="">Gagal memuat teknisi</option>';
+        console.error('Failed loading technician list:', err);
         showToast('Gagal memuat daftar teknisi: ' + (err.message || 'Error'), 'warning');
     }
 };
@@ -483,7 +505,10 @@ window.submitAssignTech = async function() {
     }
     try {
         showToast('Menugaskan teknisi...', 'info');
-        await apiFetch(`/workflow/${orderId}/assign`, 'POST', {
+        const assignUrl = (window.ROUTES_MON && window.ROUTES_MON.workflowBase)
+            ? `${window.ROUTES_MON.workflowBase}/${orderId}/assign`
+            : `/workflow/${orderId}/assign`;
+        await apiFetch(assignUrl, 'POST', {
             technician_id: technicianId,
             notes: notes,
         });

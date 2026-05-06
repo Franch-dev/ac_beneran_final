@@ -317,7 +317,7 @@
                     <button class="btn btn-sm btn-success" type="button" onclick="archiveOrder({{ $order->id }})" title="Archive to history">
                         <i class="fas fa-archive"></i> Order Selesai (Archive)
                     </button>
-                    <button class="btn btn-sm btn-danger" type="button" onclick="deleteOrder({{ $order->id }})" title="Hapus permanen">
+                    <button class="btn btn-sm btn-danger" type="button" onclick="deleteServiceOrder({{ $order->id }})" title="Hapus permanen">
                         <i class="fas fa-trash"></i> Hapus Permanen
                     </button>
                     @endif
@@ -326,7 +326,7 @@
 
                             {{-- Manager/Admin approve invoice --}}
                             @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_review')
-                            <button class="btn btn-sm btn-success" type="button" onclick="approveSpkInvoice({{ $order->id }})">
+                            <button class="btn btn-sm btn-success" type="button" onclick="approveInvoice({{ $order->id }})">
                                 <i class="fas fa-check-circle"></i> Approve SPK & Invoice
                             </button>
                             @endif
@@ -653,6 +653,39 @@
     <div class="popup-body" id="historyBody"></div>
 </div>
 
+<!-- Assign Technician Popup -->
+<div class="popup popup-lg" id="assignTechPopup">
+    <div class="popup-header">
+        <h3><i class="fas fa-user-hard-hat"></i> Tugaskan Teknisi</h3>
+        <button class="popup-close" onclick="closePopup('assignTechPopup')">&times;</button>
+    </div>
+    <div class="popup-body">
+        <input type="hidden" id="assignTechOrderId">
+        <div class="info-banner">
+            <i class="fas fa-info-circle"></i>
+            <span id="assignTechOrderInfo">Order: -</span>
+        </div>
+        <div class="form-group" style="margin-top:1rem;">
+            <label class="form-label">Pilih Teknisi <span class="required">*</span></label>
+            <select id="technicianSelect" class="form-select">
+                <option value="">Memuat daftar teknisi...</option>
+            </select>
+        </div>
+        <div class="form-group" style="margin-top:0.75rem;">
+            <label class="form-label">Catatan untuk teknisi</label>
+            <textarea id="assignTechNotes" class="form-textarea" rows="3" placeholder="Instruksi tambahan..."></textarea>
+        </div>
+        <div class="popup-actions">
+            <button class="btn btn-primary" onclick="submitAssignTech()">
+                <i class="fas fa-paper-plane"></i> Tugaskan
+            </button>
+            <button class="btn btn-secondary" onclick="closePopup('assignTechPopup')">
+                Batal
+            </button>
+        </div>
+    </div>
+</div>
+
 
 <!-- Popup Konfirmasi Ganti Order Lama -->
 <div class="popup" id="replaceConfirmPopup" style="max-width:480px;z-index:500">
@@ -760,7 +793,7 @@ window.PAGE_SYNC_CONFIG = {
     snapshotRoute: '{{ route("modules.ac-masjid-musholla.monitoring.snapshot") }}',
     persistentSelectors: ['#serviceOrderPopup'],
 };
-const ROUTES_MON = {
+window.ROUTES_MON = {
     soStore: '/modules/ac-masjid-musholla/service-order',
     soApprove: (id) => `/modules/ac-masjid-musholla/service-order/${id}/approve`,
     soCancel: (id) => `/modules/ac-masjid-musholla/service-order/${id}/cancel-approve`,
@@ -769,7 +802,14 @@ const ROUTES_MON = {
     soHistory: (id) => `/modules/ac-masjid-musholla/masjid/${id}/history`,
     spk: (id) => `/service-order/${id}/spk`,
     invoice: (id) => `/service-order/${id}/invoice`,
+    workflowCreateSpkInvoice: (id) => `/service-order/${id}/create-spk-invoice`,
+    workflowApproveInvoice: (id) => `/service-order/${id}/approve-invoice`,
+    workflowApproveSpkInvoice: (id) => `/modules/ac-masjid-musholla/workflow/${id}/approve-spk-invoice`,
+    serviceOrderArchive: (id) => `/modules/ac-masjid-musholla/service-order/${id}/archive`,
+    workflowBase: "{{ url('/workflow') }}",
+    workflowTechnicians: "{{ route('workflow.technicians') }}",
 };
+const ROUTES_MON = window.ROUTES_MON;
 const isManager = {{ auth()->user()->isManager() ? 'true' : 'false' }};
 const isFrontdesk2 = {{ auth()->user()->isFrontdesk() ? 'true' : 'false' }};
 window.HARGA_CONFIG = {
@@ -778,4 +818,87 @@ window.HARGA_CONFIG = {
 };
 </script>
 @vite(['resources/js/monitoring.js'])
+<script>
+(function () {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const fallbackFetch = async (url, method = 'POST') => {
+        const response = await fetch(url, {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            credentials: 'same-origin',
+        });
+        if (!response.ok) {
+            const isJson = response.headers.get('content-type')?.includes('application/json');
+            const errorPayload = isJson ? await response.json().catch(() => null) : null;
+            const message = errorPayload?.message || errorPayload?.error || await response.text();
+            throw new Error(message || `HTTP ${response.status}`);
+        }
+        return response.json().catch(() => null);
+    };
+
+    if (typeof window.createSpkInvoice === 'undefined') {
+        window.createSpkInvoice = async function(id) {
+            if (!confirm('Buat SPK & Invoice?')) return;
+            try {
+                const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.workflowCreateSpkInvoice)
+                    ? ROUTES_MON.workflowCreateSpkInvoice(id)
+                    : `/service-order/${id}/create-spk-invoice`;
+                await fallbackFetch(url, 'POST');
+                location.reload();
+            } catch (error) {
+                alert('Gagal membuat SPK & Invoice: ' + error.message);
+            }
+        };
+    }
+
+    if (typeof window.approveInvoice === 'undefined') {
+        window.approveInvoice = async function(id) {
+            if (!confirm('Approve SPK & Invoice?')) return;
+            try {
+                const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.workflowApproveInvoice)
+                    ? ROUTES_MON.workflowApproveInvoice(id)
+                    : `/service-order/${id}/approve-invoice`;
+                await fallbackFetch(url, 'POST');
+                location.reload();
+            } catch (error) {
+                alert('Gagal menyetujui SPK & Invoice: ' + error.message);
+            }
+        };
+    }
+
+    if (typeof window.archiveOrder === 'undefined') {
+        window.archiveOrder = async function(orderId) {
+            if (!confirm('Archive order sebagai selesai?')) return;
+            try {
+                await fallbackFetch(`/modules/ac-masjid-musholla/service-order/${orderId}/archive`, 'POST');
+                location.reload();
+            } catch (error) {
+                alert('Gagal meng-archive order: ' + error.message);
+            }
+        };
+    }
+
+    if (typeof window.deleteServiceOrder === 'undefined') {
+        window.deleteServiceOrder = async function(orderId) {
+            if (!confirm('Hapus order secara permanen?')) return;
+            try {
+                await fallbackFetch(`/modules/ac-masjid-musholla/service-order/${orderId}`, 'DELETE');
+                location.reload();
+            } catch (error) {
+                alert('Gagal menghapus order: ' + error.message);
+            }
+        };
+    }
+
+    if (typeof window.approveSpkInvoice === 'undefined') {
+        window.approveSpkInvoice = function(orderId) {
+            return window.approveInvoice(orderId);
+        };
+    }
+})();
+</script>
 @endpush
