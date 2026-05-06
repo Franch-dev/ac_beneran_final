@@ -70,6 +70,9 @@ project-docs/
 project-docs-v1/
 project_explanation/
 TODO.md
+temp_service_order_test.php
+Service_order_fix_report.md
+FILE_DOCUMENTATION.md
 .agents
 .phpunit.result.cache
 scratch/
@@ -77,6 +80,7 @@ scratch/
 /debug_workflow/blackboard
 /database/testing
 AI-agents-task-rule-etc/
+ac_beneran_explanation/
 FILE_DOCUMENTATION.html
 my-codebase.md
 repomix-output.xml
