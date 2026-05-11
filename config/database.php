@@ -105,6 +105,27 @@ return [
             ]) : [],
         ],
 
+        'ac_anggota' => [
+            'driver' => env('AC_ANGGOTA_DB_CONNECTION', 'mysql'),
+            'url' => env('AC_ANGGOTA_DB_URL', env('DB_URL')),
+            'host' => env('AC_ANGGOTA_DB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('AC_ANGGOTA_DB_PORT', env('DB_PORT', '3306')),
+            'database' => env('AC_ANGGOTA_DB_DATABASE', env('DB_DATABASE', '')),
+            'username' => env('AC_ANGGOTA_DB_USERNAME', env('DB_USERNAME', 'root')),
+            'password' => env('AC_ANGGOTA_DB_PASSWORD', env('DB_PASSWORD', '')),
+            'unix_socket' => env('AC_ANGGOTA_DB_SOCKET', env('DB_SOCKET', '')),
+            'charset' => env('AC_ANGGOTA_DB_CHARSET', env('DB_CHARSET', 'utf8mb4')),
+            'collation' => env('AC_ANGGOTA_DB_COLLATION', env('DB_COLLATION', 'utf8mb4_unicode_ci')),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'foreign_key_constraints' => env('AC_ANGGOTA_DB_FOREIGN_KEYS', env('DB_FOREIGN_KEYS', true)),
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                (PHP_VERSION_ID >= 80500 ? PDO::MYSQL_ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
         'inventory' => [
             'driver' => env('INVENTORY_DB_CONNECTION', 'mysql'),
             'url' => env('INVENTORY_DB_URL', env('DB_URL')),
