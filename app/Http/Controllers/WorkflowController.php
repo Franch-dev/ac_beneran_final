@@ -77,9 +77,10 @@ class WorkflowController extends Controller
                 'assigned_by' => auth()->id(),
                 'assigned_by_name' => auth()->user()->name,
                 'status' => 'assigned',
+                'assigned_at' => now(),
             ]);
 
-            $serviceOrder->update(['status' => 'approved']);
+            $serviceOrder->update(['status' => 'in_progress']);
 
             WorkflowStep::create([
                 'service_order_id' => $serviceOrder->id,
@@ -187,7 +188,7 @@ class WorkflowController extends Controller
 
             WorkflowStep::create([
                 'service_order_id' => $serviceOrder->id,
-                'step' => 'spk_invoice_created_approved',
+                'step' => 'spk_invoice_approved',
                 'actor_id' => auth()->id(),
                 'actor_name' => auth()->user()->name,
                 'actor_role' => auth()->user()->role,
@@ -195,7 +196,7 @@ class WorkflowController extends Controller
             ]);
 
             $this->flushMonitoringCaches();
-            RealtimeSync::afterCommit('workflow.spk_invoice_created_approved', [
+            RealtimeSync::afterCommit('workflow.spk_invoice_approved', [
                 'resource' => 'service_order',
                 'resource_id' => $serviceOrder->id,
                 'masjid_id' => $serviceOrder->masjid_id,

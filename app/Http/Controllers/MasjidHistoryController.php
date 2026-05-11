@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Masjid;
 use App\Models\ServiceOrder;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class MasjidHistoryController extends Controller
 {
@@ -36,5 +37,33 @@ class MasjidHistoryController extends Controller
 
         return view('history.show', compact('masjid', 'orders', 'totalRevenue', 'totalServices'));
     }
-}
 
+    public function historyJson(Masjid $masjid): JsonResponse
+    {
+        $orders = $masjid->serviceOrders()
+            ->with(['serviceDetails', 'invoice', 'workflowSteps'])
+            ->latest('service_date')
+            ->get()
+            ->map(fn($order) => [
+                'id' => $order->id,
+                'order_number' => $order->order_number,
+                'service_date' => $order->service_date,
+                'status' => $order->status,
+                'total_price' => $order->invoice?->total_price ?? 0,
+                'details' => $order->serviceDetails->map(fn($d) => [
+                    'pk_type' => $d->pk_type,
+                    'brand' => $d->brand,
+                    'quantity' => $d->quantity,
+                    'service_type' => $d->service_type,
+                    'complaint' => $d->complaint,
+                ]),
+                'steps' => $order->workflowSteps->map(fn($s) => [
+                    'step' => $s->step,
+                    'notes' => $s->notes,
+                    'time' => $s->created_at->format('d M Y, H:i'),
+                ]),
+            ]);
+
+        return response()->json($orders);
+    }
+}

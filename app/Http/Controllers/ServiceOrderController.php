@@ -97,7 +97,7 @@ class ServiceOrderController extends Controller
                 'phone' => $validated['phone'],
                 'service_date' => $validated['service_date'],
                 'notes' => $validated['notes'] ?? null,
-                'status' => 'pending',
+                'status' => 'spk_invoice_created',
             ]);
 
             foreach ($validated['details'] as $detail) {
@@ -115,7 +115,7 @@ class ServiceOrderController extends Controller
 
             WorkflowStep::create([
                 'service_order_id' => $order->id,
-                'step' => 'created',
+                'step' => 'frontdesk_created',
                 'actor_id' => auth()->id(),
                 'actor_name' => auth()->user()->name,
                 'actor_role' => auth()->user()->role,
@@ -182,7 +182,7 @@ class ServiceOrderController extends Controller
                 'phone' => $validated['phone'],
                 'service_date' => $validated['service_date'],
                 'notes' => $validated['notes'] ?? null,
-                'status' => 'pending',
+                'status' => 'spk_invoice_created',
             ]);
 
             foreach ($validated['details'] as $detail) {
@@ -200,7 +200,7 @@ class ServiceOrderController extends Controller
 
             WorkflowStep::create([
                 'service_order_id' => $order->id,
-                'step' => 'created',
+                'step' => 'frontdesk_created',
                 'actor_id' => auth()->id(),
                 'actor_name' => auth()->check() ? auth()->user()->name : 'Guest',
                 'actor_role' => auth()->check() ? auth()->user()->role : 'guest',
@@ -227,16 +227,16 @@ class ServiceOrderController extends Controller
 
     public function approve(ServiceOrder $serviceOrder): JsonResponse
     {
-        if ($serviceOrder->status !== 'pending') {
+        if ($serviceOrder->status !== 'spk_invoice_created') {
             return response()->json([
                 'success' => false,
-                'message' => 'Order tidak dalam status pending.',
+                'message' => 'Order tidak dalam status SPK & Invoice dibuat.',
             ], 422);
         }
 
         return DB::connection('ac_service')->transaction(function () use ($serviceOrder) {
             // ── 1. Update status ──────────────────────────────────────────────
-            $serviceOrder->update(['status' => 'waiting_invoice']);
+            $serviceOrder->update(['status' => 'approved']);
 
             // ── 2. Build & save Invoice ───────────────────────────────
             $total = $serviceOrder->serviceDetails->sum(
@@ -252,11 +252,11 @@ class ServiceOrderController extends Controller
             // ── 3. Record workflow ──────────────────────────────────────
             WorkflowStep::create([
                 'service_order_id' => $serviceOrder->id,
-                'step' => 'approved',
+                'step' => 'spk_invoice_approved',
                 'actor_id' => auth()->id(),
                 'actor_name' => auth()->user()->name,
                 'actor_role' => auth()->user()->role,
-                'notes' => 'SPK & Invoice dibuat (approve satu-klik)',
+                'notes' => 'SPK & Invoice disetujui',
             ]);
 
             // ── 4. Real-time broadcast ─────────────────────────────────
@@ -265,7 +265,7 @@ class ServiceOrderController extends Controller
                 'resource_id' => $serviceOrder->id,
                 'masjid_id' => $serviceOrder->masjid_id,
                 'service_order_id' => $serviceOrder->id,
-                'payload' => ['status' => 'waiting_invoice'],
+                'payload' => ['status' => 'approved'],
             ]);
 
             $this->flushMonitoringCaches();
@@ -283,12 +283,12 @@ class ServiceOrderController extends Controller
         if (! in_array($serviceOrder->status, ['approved', 'in_progress', 'waiting_invoice', 'waiting_review'], true)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Order tidak dapat dikembalikan ke pending.',
+                'message' => 'Order tidak dapat dikembalikan ke SPK & Invoice dibuat.',
             ], 422);
         }
 
         return DB::connection('ac_service')->transaction(function () use ($serviceOrder) {
-            $serviceOrder->update(['status' => 'pending']);
+            $serviceOrder->update(['status' => 'spk_invoice_created']);
             $serviceOrder->invoice?->delete();
             $serviceOrder->technicianAssignment()->delete();
 
@@ -298,7 +298,7 @@ class ServiceOrderController extends Controller
                 'actor_id' => auth()->id(),
                 'actor_name' => auth()->user()->name,
                 'actor_role' => auth()->user()->role,
-                'notes' => 'Approval dibatalkan dan order dikembalikan ke pending',
+                'notes' => 'Approval dibatalkan dan order dikembalikan ke SPK & Invoice dibuat',
             ]);
 
             RealtimeSync::afterCommit('service_order.cancelled', [
@@ -307,7 +307,7 @@ class ServiceOrderController extends Controller
                 'masjid_id' => $serviceOrder->masjid_id,
                 'service_order_id' => $serviceOrder->id,
                 'payload' => [
-                    'status' => 'pending',
+                    'status' => 'spk_invoice_created',
                 ],
             ]);
 
@@ -374,7 +374,6 @@ class ServiceOrderController extends Controller
             ]);
 
             $serviceOrder->update(['status' => 'approved']);
-
             WorkflowStep::create([
                 'service_order_id' => $serviceOrder->id,
                 'step' => 'invoice_generated',
@@ -399,7 +398,7 @@ class ServiceOrderController extends Controller
         });
     }
 
-    public function approveInvoice(ServiceOrder $serviceOrder): JsonResponse
+    public function confirmPayment(ServiceOrder $serviceOrder): JsonResponse
     {
         if (! auth()->user()->isManager() && ! auth()->user()->isAdmin()) {
             return response()->json(['success' => false, 'message' => 'Akses tidak diizinkan.'], 403);
@@ -409,8 +408,44 @@ class ServiceOrderController extends Controller
             return response()->json(['success' => false, 'message' => 'Invoice belum dibuat.'], 422);
         }
 
-        if ($serviceOrder->status !== 'waiting_review') {
-            return response()->json(['success' => false, 'message' => 'Order belum dalam review invoice.'], 422);
+        if ($serviceOrder->status !== 'waiting_invoice') {
+            return response()->json(['success' => false, 'message' => 'Order tidak menunggu pembayaran.'], 422);
+        }
+
+        return DB::connection('ac_service')->transaction(function () use ($serviceOrder) {
+            $serviceOrder->invoice->update(['payment_verified_at' => now()]);
+            $serviceOrder->update(['status' => 'payment_verified']);
+
+            WorkflowStep::create([
+                'service_order_id' => $serviceOrder->id,
+                'step' => 'payment_verified',
+                'actor_id' => auth()->id(),
+                'actor_name' => auth()->user()->name,
+                'actor_role' => auth()->user()->role,
+                'notes' => 'Pembayaran telah diverifikasi',
+            ]);
+
+            RealtimeSync::afterCommit('service_order.payment_verified', [
+                'resource' => 'service_order',
+                'resource_id' => $serviceOrder->id,
+                'masjid_id' => $serviceOrder->masjid_id,
+                'service_order_id' => $serviceOrder->id,
+                'payload' => ['status' => 'payment_verified'],
+            ]);
+
+            $this->flushMonitoringCaches();
+            return response()->json(['success' => true]);
+        });
+    }
+
+    public function finalizeOrder(ServiceOrder $serviceOrder): JsonResponse
+    {
+        if (! auth()->user()->isManager() && ! auth()->user()->isAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Akses tidak diizinkan.'], 403);
+        }
+
+        if ($serviceOrder->status !== 'payment_verified') {
+            return response()->json(['success' => false, 'message' => 'Order belum diverifikasi pembayarannya.'], 422);
         }
 
         return DB::connection('ac_service')->transaction(function () use ($serviceOrder) {
@@ -422,14 +457,13 @@ class ServiceOrderController extends Controller
                 'actor_id' => auth()->id(),
                 'actor_name' => auth()->user()->name,
                 'actor_role' => auth()->user()->role,
-                'notes' => 'Invoice disetujui manager',
+                'notes' => 'Order selesai',
             ]);
 
             foreach ($serviceOrder->serviceDetails as $detail) {
                 $units = $serviceOrder->masjid->acUnits
                     ->where('pk_type', $detail->pk_type)
                     ->where('brand', $detail->brand);
-
                 foreach ($units as $unit) {
                     $unit->update(['last_service_date' => $serviceOrder->service_date]);
                 }
@@ -440,9 +474,7 @@ class ServiceOrderController extends Controller
                 'resource_id' => $serviceOrder->id,
                 'masjid_id' => $serviceOrder->masjid_id,
                 'service_order_id' => $serviceOrder->id,
-                'payload' => [
-                    'status' => 'completed',
-                ],
+                'payload' => ['status' => 'completed'],
             ]);
 
             $this->flushMonitoringCaches();
@@ -506,7 +538,7 @@ class ServiceOrderController extends Controller
 
     public function cleanExpired(): JsonResponse
     {
-        $expired = ServiceOrder::where('status', 'pending')
+        $expired = ServiceOrder::where('status', 'spk_invoice_created')
             ->where('service_date', '<', now()->toDateString())
             ->get();
 
@@ -577,7 +609,7 @@ class ServiceOrderController extends Controller
                 'notes' => 'Teknisi submits field report. ' . ($additionalFee > 0 ? "Additional fee: Rp " . number_format($additionalFee) : 'Tanpa biaya tambahan'),
             ]);
 
-            $newStatus = ($additionalFee > 0) ? 'waiting_review' : 'completed';
+            $newStatus = ($additionalFee > 0) ? 'waiting_review' : 'waiting_invoice';
             $serviceOrder->update(['status' => $newStatus]);
 
             RealtimeSync::afterCommit('service_order.field_report_submitted', [
@@ -630,13 +662,13 @@ class ServiceOrderController extends Controller
                 $invoice->update(['total_price' => $newTotal]);
             }
 
-            $serviceOrder->update(['status' => 'completed']);
+            $serviceOrder->update(['status' => 'waiting_invoice']);
 
             RealtimeSync::afterCommit('service_order.additional_fee_approved', [
                 'resource' => 'service_order',
                 'resource_id' => $serviceOrder->id,
                 'masjid_id' => $serviceOrder->masjid_id,
-                'payload' => ['status' => 'completed'],
+                'payload' => ['status' => 'waiting_invoice'],
             ]);
 
             $this->flushMonitoringCaches();
