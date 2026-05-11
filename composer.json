@@ -36,8 +36,7 @@
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
             "@php -r \"@mkdir('storage/framework/cache', 0755, true); @mkdir('storage/framework/sessions', 0755, true); @mkdir('storage/framework/views', 0755, true);\"",
-            "@php artisan migrate --force",
-            "@php artisan db:rebuild --force",
+            "@php artisan db:rebuild --no-interaction",
             "npm install",
             "npm run build"
         ],

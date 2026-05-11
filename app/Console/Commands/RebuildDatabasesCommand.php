@@ -25,7 +25,7 @@ class RebuildDatabasesCommand extends Command
      */
     public function handle()
     {
-        if (!$this->confirm('This will completely DESTROY all data across all configured databases. Are you sure?')) {
+        if (!$this->confirm('This will completely DESTROY all data across all configured databases. Are you sure?', true)) {
             $this->info('Database rebuild cancelled.');
             return;
         }
