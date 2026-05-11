@@ -8,15 +8,16 @@ use Illuminate\Database\Eloquent\Model;
 class AnggotaServiceOrder extends Model
 {
     public const ACTIVE_STATUSES = [
-        'pending',
+        'spk_invoice_created',
         'approved',
         'in_progress',
         'waiting_invoice',
         'waiting_review',
+        'completed',
     ];
 
     public const STATUS_LABELS = [
-        'pending' => 'Pending',
+        'spk_invoice_created' => 'SPK & Invoice Created',
         'approved' => 'SPK Issued',
         'in_progress' => 'In Progress',
         'waiting_invoice' => 'Waiting Invoice',
@@ -101,6 +102,6 @@ class AnggotaServiceOrder extends Model
 
     public function isExpired(): bool
     {
-        return $this->service_date < now()->toDateString() && $this->status === 'pending';
+        return $this->service_date < now()->toDateString() && $this->status === 'spk_invoice_created';
     }
 }

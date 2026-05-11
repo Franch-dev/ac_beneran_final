@@ -8,18 +8,17 @@ use Illuminate\Database\Eloquent\Model;
 class ServiceOrder extends Model
 {
     public const ACTIVE_STATUSES = [
-        'pending',
-        'spk_invoice_pending',
+        'spk_invoice_created',
         'approved',
         'in_progress',
         'waiting_review',
         'waiting_invoice',
+        'completed',
     ];
 
     public const STATUS_LABELS = [
-        'pending' => 'Menunggu SPK & Invoice',
-        'spk_invoice_pending' => 'SPK & Invoice Menunggu Persetujuan',
-        'approved' => 'SPK & Invoice Disetujui',
+        'spk_invoice_created' => 'SPK & Invoice Dibuat',
+        'approved' => 'SPK & Invoice Diterbitkan',
         'in_progress' => 'Sedang Dikerjakan',
         'waiting_review' => 'Menunggu Review Biaya Tambahan',
         'waiting_invoice' => 'Menunggu Pembayaran',
@@ -124,7 +123,7 @@ class ServiceOrder extends Model
 
     public function isExpired(): bool
     {
-        return $this->service_date < now()->toDateString() && $this->status === 'pending';
+        return $this->service_date < now()->toDateString() && $this->status === 'spk_invoice_created';
     }
 
     public function hasFieldReport(): bool
@@ -181,12 +180,12 @@ class ServiceOrder extends Model
 
     public function needsSpkInvoiceCreation(): bool
     {
-        return $this->status === 'pending';
+        return false; // SPK is created when order is created
     }
 
     public function needsSpkInvoiceApproval(): bool
     {
-        return $this->status === 'spk_invoice_pending';
+        return $this->status === 'waiting_invoice';
     }
 
     public function needsTechnicianReport(): bool

@@ -9,6 +9,8 @@ class ServiceOrderHistory extends Model
 {
     use HasFactory;
 
+    protected $connection = 'ac_service';
+
     protected $table = 'service_order_histories';
 
     protected $fillable = [
