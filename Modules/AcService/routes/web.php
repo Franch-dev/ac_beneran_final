@@ -71,7 +71,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/service-order/{serviceOrder}/approve', [ServiceOrderController::class, 'approve'])->name('service-order.approve');
         Route::post('/service-order/{serviceOrder}/cancel-approve', [ServiceOrderController::class, 'cancelApprove'])->name('service-order.cancel-approve');
         Route::delete('/service-order/{serviceOrder}/manager', [ServiceOrderController::class, 'destroy'])->name('service-order.destroy-manager');
-        Route::post('/service-order/{serviceOrder}/approve-invoice', [ServiceOrderController::class, 'approveInvoice'])->name('service-order.approve-invoice');
+        Route::post('/service-order/{serviceOrder}/confirm-payment', [ServiceOrderController::class, 'confirmPayment'])->name('service-order.confirm-payment');
+        Route::post('/service-order/{serviceOrder}/finalize-order', [ServiceOrderController::class, 'finalizeOrder'])->name('service-order.finalize-order');
         
         // New: Approve Additional Fee
         Route::post('/service-order/{serviceOrder}/approve-additional-fee', [ServiceOrderController::class, 'approveAdditionalFee'])->name('service-order.approve-additional-fee');
@@ -115,6 +116,8 @@ Route::middleware('auth')->group(function () {
     // ── Masjid Service History (dedicated page) ───────────────
     Route::get('/masjid/{masjid}/history-page', [MasjidHistoryController::class, 'show'])
          ->name('masjid.history.show');
+    Route::get('/masjid/{masjid}/history-json', [MasjidHistoryController::class, 'historyJson'])
+         ->name('masjid.history.json');
 
     // ── Workflow: timeline (read — all auth roles) ────────────
     Route::get('/workflow/{serviceOrder}/timeline',  [WorkflowController::class, 'timeline'])
