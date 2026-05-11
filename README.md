@@ -4,252 +4,139 @@
   <img src="https://img.shields.io/badge/Laravel-12.x-blue?style=flat&logo=laravel" alt="Laravel">
   <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat&logo=php" alt="PHP">
   <img src="https://img.shields.io/badge/TailwindCSS-4.x-06B6D4?style=flat&logo=tailwind-css" alt="Tailwind">
-  <img src="https://img.shields.io/badge/MySQL-3+Databases-4479A1?style=flat&logo=mysql" alt="MySQL">
+  <img src="https://img.shields.io/badge/MySQL-4_Databases-4479A1?style=flat&logo=mysql" alt="MySQL">
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat" alt="License">
 </p>
 
 ## Overview
 
-AC Beneran is a comprehensive platform for managing AC (Air Conditioning) service operations for mosques and musholla in Indonesia. The system handles service orders, technician assignments, invoicing, and member management across multiple module-based applications.
+AC Beneran is a comprehensive platform for managing AC (Air Conditioning) service operations specifically tailored for mosques and musholla in Indonesia. Built with a robust modular architecture and multi-database design, it manages the entire service lifecycle—from initial order and technician assignment to automated invoicing and dual-confirmation completion.
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Backend | Laravel 12.x |
-| Frontend | Vite + Tailwind CSS 4 |
-| Database | MySQL (Multi-database) |
-| PHP | 8.2+ |
-| Authentication | Laravel Breeze (Custom) |
+| **Backend** | Laravel 12.x |
+| **Frontend** | Vite + Tailwind CSS 4.x |
+| **Database** | MySQL 8.x (Multi-database: Main, AC Service, Anggota, Inventory) |
+| **Animations** | GSAP, Anime.js, AOS |
+| **Auth** | Customized Laravel Breeze / Role-based Access |
 
 ## Architecture
 
 ### Multi-Database Design
+The platform intelligently partitions data across four distinct databases to ensure scalability and isolation. The system is designed to **automatically create** these databases during migration if they do not exist.
 
-```
-main_platform     → Users, Sessions, Auth
-ac_service_db    → Masjid, AC Units, Service Orders, Invoices
-inventory_db    → Inventory (Planned)
-```
+1. `main_platform` → Global users, auth, sessions, and core configurations.
+2. `ac_masjid_db` → Core operations: Masjids, AC Units, Service Orders, and Invoices.
+3. `ac_anggota_db` → Member portal data and history.
+4. `inventory_db` → Asset and stock management (MVP).
 
-### Module System
-
-The application uses a modular architecture with 5 modules:
+### Modular System
+The application follows a modular pattern located in the `Modules/` directory:
 
 | Module | Purpose | Status |
 |--------|---------|--------|
-| AC Service | Core service operations | Live |
-| AC Masjid & Musholla | Public service info | Live |
-| AC Anggota | Member portal | Live |
-| Inventory | Asset tracking | MVP |
-| Future Module | Template | MVP |
-
-### User Roles
-
-| Role | Permissions |
-|------|-----------|
-| Admin | Full system access |
-| Manager | Approvals, Reports, Workflow |
-| Frontdesk | CRUD Masjid, AC, Orders |
-| Technician | Service execution |
-| Viewer | Read-only access |
+| **AcService** | Core operational hub for masjid services | Live |
+| **AcMasjidMusholla** | Public monitoring and information | Live |
+| **AcAnggota** | Member/Donator portal | Live |
+| **Inventory** | Asset and equipment tracking | MVP |
+| **FutureModule** | Template for new feature expansion | MVP |
 
 ## Getting Started
 
 ### Prerequisites
-
 - PHP 8.2+
-- Composer
-- Node.js 18+
-- MySQL 5.7+
+- Composer 2.x
+- Node.js 20+
+- MySQL 8.x
 
 ### Installation
 
 ```bash
-# Install PHP dependencies
+# 1. Install PHP dependencies
 composer install
 
-# Install Node.js dependencies
+# 2. Install Node.js dependencies
 npm install
 
-# Copy environment file
+# 3. Setup environment
 copy .env.example .env
 
-# Generate application key
+# 4. Generate keys and migrate
+# Note: Migrations will attempt to auto-create the 4 required databases
 php artisan key:generate
-
-# Run migrations
 php artisan migrate
 
-# Build assets
+# 5. Build frontend assets
 npm run build
 ```
 
 ### Development
+The platform includes a pre-configured development stack that handles the server, queue, and vite simultaneously:
 
 ```bash
-# Run full development stack
+# Recommended: Run the full stack (Serve, Queue, Pail, Vite)
 composer dev
 
-# Or separately
+# Manual alternative
 php artisan serve
 npm run dev
 ```
+
+## Core Workflow & Statuses
+
+### Service Order Lifecycle
+AC Beneran uses a strict status-driven workflow to ensure operational integrity:
+
+1. `spk_invoice_created` → Order initiated, SPK & Invoice generated.
+2. `approved` → Documents reviewed and published for technician.
+3. `in_progress` → Technician assigned and work is ongoing.
+4. `waiting_review` → Triggered if technician reports additional costs/materials.
+5. `waiting_invoice` → Work complete, pending payment verification.
+6. `completed` → Payment verified; requires **Dual Confirmation** (Frontdesk & Manager).
+
+### Dual Confirmation Feature
+To ensure service quality and financial accuracy, an order can only be truly finalized after both a **Frontdesk** staff and a **Manager** have confirmed the completion in the system.
 
 ## Project Structure
 
 ```
 ac_beneran_final/
 ├── app/
-│   ├── Http/Controllers/    # Controllers
-│   ├── Models/              # Eloquent Models
-│   └── Providers/           # Service Providers
-├── bootstrap/
-│   └── app.php              # Application bootstrap
-├── config/                 # Configuration files
+│   ├── Http/Controllers/    # Core business logic
+│   ├── Models/              # Multi-connection Eloquent models
+│   └── Support/             # Platform-wide helpers and navigation
+├── Modules/                 # Encapsulated feature modules
+│   ├── AcService/           # Main service logic
+│   ├── AcAnggota/           # Member portal
+│   └── ...                  # Other modules
 ├── database/
-│   ├── migrations/         # Database migrations
-│   ├── seeders/           # Database seeders
-│   └── factories/          # Model factories
-├── Modules/               # Modular application
-│   ├── AcService/         # AC Service module
-│   ├── AcAnggota/         # AC Anggota module
-│   ├── AcMasjidMusholla/  # AC Masjid module
-│   ├── Inventory/        # Inventory module
-│   └── FutureModule/     # Future module
-├── public/                # Public assets
-├── resources/
-│   └── views/            # Blade templates
-├── routes/               # Route definitions
-├── storage/              # Storage (logs, cache)
-└── vendor/              # Composer dependencies
+│   ├── migrations/          # Structured for multi-db support
+│   └── seeders/             # Core and module data seeders
+├── public/                  # Themed assets (Liquid Glass UI)
+└── resources/views/         # Blade templates & UI components
 ```
 
-## Key Features
-
-### Service Management
-- Masjid & AC unit registration
-- Service order creation and tracking
-- Workflow management (create → approve → assign → execute → close)
-- Invoice generation
-- SPK (Surat Perintah Kerja) generation
-
-### Member Management
-- Anggota registration
-- Member AC units tracking
-- Service history per member
-
-### Monitoring & Reporting
-- Real-time dashboard
-- Status tracking
-- Snapshot APIs for reactivity
-- Export capabilities
-
-### User Management
-- Role-based access control
-- Password reset functionality
-- Activity logging
-
-## API Endpoints
-
-### Public
-- `GET /` - Home page
-- `GET /login` - Login form
-- `GET /modules/{module}` - Module pages
-
-### Authenticated
-- `GET /dashboard` - Main dashboard
-- `GET /monitoring` - Service monitoring
-- `GET /profile` - User profile
-
-### Protected (Role-based)
-- `POST /masjid` - Create Masjid (frontdesk+)
-- `POST /workflow/{order}/assign` - Assign technician (manager+)
-- `GET /users` - User management (admin only)
-
-See `sitemap-visual.html` for complete route documentation.
-
-## Database Schema
-
-### Main Database (main_platform)
-
-| Table | Description |
-|-------|------------|
-| users | User accounts with roles |
-| sessions | User sessions |
-| password_reset_tokens | Password reset tokens |
-
-### AC Service Database (ac_service_db)
-
-| Table | Description |
-|-------|------------|
-| masjids | Masjid/Musholla records |
-| ac_units | AC units per Masjid |
-| service_orders | Service order requests |
-| service_details | Order line items |
-| invoices | Generated invoices |
-| workflow_steps | Order workflow history |
-| technician_assignments | Technician assignments |
-| anggotas | Member records |
-| anggota_ac_units | Member AC units |
-| anggota_service_orders | Member service orders |
-| sync_events | Real-time sync events |
-
-See `database-schema.html` for detailed schema.
-
-## Environment Variables
-
-```env
-# Application
-APP_NAME="Forkis Platform"
-APP_ENV=local
-APP_DEBUG=true
-
-# Database
-DB_CONNECTION=main
-DB_HOST=127.0.0.1
-DB_DATABASE=main_platform
-
-MAIN_DB_CONNECTION=mysql
-MAIN_DB_DATABASE=main_platform
-
-AC_SERVICE_DB_CONNECTION=mysql
-AC_SERVICE_DB_DATABASE=ac_service_db
-
-# Domains (for subdomain routing)
-AC_SERVICE_DOMAIN=ac.ac_beneran_final.test
-INVENTORY_DOMAIN=inventory.ac_beneran_final.test
-```
-
-## Security
-
-- Laravel CSRF protection
-- SQL injection prevention (Eloquent ORM)
-- XSS prevention (Blade escaping)
-- Role-based access control via middleware
-- Session security configuration
+## Security & Reliability
+- **Subdomain Routing:** Modules are isolated via subdomains (e.g., `ac.domain.test`).
+- **Real-time Sync:** Uses `SyncEvent` models for UI reactivity.
+- **Role Middleware:** Strict RBAC (Admin, Manager, Frontdesk, Technician, Viewer).
+- **Security Headers:** Built-in CSP and security header middleware.
 
 ## Documentation
 
-| File | Description |
-|------|------------|
-| `README.md` | This file |
-| `Architecture.md` | Architecture details |
-| `Database.md` | Database documentation |
-| `TechStack.md` | Technology details |
-| `Features.md` | Feature list |
-| `Security.md` | Security practices |
-| `UIUX.md` | Design system |
-| `API.md` | API documentation |
-| `Deployment.md` | Deployment guide |
-| `PRD.md` | Product requirements |
-| `sitemap-visual.html` | Visual sitemap |
-| `database-schema.html` | Visual database schema |
+Comprehensive guides are available in the `project-docs/` directory:
+
+- [Architecture Guide](project-docs/Architecture.md)
+- [Database Schema](project-docs/Database.md)
+- [API Specification](project-docs/API.md)
+- [Product Requirements (PRD)](project-docs/PRD.md)
+- [Deployment Guide](project-docs/Deployment.md)
+- [UI/UX Design System](project-docs/UIUX.md)
 
 ## License
-
 This project is licensed under the MIT License.
 
 ---
-
-<p align="center">Built with ❤️ using Laravel & Tailwind CSS</p>
+<p align="center">Built for better transparency in Mosque AC Maintenance 🕌✨</p>
