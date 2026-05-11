@@ -83,7 +83,7 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(CommandStarting::class, function (CommandStarting $event) {
             if (in_array($event->command, ['migrate', 'migrate:fresh', 'migrate:refresh', 'db:seed'])) {
                 try {
-                    $connectionNames = ['main', 'ac_service', 'inventory'];
+                    $connectionNames = ['main', 'ac_service', 'ac_anggota', 'inventory'];
                     $created = [];
 
                     foreach ($connectionNames as $name) {

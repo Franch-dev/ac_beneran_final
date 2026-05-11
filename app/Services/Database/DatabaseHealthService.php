@@ -12,7 +12,7 @@ class DatabaseHealthService
      */
     public function checkConnections(): array
     {
-        $connections = ['main', 'ac_service', 'inventory'];
+        $connections = ['main', 'ac_service', 'ac_anggota', 'inventory'];
         $result = [];
 
         foreach ($connections as $name) {
