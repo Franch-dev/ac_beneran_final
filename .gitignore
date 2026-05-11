@@ -55,6 +55,9 @@ yarn-error.log*
 /storage/logs/*.log
 /storage/framework/sessions/*
 /storage/framework/views/*
+/tests/QA_Monitoring_Skeleton
+/tests/QA-tester
+/tests/TestCase.php
 
 # Project temps
 Website-Update/
@@ -66,6 +69,7 @@ useless/
 .paul/
 .cursor/
 .codex/
+.learnings
 project-docs/
 project-docs-v1/
 project_explanation/
@@ -84,6 +88,9 @@ ac_beneran_explanation/
 FILE_DOCUMENTATION.html
 my-codebase.md
 repomix-output.xml
+my-codebase.xml
+GEMINI.md
+
 # Dependencies venv
 venv/
 .venv/
