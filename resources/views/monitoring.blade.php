@@ -5,7 +5,7 @@
 @section('content')
 @php
     $statusLabels = \App\Models\ServiceOrder::STATUS_LABELS;
-    $pendingCount = (int) ($statusTotals['pending'] ?? 0);
+    $pendingCount = (int) ($statusTotals['spk_invoice_created'] ?? 0);
     $waitingInvoiceCount = (int) ($statusTotals['waiting_invoice'] ?? 0);
     $waitingReviewCount = (int) ($statusTotals['waiting_review'] ?? 0);
     $searchTerm = request('search');
@@ -41,7 +41,7 @@
             'cancelled',
         ];
 
-        return in_array($status, ['pending', 'approved', 'waiting_invoice'], true)
+        return in_array($status, ['spk_invoice_created', 'approved', 'waiting_invoice'], true)
             && ! in_array($latestStep, $spkAlreadyStartedSteps, true);
     };
 @endphp
@@ -230,11 +230,11 @@
                         default => 'Belum Ada Data',
                     };
                     $progress = match($order->status) {
-                        'pending' => ['value' => 18, 'label' => 'Menunggu approval', 'tone' => 'warning'],
-                        'waiting_invoice' => ['value' => 35, 'label' => 'Menunggu SPK & Invoice', 'tone' => 'info'],
-                        'approved' => ['value' => 50, 'label' => 'Siap Ditugaskan', 'tone' => 'success'],
+                        'spk_invoice_created' => ['value' => 18, 'label' => 'Menunggu SPK & Invoice', 'tone' => 'warning'],
+                        'approved' => ['value' => 35, 'label' => 'Siap Ditugaskan', 'tone' => 'success'],
                         'in_progress' => ['value' => 75, 'label' => 'Teknisi sedang bekerja', 'tone' => 'primary'],
-                        'waiting_review' => ['value' => 90, 'label' => 'Menunggu review akhir', 'tone' => 'accent'],
+                        'waiting_invoice' => ['value' => 50, 'label' => 'Menunggu Pembayaran', 'tone' => 'info'],
+                        'waiting_review' => ['value' => 90, 'label' => 'Menunggu review pembayaran', 'tone' => 'accent'],
                         'completed' => ['value' => 100, 'label' => 'Workflow selesai', 'tone' => 'success'],
                         default => ['value' => 12, 'label' => 'Status belum dipetakan', 'tone' => 'neutral'],
                     };
@@ -318,13 +318,45 @@
                         </span>
                     </td>
                     <td class="table-cell-actions">
+                        @php
+                            $orderStatus = $order->status;
+
+                            $isManagerOrAdmin = auth()->user()->isManager() || auth()->user()->isAdmin();
+                            $isFrontdeskOrAdmin = auth()->user()->isFrontdesk() || auth()->user()->isAdmin();
+                            $isTechnician = auth()->user()->isTechnician();
+
+                            $isApproved = $orderStatus === 'approved';
+                            $isInProgressOrApproved = $isApproved || $orderStatus === 'in_progress';
+                            $isWaitingInvoice = $orderStatus === 'waiting_invoice';
+                            $isWaitingReview = $orderStatus === 'waiting_review';
+                            $isCompleted = $orderStatus === 'completed';
+
+                            $hasInvoice = (bool) $order->invoice;
+
+                            $canAssignTech = $isManagerOrAdmin && $isApproved;
+                            $canSubmitReport = $isTechnician && in_array($orderStatus, ['approved','in_progress'], true);
+
+                            $canCreateSpk = $canCreateSpkInvoice($order);
+                            $canApprovePayment = $isManagerOrAdmin && $isWaitingInvoice && $hasInvoice;
+
+                            $canApproveAdditionalFee = $isManagerOrAdmin
+                                && ($order->field_report_additional_fee > 0)
+                                && ! $order->manager_approved_additional_fee;
+
+                            $canShowSpk = in_array($orderStatus, ['approved','in_progress','waiting_invoice','waiting_review','completed'], true);
+
+                            $frontdeskNeedsConfirm = $isFrontdeskOrAdmin && ! $order->frontdesk_confirmed_complete;
+                            $managerNeedsConfirm = ($isManagerOrAdmin) && ! $order->manager_confirmed_complete;
+
+                            $bothConfirmed = $order->frontdesk_confirmed_complete && $order->manager_confirmed_complete;
+                        @endphp
                         <div class="action-btns action-btns--dense">
                             <button class="btn btn-sm btn-info" type="button" onclick='showOrderDetail(@json($order->id), @json($order->order_number), @json($masjidName), @json($order->service_date->format('d M Y')))'>
                                 <i class="fas fa-eye"></i> Detail
                             </button>
 
                             {{-- Assign technician after SPK --}}
-                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'approved')
+                            @if($canAssignTech)
                             <button class="btn btn-sm btn-outline btn-accent" type="button"
                                 onclick='openAssignTech(@json($order->id), @json($order->order_number), @json($masjidName))'>
                                 <i class="fas fa-user-hard-hat"></i> Tugaskan
@@ -332,78 +364,68 @@
                             @endif
 
                             {{-- Technician mark task done / submit field report --}}
-                            @if(auth()->user()->isTechnician() && in_array($order->status, ['approved','in_progress']))
+                            @if($canSubmitReport)
                             <button class="btn btn-sm btn-warning" type="button" onclick='openFieldReport(@json($order->id), @json($order->order_number))'>
                                 <i class="fas fa-clipboard-check"></i> Submit Laporan
                             </button>
                             @endif
 
                             {{-- Manager/Frontdesk/Admin generate SPK & Invoice --}}
-                            @if($canCreateSpkInvoice($order))
+                            @if($canCreateSpk)
                             <button class="btn btn-sm btn-primary" type="button" onclick="createSpkInvoice({{ $order->id }})">
                                 <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
                             </button>
                             @endif
 
-
-
                             {{-- Order Selesai button for 'completed' status with dual confirmation --}}
-                            @if($order->status == 'completed')
-                                {{-- Frontdesk/Admin confirmation --}}
-                                @if((auth()->user()->isFrontdesk() || auth()->user()->isAdmin()) && !$order->frontdesk_confirmed_complete)
+                            @if($isCompleted)
+                                @if($frontdeskNeedsConfirm)
                                 <button class="btn btn-sm btn-success" type="button" onclick="openDualConfirmation({{ $order->id }}, 'frontdesk', 'Apakah Anda (Frontdesk) menyetujui bahwa service order ini sudah selesai?')" title="Konfirmasi Selesai">
                                     <i class="fas fa-check"></i> Konfirmasi Selesai
                                 </button>
                                 @endif
 
-                                {{-- Manager/Admin confirmation --}}
-                                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && !$order->manager_confirmed_complete)
+                                @if($managerNeedsConfirm)
                                 <button class="btn btn-sm btn-success" type="button" onclick="openDualConfirmation({{ $order->id }}, 'manager', 'Apakah Anda (Manager) menyetujui bahwa service order ini sudah selesai?')" title="Konfirmasi Selesai">
                                     <i class="fas fa-check"></i> Konfirmasi Selesai
                                 </button>
                                 @endif
 
-                                {{-- Show if both confirmed --}}
-                                @if($order->frontdesk_confirmed_complete && $order->manager_confirmed_complete)
+                                @if($bothConfirmed)
                                 <span class="btn btn-sm btn-success" style="opacity:0.7">
                                     <i class="fas fa-check-double"></i> Selesai
                                 </span>
                                 @endif
                             @endif
 
-
-
                             {{-- Manager/Admin approve SPK & Invoice --}}
-                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_review')
+                            @if($canApprovePayment)
                             <button class="btn btn-sm btn-success" type="button" onclick="approveInvoice({{ $order->id }})">
-                                <i class="fas fa-check-circle"></i> Approve SPK & Invoice
+                                <i class="fas fa-check-circle"></i> Konfirmasi Pembayaran
                             </button>
                             @endif
 
                             {{-- Manager: Approve Additional Fee if field report submitted --}}
-                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->field_report_additional_fee > 0 && !$order->manager_approved_additional_fee)
+                            @if($canApproveAdditionalFee)
                             <button class="btn btn-sm btn-warning" type="button" onclick="approveAdditionalFee({{ $order->id }})">
                                 <i class="fas fa-coins"></i> Approve Biaya Extra
                             </button>
                             @endif
 
                             {{-- Frontdesk/Admin delete order --}}
-
                             @if(auth()->user()->isFrontdesk() || auth()->user()->isAdmin())
                             <button class="btn btn-xs btn-danger btn-icon btn-delete-small" type="button" onclick="deleteServiceOrder({{ $order->id }})" title="Hapus Order" aria-label="Hapus order">
                                 <i class="fas fa-trash"></i>
                             </button>
                             @endif
 
-
-
                             {{-- SPK / Invoice viewer --}}
-                            @if(in_array($order->status, ['approved','in_progress','waiting_invoice','waiting_review','completed']))
+                            @if($canShowSpk)
                                 <a href="{{ route('spk.print', $order->id) }}" target="_blank" class="btn btn-sm btn-secondary">
                                     <i class="fas fa-print"></i> SPK
                                 </a>
                             @endif
-                            @if($order->invoice)
+                            @if($hasInvoice)
                                 <a href="{{ route('invoice.print', $order->id) }}" target="_blank" class="btn btn-sm btn-primary">
                                     <i class="fas fa-file-invoice"></i> Invoice
                                 </a>
@@ -413,7 +435,6 @@
                             <button class="btn btn-sm btn-info" type="button" onclick='showWorkflowTimeline(@json($order->id), @json($order->order_number), @json($masjidName))'>
                                 <i class="fas fa-stream"></i> Timeline
                             </button>
-
                         </div>
                     </td>
                 </tr>
@@ -502,9 +523,9 @@
                 </button>
                 @endif
 
-                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_review')
+                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_invoice' && $order->invoice)
                 <button class="btn btn-sm btn-success" type="button" onclick="approveInvoice({{ $order->id }})">
-                    <i class="fas fa-check-circle"></i> Approve SPK & Invoice
+                    <i class="fas fa-check-circle"></i> Konfirmasi Pembayaran
                 </button>
                 @endif
 
@@ -735,12 +756,11 @@
             <span id="assignTechOrderInfo">Order: -</span>
         </div>
         <div class="form-group" style="margin-top:1rem;">
-            <label class="form-label">Pilih Teknisi <span class="required">*</span></label>
+            <label class="form-label" for="technicianSelect">Pilih Teknisi <span class="required">*</span></label>
             <select id="technicianSelect" class="form-select">
                 <option value="">Memuat daftar teknisi...</option>
             </select>
-        </div>
-        <div class="form-group" style="margin-top:0.75rem;">
+        </div>        <div class="form-group" style="margin-top:0.75rem;">
             <label class="form-label">Catatan untuk teknisi</label>
             <textarea id="assignTechNotes" class="form-textarea" rows="3" placeholder="Instruksi tambahan..."></textarea>
         </div>

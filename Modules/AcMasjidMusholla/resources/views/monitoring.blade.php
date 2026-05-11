@@ -5,7 +5,7 @@
 @section('content')
 @php
     $statusLabels = \App\Models\ServiceOrder::STATUS_LABELS;
-    $pendingCount = (int) ($statusTotals['pending'] ?? 0);
+    $pendingCount = (int) ($statusTotals['spk_invoice_created'] ?? 0);
     $waitingInvoiceCount = (int) ($statusTotals['waiting_invoice'] ?? 0);
     $waitingReviewCount = (int) ($statusTotals['waiting_review'] ?? 0);
     $searchTerm = request('search');
@@ -191,8 +191,8 @@
                         default => 'Belum Ada Data',
                     };
                     $progress = match($order->status) {
-                        'pending' => ['value' => 18, 'label' => 'Menunggu approval', 'tone' => 'warning'],
-                        'waiting_invoice' => ['value' => 35, 'label' => 'Menunggu SPK & Invoice', 'tone' => 'info'],
+                        'spk_invoice_created' => ['value' => 18, 'label' => 'Menunggu SPK & Invoice', 'tone' => 'warning'],
+                        'waiting_invoice' => ['value' => 35, 'label' => 'Menunggu Pembayaran', 'tone' => 'info'],
                         'approved' => ['value' => 50, 'label' => 'Siap Ditugaskan', 'tone' => 'success'],
                         'in_progress' => ['value' => 75, 'label' => 'Teknisi sedang bekerja', 'tone' => 'primary'],
                         'waiting_review' => ['value' => 90, 'label' => 'Menunggu review akhir', 'tone' => 'accent'],
@@ -281,7 +281,7 @@
                             </button>
 
                             {{-- Manager/Admin create SPK & invoice --}}
-                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'pending')
+                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && in_array($order->status, ['spk_invoice_created', 'waiting_invoice'], true) && ! $order->invoice)
                             <button class="btn btn-sm btn-primary" type="button" onclick="createSpkInvoice({{ $order->id }})">
                                 <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
                             </button>
@@ -324,10 +324,17 @@
 
 
 
-                            {{-- Manager/Admin approve invoice --}}
-                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_review')
-                            <button class="btn btn-sm btn-success" type="button" onclick="approveInvoice({{ $order->id }})">
-                                <i class="fas fa-check-circle"></i> Approve SPK & Invoice
+                            {{-- Manager/Admin confirm payment --}}
+                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_invoice' && $order->invoice)
+                            <button class="btn btn-sm btn-success" type="button" onclick="confirmPayment({{ $order->id }})">
+                                <i class="fas fa-money-check"></i> Konfirmasi Pembayaran
+                            </button>
+                            @endif
+
+                            {{-- Manager/Admin finalize order --}}
+                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'payment_verified')
+                            <button class="btn btn-sm btn-success" type="button" onclick="finalizeOrder({{ $order->id }})">
+                                <i class="fas fa-check-circle"></i> Selesaikan Order
                             </button>
                             @endif
 
@@ -422,7 +429,7 @@
                     <i class="fas fa-eye"></i> Detail
                 </button>
 
-                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'pending')
+                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && in_array($order->status, ['spk_invoice_created', 'waiting_invoice'], true) && ! $order->invoice)
                 <button class="btn btn-sm btn-primary" type="button" onclick="createSpkInvoice({{ $order->id }})">
                     <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
                 </button>
@@ -447,9 +454,15 @@
                 </button>
                 @endif
 
-                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_review')
-                <button class="btn btn-sm btn-success" type="button" onclick="approveInvoice({{ $order->id }})">
-                    <i class="fas fa-check-circle"></i> Approve Invoice
+                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_invoice' && $order->invoice)
+                <button class="btn btn-sm btn-success" type="button" onclick="confirmPayment({{ $order->id }})">
+                    <i class="fas fa-money-check"></i> Konfirmasi Pembayaran
+                </button>
+                @endif
+
+                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'payment_verified')
+                <button class="btn btn-sm btn-success" type="button" onclick="finalizeOrder({{ $order->id }})">
+                    <i class="fas fa-check-circle"></i> Selesaikan Order
                 </button>
                 @endif
 
@@ -666,12 +679,11 @@
             <span id="assignTechOrderInfo">Order: -</span>
         </div>
         <div class="form-group" style="margin-top:1rem;">
-            <label class="form-label">Pilih Teknisi <span class="required">*</span></label>
+            <label class="form-label" for="technicianSelect">Pilih Teknisi <span class="required">*</span></label>
             <select id="technicianSelect" class="form-select">
                 <option value="">Memuat daftar teknisi...</option>
             </select>
-        </div>
-        <div class="form-group" style="margin-top:0.75rem;">
+        </div>        <div class="form-group" style="margin-top:0.75rem;">
             <label class="form-label">Catatan untuk teknisi</label>
             <textarea id="assignTechNotes" class="form-textarea" rows="3" placeholder="Instruksi tambahan..."></textarea>
         </div>
@@ -803,7 +815,8 @@ window.ROUTES_MON = {
     spk: (id) => `/service-order/${id}/spk`,
     invoice: (id) => `/service-order/${id}/invoice`,
     workflowCreateSpkInvoice: (id) => `/service-order/${id}/create-spk-invoice`,
-    workflowApproveInvoice: (id) => `/service-order/${id}/approve-invoice`,
+    workflowConfirmPayment: (id) => `/service-order/${id}/confirm-payment`,
+    workflowFinalizeOrder: (id) => `/service-order/${id}/finalize-order`,
     workflowApproveSpkInvoice: (id) => `/modules/ac-masjid-musholla/workflow/${id}/approve-spk-invoice`,
     serviceOrderArchive: (id) => `/modules/ac-masjid-musholla/service-order/${id}/archive`,
     workflowBase: "{{ url('/workflow') }}",
@@ -855,17 +868,32 @@ window.HARGA_CONFIG = {
         };
     }
 
-    if (typeof window.approveInvoice === 'undefined') {
-        window.approveInvoice = async function(id) {
-            if (!confirm('Approve SPK & Invoice?')) return;
+    if (typeof window.confirmPayment === 'undefined') {
+        window.confirmPayment = async function(id) {
+            if (!confirm('Konfirmasi pembayaran telah diterima?')) return;
             try {
-                const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.workflowApproveInvoice)
-                    ? ROUTES_MON.workflowApproveInvoice(id)
-                    : `/service-order/${id}/approve-invoice`;
+                const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.workflowConfirmPayment)
+                    ? ROUTES_MON.workflowConfirmPayment(id)
+                    : `/service-order/${id}/confirm-payment`;
                 await fallbackFetch(url, 'POST');
                 location.reload();
             } catch (error) {
-                alert('Gagal menyetujui SPK & Invoice: ' + error.message);
+                alert('Gagal mengonfirmasi pembayaran: ' + error.message);
+            }
+        };
+    }
+
+    if (typeof window.finalizeOrder === 'undefined') {
+        window.finalizeOrder = async function(id) {
+            if (!confirm('Selesaikan order ini?')) return;
+            try {
+                const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.workflowFinalizeOrder)
+                    ? ROUTES_MON.workflowFinalizeOrder(id)
+                    : `/service-order/${id}/finalize-order`;
+                await fallbackFetch(url, 'POST');
+                location.reload();
+            } catch (error) {
+                alert('Gagal menyelesaikan order: ' + error.message);
             }
         };
     }
@@ -894,9 +922,9 @@ window.HARGA_CONFIG = {
         };
     }
 
-    if (typeof window.approveSpkInvoice === 'undefined') {
-        window.approveSpkInvoice = function(orderId) {
-            return window.approveInvoice(orderId);
+    if (typeof window.confirmPaymentSpkInvoice === 'undefined') {
+        window.confirmPaymentSpkInvoice = function(orderId) {
+            return window.confirmPayment(orderId);
         };
     }
 })();
