@@ -16,11 +16,18 @@ class DbSetup extends Command
     {
         $this->info('Starting AC project database setup...');
 
-        $connections = collect(['main', 'ac_service', 'inventory', 'ac_anggota'])
+        $connections = collect(['main', 'ac_service', 'ac_anggota', 'inventory'])
             ->filter(fn (string $connection): bool => (bool) config("database.connections.{$connection}"))
             ->unique()
             ->values()
             ->all();
+
+        $migrationPaths = [
+            'main' => 'database/migrations/main',
+            'ac_service' => 'database/migrations/ac_service',
+            'ac_anggota' => 'database/migrations/ac_anggota',
+            'inventory' => 'database/migrations/inventory',
+        ];
 
         foreach ($connections as $connection) {
             try {
@@ -38,6 +45,12 @@ class DbSetup extends Command
                     continue;
                 }
 
+                if (! isset($migrationPaths[$connection])) {
+                    $this->warn("No migration path configured for {$connection}. Skipping migrate.");
+
+                    continue;
+                }
+
                 DB::purge($connection);
                 $pdo = DB::connection($connection)->getPdo();
 
@@ -45,9 +58,9 @@ class DbSetup extends Command
                 $pdo->exec("CREATE DATABASE IF NOT EXISTS `{$dbName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
                 $this->line("✅ Database '{$dbName}' ensured.");
 
-                // Now migrate with proper connection
                 $options = [
                     '--database' => $connection,
+                    '--path' => $migrationPaths[$connection],
                     '--force' => true,
                 ];
                 Artisan::call('migrate', $options);

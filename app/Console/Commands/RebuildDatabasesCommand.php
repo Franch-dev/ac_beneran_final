@@ -30,19 +30,30 @@ class RebuildDatabasesCommand extends Command
             return;
         }
 
-        $connections = ['main', 'ac_service', 'inventory'];
+        $connections = ['main', 'ac_service', 'ac_anggota', 'inventory'];
 
         foreach ($connections as $connectionName) {
             $this->info("Dropping all tables in connection: {$connectionName}...");
             $this->dropAllTables($connectionName);
         }
 
-        $this->info("All database tables dropped cleanly.");
-        $this->info("Running migrate:fresh...");
-        
-        $this->call('migrate:fresh', [
-            '--force' => true,
-        ]);
+        $this->info('All database tables dropped cleanly.');
+        $this->info('Running migrations (per database)...');
+
+        $paths = [
+            'main' => 'database/migrations/main',
+            'ac_service' => 'database/migrations/ac_service',
+            'ac_anggota' => 'database/migrations/ac_anggota',
+            'inventory' => 'database/migrations/inventory',
+        ];
+
+        foreach ($paths as $database => $path) {
+            $this->call('migrate', [
+                '--database' => $database,
+                '--path' => $path,
+                '--force' => true,
+            ]);
+        }
 
         $this->info("Running seeders...");
         $this->call('db:seed', [
@@ -57,17 +68,17 @@ class RebuildDatabasesCommand extends Command
         try {
             $connection = DB::connection($connectionName);
             $schema = $connection->getSchemaBuilder();
-            
+
             $schema->disableForeignKeyConstraints();
-            
+
             // Getting all table names based on DB driver. Assuming MySQL here.
             $tables = $connection->select('SHOW TABLES');
-            
+
             foreach ($tables as $table) {
                 $tableName = current((array)$table);
                 $schema->drop($tableName);
             }
-            
+
             $schema->enableForeignKeyConstraints();
         } catch (\Exception $e) {
             $this->warn("Could not clear connection {$connectionName}: " . $e->getMessage());
