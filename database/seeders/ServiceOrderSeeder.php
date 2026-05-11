@@ -30,8 +30,8 @@ class ServiceOrderSeeder extends Seeder
 
         DB::connection('ac_service')->transaction(function () use ($masjids, $frontdesk, $manager, $admin, $technicians) {
             $this->seedPendingOrder($masjids[0], $frontdesk);
-            $this->seedApprovedOrder($masjids[1], $frontdesk, $manager, $technicians[0]);
-            $this->seedWaitingInvoiceOrder($masjids[2], $frontdesk, $manager, $technicians[0]);
+            $this->seedWaitingInvoiceOrder($masjids[1], $frontdesk, $manager);
+            $this->seedApprovedOrder($masjids[2], $frontdesk, $manager, $technicians[0]);
             $this->seedWaitingReviewOrder($masjids[3] ?? $masjids[2], $frontdesk, $manager, $admin, $technicians[1] ?? $technicians[0]);
             $this->seedCompletedOrder($masjids[4] ?? $masjids[3] ?? $masjids[2], $frontdesk, $manager, $admin, $technicians[0]);
         });
@@ -39,62 +39,76 @@ class ServiceOrderSeeder extends Seeder
 
     private function seedPendingOrder(Masjid $masjid, User $frontdesk): void
     {
-        $order = $this->createOrder($masjid, 'pending', now()->addDays(2), 'Cuci unit aula utama');
+        $order = $this->createOrder($masjid, 'spk_invoice_created', now()->addDays(2), 'Cuci unit aula utama');
         $this->createDetailsFromUnits($order, $masjid);
-        $this->addStep($order, 'created', $frontdesk, 'Order dibuat oleh front desk');
+        $this->addStep($order, 'frontdesk_created', $frontdesk, 'Order dibuat oleh front desk');
     }
 
     private function seedApprovedOrder(Masjid $masjid, User $frontdesk, User $manager, User $technician): void
     {
         $order = $this->createOrder($masjid, 'approved', now()->addDay(), 'SPK terbit dan menunggu eksekusi teknisi');
         $this->createDetailsFromUnits($order, $masjid);
-        $this->addStep($order, 'created', $frontdesk, 'Order dibuat');
-        $this->addStep($order, 'approved', $manager, 'SPK diterbitkan');
+
+        // Timeline: created -> SPK/Invoice created -> SPK/Invoice approved -> assigned
+        $this->addStep($order, 'frontdesk_created', $frontdesk, 'Order dibuat oleh front desk');
+        $this->createInvoice($order);
+        $this->addStep($order, 'spk_invoice_created', $manager, 'SPK & Invoice dibuat');
+        $this->addStep($order, 'spk_invoice_approved', $manager, 'SPK & Invoice disetujui');
+
         $this->assignTechnician($order, $manager, $technician, 'Teknisi dijadwalkan untuk kunjungan besok');
     }
 
-    private function seedWaitingInvoiceOrder(Masjid $masjid, User $frontdesk, User $manager, User $technician): void
+    private function seedWaitingInvoiceOrder(Masjid $masjid, User $frontdesk, User $manager): void
     {
-        $order = $this->createOrder($masjid, 'waiting_invoice', now()->subDay(), 'Pekerjaan lapangan sudah selesai');
+        $order = $this->createOrder($masjid, 'waiting_invoice', now()->subDay(), 'Pekerjaan selesai dan menunggu pembayaran');
         $this->createDetailsFromUnits($order, $masjid);
-        $this->addStep($order, 'created', $frontdesk, 'Order dibuat');
-        $this->addStep($order, 'approved', $manager, 'SPK diterbitkan');
-        $assignment = $this->assignTechnician($order, $manager, $technician, 'Tugas servis reguler');
-        $assignment->update([
-            'status' => 'done',
-            'started_at' => now()->subDay()->setTime(9, 0),
-            'completed_at' => now()->subDay()->setTime(13, 30),
-            'technician_notes' => 'Pembersihan evaporator dan cek freon selesai',
-        ]);
-        $this->addStep($order, 'in_progress', $technician, 'Teknisi mulai bekerja');
-        $this->addStep($order, 'completed', $technician, 'Pekerjaan selesai. Menunggu invoice');
+
+        // Timeline: created -> SPK/Invoice created -> SPK/Invoice approved -> waiting payment
+        $this->addStep($order, 'frontdesk_created', $frontdesk, 'Order dibuat oleh front desk');
+        $this->createInvoice($order);
+        $this->addStep($order, 'spk_invoice_created', $manager, 'SPK & Invoice dibuat');
+        $this->addStep($order, 'spk_invoice_approved', $manager, 'SPK & Invoice disetujui');
     }
 
     private function seedWaitingReviewOrder(Masjid $masjid, User $frontdesk, User $manager, User $admin, User $technician): void
     {
-        $order = $this->createOrder($masjid, 'waiting_review', now()->subDays(2), 'Invoice sudah dibuat dan menunggu review manager');
+        $order = $this->createOrder($masjid, 'waiting_review', now()->subDays(2), 'Teknisi melaporkan biaya tambahan, menunggu review manager');
         $this->createDetailsFromUnits($order, $masjid);
-        $this->addStep($order, 'created', $frontdesk, 'Order dibuat');
-        $this->addStep($order, 'approved', $manager, 'SPK diterbitkan');
-        $assignment = $this->assignTechnician($order, $manager, $technician, 'Prioritas tinggi untuk ruang utama');
-        $assignment->update([
-            'status' => 'done',
-            'started_at' => now()->subDays(2)->setTime(8, 30),
-            'completed_at' => now()->subDays(2)->setTime(12, 15),
-            'technician_notes' => 'Ganti kapasitor dan pembersihan outdoor selesai',
-        ]);
-        $this->addStep($order, 'in_progress', $technician, 'Teknisi mulai bekerja');
-        $this->addStep($order, 'completed', $technician, 'Pekerjaan selesai');
+
+        // Timeline: created -> SPK/Invoice created -> SPK/Invoice approved -> in_progress -> technician reported -> edited invoice created -> waiting_review
+        $this->addStep($order, 'frontdesk_created', $frontdesk, 'Order dibuat oleh front desk');
+
         $this->createInvoice($order);
-        $this->addStep($order, 'invoice_generated', $admin, 'Invoice diterbitkan oleh admin');
+        $this->addStep($order, 'spk_invoice_created', $manager, 'SPK & Invoice dibuat');
+        $this->addStep($order, 'spk_invoice_approved', $manager, 'SPK & Invoice disetujui');
+
+        $this->assignTechnician($order, $manager, $technician, 'Prioritas tinggi untuk ruang utama');
+
+        $this->addStep($order, 'in_progress', $technician, 'Teknisi mulai bekerja');
+
+        // Technician finishes work and reports additional fee
+        $order->update([
+            'field_report_notes' => 'Ada kebutuhan penggantian komponen minor.',
+            'field_report_additional_fee' => 150000,
+            'field_report_submitted_at' => now()->subDays(2)->setTime(12, 20),
+        ]);
+
+        // Timeline hook: technician reported -> edited invoice created -> waiting_review
+        $this->addStep($order, 'technician_reported', $technician, 'Laporan biaya tambahan disampaikan');
+
+        // Optional edited invoice lifecycle: placed ABOVE invoice_edited per your request
+        $this->addStep($order, 'edited_invoice_created', $admin, 'Invoice edit biaya tambahan dibuat');
+        $this->createInvoice($order);
+
+        // Keep state as waiting_review (manager has not approved additional fee yet)
     }
 
     private function seedCompletedOrder(Masjid $masjid, User $frontdesk, User $manager, User $admin, User $technician): void
     {
         $order = $this->createOrder($masjid, 'completed', now()->subDays(5), 'Order historis selesai penuh');
         $this->createDetailsFromUnits($order, $masjid);
-        $this->addStep($order, 'created', $frontdesk, 'Order dibuat');
-        $this->addStep($order, 'approved', $manager, 'SPK diterbitkan');
+        $this->addStep($order, 'frontdesk_created', $frontdesk, 'Order dibuat');
+        $this->addStep($order, 'spk_invoice_approved', $manager, 'SPK disetujui');
         $assignment = $this->assignTechnician($order, $manager, $technician, 'Perawatan berkala bulanan');
         $assignment->update([
             'status' => 'done',
@@ -105,8 +119,16 @@ class ServiceOrderSeeder extends Seeder
         $this->addStep($order, 'in_progress', $technician, 'Teknisi mulai bekerja');
         $this->addStep($order, 'completed', $technician, 'Pekerjaan selesai');
         $this->createInvoice($order);
-        $this->addStep($order, 'invoice_generated', $admin, 'Invoice diterbitkan');
-        $this->addStep($order, 'closed', $manager, 'Invoice disetujui manager');
+        $this->addStep($order, 'payment_received', $admin, 'Invoice diterbitkan dan dibayar');
+        $this->addStep($order, 'completed', $manager, 'Order ditutup setelah pembayaran');
+        $order->update([
+            'frontdesk_confirmed_complete' => true,
+            'frontdesk_confirmed_by' => $frontdesk->id,
+            'frontdesk_confirmed_at' => now()->subDays(5)->setTime(12, 0),
+            'manager_confirmed_complete' => true,
+            'manager_confirmed_by' => $manager->id,
+            'manager_confirmed_at' => now()->subDays(5)->setTime(12, 5),
+        ]);
     }
 
     private function createOrder(Masjid $masjid, string $status, Carbon $serviceDate, string $notes): ServiceOrder
@@ -153,11 +175,18 @@ class ServiceOrderSeeder extends Seeder
 
     private function createInvoice(ServiceOrder $order): void
     {
-        Invoice::create([
-            'service_order_id' => $order->id,
-            'invoice_number' => Invoice::generateInvoiceNumber(),
-            'total_price' => $order->serviceDetails->sum(fn ($detail) => $detail->price_per_unit * $detail->quantity),
-        ]);
+        $totalPrice = $order->serviceDetails->sum(
+            fn ($detail) => $detail->price_per_unit * $detail->quantity
+        );
+
+        // Prevent duplicate invoice inserts for the same service_order_id
+        Invoice::updateOrCreate(
+            ['service_order_id' => $order->id],
+            [
+                'invoice_number' => Invoice::generateInvoiceNumber(),
+                'total_price' => $totalPrice,
+            ]
+        );
     }
 
     private function addStep(ServiceOrder $order, string $step, User $actor, string $notes): void
