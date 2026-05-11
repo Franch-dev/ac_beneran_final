@@ -17,29 +17,29 @@ window.showOrderDetail = async function(orderId, orderNumber, masjidName, servic
 
     const modal = document.getElementById('orderDetailPopup');
     const body = document.getElementById('orderDetailBody');
-    
+
     if (!modal || !body) {
         showToast('Modal tidak ditemukan', 'error');
         return;
     }
-    
+
     body.innerHTML = '<div class="timeline-loading" style="text-align:center;padding:2rem;"><i class="fas fa-spinner fa-spin fa-2x" style="color:var(--primary)"></i><p style="margin-top:1rem;">Memuat detail...</p></div>';
     modal.classList.add('active');
-    
+
     try {
         // Track current order for history loading
         window.__currentOrderId = serviceOrderId;
         const order = await apiFetch(`/service-order/${serviceOrderId}`, 'GET');
         const orderData = order.data || order.order || order;
         const safeText = window.escapeHtml || ((val) => String(val ?? ''));
-        
+
         // Validate and sanitize order data before processing
         if (!orderData) {
             throw new Error('Data order tidak valid');
         }
-        
+
         const statusLabel = String(orderData.status || '').replaceAll('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
-        
+
         // Process service details with comprehensive error handling
         let detailsHtml = '<p class="text-muted">Tidak ada detail</p>';
         try {
@@ -52,7 +52,7 @@ window.showOrderDetail = async function(orderId, orderNumber, masjidName, servic
                             .replace(/https?:\/\/[^\\s]*\.(png|jpg|jpeg|gif|webp|svg)/gi, '') // Remove image URLs
                             .replace(/data:image\/[^;]+;base64,[A-Za-z0-9+\/=]+/g, '') // Remove data URIs
                             .trim();
-                        
+
                         return `
                             <div style="display:flex;justify-content:space-between;padding:0.5rem;background:var(--bg);border-radius:4px;margin-bottom:0.5rem;">
                                 <span>${safeText(d.pk_type)} ${safeText(d.brand || '')} × ${d.quantity || 0}</span>
@@ -75,13 +75,33 @@ window.showOrderDetail = async function(orderId, orderNumber, masjidName, servic
             console.warn('Error processing service details:', detailsError);
             detailsHtml = '<p class="text-muted">Tidak ada detail</p>';
         }
+
+        // After loading, fetch and render timeline
+        const timelineData = await apiFetch(`/workflow/${serviceOrderId}/timeline`, 'GET');
+        let timelineHtml = '<div style="margin-top:1rem;"><div style="font-weight:600;margin-bottom:0.5rem;color:var(--text);"><i class="fas fa-stream"></i> Timeline Workflow</div>';
         
+        if (timelineData.steps && timelineData.steps.length > 0) {
+            timelineHtml += timelineData.steps.map(step => `
+                <div style="padding-left:1rem; border-left:2px solid var(--primary); margin-bottom:0.5rem; font-size:0.85rem;">
+                    <strong>${safeText(step.label)}</strong> — <small>${safeText(step.time)}</small><br>
+                    <small>${safeText(step.actor_name)} (${safeText(step.actor_role)})</small>
+                    ${step.notes ? `<div style="font-size:0.75rem; color:var(--text-muted);">${safeText(step.notes)}</div>` : ''}
+                </div>
+            `).join('');
+        } else {
+            timelineHtml += '<p class="text-muted text-sm">Belum ada aktivitas.</p>';
+        }
+        timelineHtml += '</div>';
+
         // After loading, fetch and render history (if any)
         window.loadOrderHistory?.(serviceOrderId);
 
         // Build the modal content with error handling
         let modalContent = '';
         try {
+            const spkRoute = `/service-order/${serviceOrderId}/spk`;
+            const invoiceRoute = `/service-order/${serviceOrderId}/invoice`;
+
             modalContent = `
                 <div class="order-detail-popup">
                     <div class="od-row" style="margin-bottom:0.5rem; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:0.5rem;">
@@ -100,12 +120,25 @@ window.showOrderDetail = async function(orderId, orderNumber, masjidName, servic
                         <span class="od-label"><i class="fas fa-info-circle"></i> Status:</span>
                         <span class="status-badge status-${safeText(orderData.status || '')}">${safeText(statusLabel)}</span>
                     </div>
+                    
+                    ${(orderData.status !== 'spk_invoice_created' && orderData.invoice) ? `
+                    <div style="margin-top:1rem; display:flex; gap:0.5rem;">
+                        <a href="${spkRoute}" target="_blank" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-file-alt"></i> SPK
+                        </a>
+                        <a href="${invoiceRoute}" target="_blank" class="btn btn-sm btn-primary">
+                            <i class="fas fa-file-invoice"></i> Invoice
+                        </a>
+                    </div>
+                    ` : ''}
+
                     <div style="margin-top:1rem;">
                         <div style="font-weight:600;margin-bottom:0.5rem;color:var(--text);">
                             <i class="fas fa-list"></i> Detail Unit AC
                         </div>
                         ${detailsHtml}
                     </div>
+                    ${timelineHtml}
                     ${orderData.notes ? `
                     <div style="margin-top:1rem;padding:0.75rem;background:var(--info-soft);border-radius:4px;border:1px solid var(--info);font-size:0.85rem;color:var(--info);">
                         <i class="fas fa-sticky-note"></i> <strong>Catatan:</strong> ${safeText(orderData.notes)}
@@ -113,6 +146,7 @@ window.showOrderDetail = async function(orderId, orderNumber, masjidName, servic
                     ` : ''}
                 </div>
             `;
+
         } catch (contentError) {
             console.error('Error building modal content:', contentError);
             modalContent = `
@@ -121,7 +155,7 @@ window.showOrderDetail = async function(orderId, orderNumber, masjidName, servic
                 </div>
             `;
         }
-        
+
         body.innerHTML = modalContent;
     } catch (err) {
         body.innerHTML = `
@@ -473,18 +507,22 @@ window.openAssignTech = async function(orderId, orderNumber, masjidName) {
             ? window.ROUTES_MON.workflowTechnicians
             : `${window.ROUTES_MON?.workflowBase ?? '/workflow'}/technicians`;
         const techniciansResponse = await apiFetch(techniciansUrl, 'GET');
+        console.log('DEBUG: Technicians API response:', techniciansResponse);
         const technicians = Array.isArray(techniciansResponse)
             ? techniciansResponse
             : Array.isArray(techniciansResponse.data)
                 ? techniciansResponse.data
                 : [];
+        console.log('DEBUG: Final technicians array:', technicians);
 
         if (technicians.length > 0) {
             technicianSelect.innerHTML = '<option value="">- Pilih Teknisi -</option>' + technicians.map(t => {
                 const label = [t.name, t.email].filter(Boolean).join(' - ');
                 return `<option value="${t.id}">${label}</option>`;
             }).join('');
+            console.log('DEBUG: Technician select innerHTML updated.');
         } else {
+            console.log('DEBUG: Technicians array empty.');
             technicianSelect.innerHTML = '<option value="">Tidak ada teknisi terdaftar</option>';
         }
     } catch (err) {
@@ -521,8 +559,66 @@ window.submitAssignTech = async function() {
 };
 
 // === SHOW ORDER HISTORY ===
-window.showOrderHistory = function() {
-    showToast('Fitur history sedang dalam pengembangan.', 'info');
+window.showOrderHistory = async function() {
+    const selectedItem = document.querySelector('.masjid-select-item.selected');
+    if (!selectedItem) {
+        showToast('Silakan pilih masjid terlebih dahulu', 'warning');
+        return;
+    }
+    const masjidId = selectedItem.dataset.id;
+    
+    // Create or get container
+    let container = document.getElementById('soHistoryContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'soHistoryContainer';
+        container.style.cssText = 'margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border);';
+        document.getElementById('soFormContent').appendChild(container);
+    }
+    
+    container.innerHTML = '<div style="text-align:center;padding:1rem;"><i class="fas fa-spinner fa-spin"></i> Memuat history...</div>';
+
+    try {
+        const history = await apiFetch(`/masjid/${masjidId}/history-json`, 'GET');
+        
+        if (history.length === 0) {
+            container.innerHTML = '<p class="text-muted text-sm">Tidak ada riwayat untuk masjid ini.</p>';
+            return;
+        }
+
+        container.innerHTML = '<h5 style="margin-bottom:0.5rem;"><i class="fas fa-history"></i> Riwayat Order</h5>' + history.map(o => `
+            <div class="history-item" style="border:1px solid var(--border); border-radius:4px; margin-bottom:0.5rem; padding:0.5rem;">
+                <div style="cursor:pointer; display:flex; justify-content:space-between;" onclick="this.nextElementSibling.classList.toggle('active')">
+                    <strong>${o.order_number}</strong>
+                    <span class="status-badge status-${o.status}">${o.status.replaceAll('_', ' ')}</span>
+                </div>
+                <div class="history-details" style="display:none; padding-top:0.5rem; border-top:1px dashed var(--border); margin-top:0.5rem;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.5rem;">
+                        <span><strong>Tanggal:</strong> ${o.service_date}</span>
+                        <span><strong>Total:</strong> Rp ${o.total_price.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div style="margin-bottom:0.5rem;">
+                        <strong>Unit AC:</strong>
+                        ${o.details.map(d => `<div style="font-size:0.75rem; padding-left:0.5rem;">• ${d.pk_type} ${d.brand} - <em>${d.service_type}</em> ${d.complaint ? `<br><small style="color:var(--text-muted)">Keluhan: ${d.complaint}</small>` : ''}</div>`).join('')}
+                    </div>
+                    <div>
+                        <strong>Riwayat Workflow:</strong>
+                        ${o.steps.map(s => `<div style="font-size:0.75rem; padding-left:0.5rem;">• ${s.time} - <strong>${s.step.replaceAll('_', ' ')}</strong> ${s.notes ? `: <small>${s.notes}</small>` : ''}</div>`).join('')}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        // Add minimal CSS for active class
+        if (!document.getElementById('history-style')) {
+            const style = document.createElement('style');
+            style.id = 'history-style';
+            style.textContent = '.history-details.active { display:block !important; }';
+            document.head.appendChild(style);
+        }
+    } catch (err) {
+        container.innerHTML = `<p class="text-danger text-sm">Gagal memuat: ${err.message}</p>`;
+    }
 };
 
 // === SERVICE ORDER POPUP: PK-SELECTOR ARCHITECTURE ===
@@ -909,7 +1005,7 @@ window.submitServiceOrderDuplicate = async function() {
         };
 
         await apiFetch('/service-order', 'POST', orderData);
-        
+
         showToast('Service order berhasil dibuat!', 'success');
         closePopup('serviceOrderPopup');
         refreshMonitoringSurface?.();
@@ -956,11 +1052,20 @@ window.markTaskDone = async function(orderId) {
     openConfirmModal({
         type: 'success',
         heading: 'Tandai Selesai?',
-        message: 'Order akan ditandai sebagai selesai.',
+        message: 'Order akan ditandai sebagai selesai dan menunggu approval pembayaran.',
         confirmText: 'Ya, Selesai',
         onConfirm: async () => {
             try {
-                await apiFetch(`/service-order/${orderId}/complete`, 'POST');
+                // Call the workflow progress endpoint with status='done'
+                const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.workflowBase)
+                    ? `${ROUTES_MON.workflowBase}/${orderId}/progress`
+                    : `/workflow/${orderId}/progress`;
+
+                await apiFetch(url, 'POST', {
+                    status: 'done',
+                    notes: 'Pekerjaan selesai',
+                });
+
                 showToast('Order ditandai selesai!', 'success');
                 refreshMonitoringSurface?.();
             } catch (err) {
@@ -1018,19 +1123,19 @@ window.showWorkflowTimeline = async function(orderId, orderNumber, masjidName) {
 
     const modal = document.getElementById('workflowTimelineModal');
     const body = document.getElementById('workflowTimelineBody');
-    
+
     if (!modal || !body) {
         showToast('Modal tidak ditemukan', 'error');
         return;
     }
-    
+
     body.innerHTML = '<div class="timeline-loading" style="text-align:center;padding:2rem;"><i class="fas fa-spinner fa-spin fa-2x" style="color:var(--primary)"></i><p style="margin-top:1rem;">Memuat timeline...</p></div>';
     modal.classList.add('active');
-    
+
     try {
         const data = await apiFetch(`/workflow/${serviceOrderId}/timeline`, 'GET');
         const safeText = window.escapeHtml || ((val) => String(val ?? ''));
-        
+
         let stepsHtml = '';
         if (data.steps && data.steps.length > 0) {
             stepsHtml = data.steps.map(step => `
@@ -1047,7 +1152,7 @@ window.showWorkflowTimeline = async function(orderId, orderNumber, masjidName) {
                 </div>
             `).join('');
         }
-        
+
         let assignmentHtml = '';
         if (data.assignment) {
             const statusLabel = String(data.assignment.status || '').replaceAll('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -1066,7 +1171,7 @@ window.showWorkflowTimeline = async function(orderId, orderNumber, masjidName) {
                 </div>
             `;
         }
-        
+
         const combinedHtml = `
             <div class="order-detail-popup">
                 <div class="od-row" style="margin-bottom:0.5rem; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:0.5rem;">
@@ -1095,7 +1200,7 @@ window.showWorkflowTimeline = async function(orderId, orderNumber, masjidName) {
                 </div>
             </div>
         `;
-        
+
         body.innerHTML = combinedHtml;
     } catch (err) {
         body.innerHTML = `
@@ -1150,11 +1255,11 @@ window.addToolMaterialRow = function() {
 
 document.getElementById('fieldReportForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
-    
+
     const orderId = document.getElementById('fieldReportOrderId').value;
     const notes = document.getElementById('fieldReportNotes').value;
     const additionalFee = parseFloat(document.getElementById('fieldReportAdditionalFee').value) || 0;
-    
+
     const toolsMaterials = [];
     document.querySelectorAll('.tools-material-row').forEach(row => {
         const name = row.querySelector('[name="tm_name[]"]').value;
@@ -1164,16 +1269,16 @@ document.getElementById('fieldReportForm')?.addEventListener('submit', async fun
             toolsMaterials.push({ name, quantity: qty, price });
         }
     });
-    
+
     try {
         showToast('Mengirim laporan pekerjaan...', 'info');
-        
+
         const response = await apiFetch(`/service-order/${orderId}/field-report`, 'POST', {
             field_report_notes: notes,
             field_report_additional_fee: additionalFee,
             field_report_tools_materials: toolsMaterials.length > 0 ? toolsMaterials : null
         });
-        
+
         showToast('Laporan berhasil dikirim!', 'success');
         closePopup('fieldReportPopup');
         refreshMonitoringSurface?.();
@@ -1202,12 +1307,12 @@ window.approveAdditionalFee = function(orderId) {
 window.confirmAdditionalFee = async function() {
     const orderId = document.getElementById('approveAdditionalFeeOrderId')?.value;
     if (!orderId) return;
-    
+
     try {
         showToast('Menyetuju biaya tambahan...', 'info');
-        
+
         await apiFetch(`/service-order/${orderId}/approve-additional-fee`, 'POST');
-        
+
         showToast('Biaya tambahan disetujui!', 'success');
         closePopup('additionalFeeApprovalPopup');
         refreshMonitoringSurface?.();
@@ -1230,16 +1335,16 @@ window.openDualConfirmation = function(orderId, role, message) {
 window.submitDualConfirmation = async function() {
     const { orderId, role } = pendingDualConfirm;
     if (!orderId || !role) return;
-    
+
     try {
         showToast('Mengonfirmasi...', 'info');
-        
-        const endpoint = role === 'frontdesk' 
+
+        const endpoint = role === 'frontdesk'
             ? `/service-order/${orderId}/frontdesk-confirm-complete`
             : `/service-order/${orderId}/manager-confirm-complete`;
-        
+
         await apiFetch(endpoint, 'POST');
-        
+
         showToast('Konfirmasi berhasil!', 'success');
         closePopup('dualConfirmPopup');
         refreshMonitoringSurface?.();
