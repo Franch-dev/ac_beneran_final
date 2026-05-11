@@ -38,7 +38,9 @@ class ReportController extends Controller
         $ordersInPeriod = ServiceOrder::whereBetween('service_date', [$startDate, $endDate])->get();
         $totalOrders     = $ordersInPeriod->count();
         $completedOrders = $ordersInPeriod->where('status', 'completed')->count();
-        $pendingOrders   = $ordersInPeriod->where('status', 'pending')->count();
+
+        // Statuses are aligned to workflow (no legacy `pending` anymore)
+        $pendingOrders   = $ordersInPeriod->where('status', 'spk_invoice_created')->count();
 
         // Overdue masjids
         $overdueMasjids = Masjid::with('acUnits')
@@ -69,17 +71,21 @@ class ReportController extends Controller
             ->get()
             ->groupBy('pk_type')
             ->map(fn($g) => [
-                'pk_type' => $g->first()->pk_type,
-                'units'   => $g->sum('quantity'),
-                'revenue' => $g->sum(fn($d) => $d->quantity * $d->price_per_unit),
+                'pk_type'  => $g->first()->pk_type,
+                'units'    => $g->sum('quantity'),
+                'revenue'  => $g->sum(fn($d) => $d->quantity * $d->price_per_unit),
             ])
             ->values();
 
         return view('reports.index', compact(
-            'startDate', 'endDate',
-            'totalRevenue', 'totalInvoices',
+            'startDate',
+            'endDate',
+            'totalRevenue',
+            'totalInvoices',
             'monthlyRevenue',
-            'totalOrders', 'completedOrders', 'pendingOrders',
+            'totalOrders',
+            'completedOrders',
+            'pendingOrders',
             'overdueMasjids',
             'topMasjids',
             'revenueByPK'
