@@ -232,7 +232,7 @@
         @endforelse
     </div>
 
-    @if($masjids->hasPages())
+    @if(method_exists($masjids, 'hasPages') && $masjids->hasPages())
     <div class="pagination-shell pagination-shell--fixed">
         {{ $masjids->onEachSide(1)->links() }}
     </div>

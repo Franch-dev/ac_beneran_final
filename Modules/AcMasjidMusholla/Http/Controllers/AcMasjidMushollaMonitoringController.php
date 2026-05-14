@@ -8,6 +8,7 @@ use App\Models\Masjid;
 use App\Models\ServiceOrder;
 use App\Support\SqlDateExpressions;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 use Throwable;
 
@@ -94,11 +95,11 @@ class AcMasjidMushollaMonitoringController extends Controller
             report($e);
 
             return [
-                'orders' => collect(),
+                'orders' => new LengthAwarePaginator([], 0, 30),
                 'totalLokasi' => 0,
                 'totalUnit' => 0,
                 'overdue' => 0,
-                'masjids' => collect(),
+                'masjids' => new LengthAwarePaginator([], 0, 30),
                 'statusTotals' => collect(),
             ];
         }

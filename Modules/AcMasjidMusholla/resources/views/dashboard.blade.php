@@ -4,8 +4,8 @@
 
 @section('content')
 @php
-    $visibleMasjids = $masjids->getCollection();
-    $visibleUnits = $visibleMasjids->sum(fn ($masjid) => $masjid->acUnits->sum('quantity'));
+    $visibleMasjids = (method_exists($masjids, 'getCollection') ? $masjids->getCollection() : $masjids);
+    $visibleUnits = $visibleMasjids?->sum(fn ($masjid) => $masjid->acUnits->sum('quantity')) ?? 0;
     $activeOrders = $dashboardMetrics['active_orders'] ?? 0;
     $needsAttention = $dashboardMetrics['needs_attention_locations'] ?? 0;
     $searchTerm = request('search');
@@ -61,7 +61,9 @@
         <div class="ops-kpi-grid" data-stagger-group>
             <article class="ops-kpi-card" data-stagger-item>
                 <span class="ops-kpi-card__label">Total Lokasi</span>
-                <strong class="ops-kpi-card__value">{{ $dashboardMetrics['total_locations'] ?? $masjids->total() }}</strong>
+                <strong class="ops-kpi-card__value">
+                    {{ $dashboardMetrics['total_locations'] ?? (method_exists($masjids, 'total') ? $masjids->total() : $masjids->count()) }}
+                </strong>
                 <span class="ops-kpi-card__meta">Masjid dan musholla terdaftar</span>
             </article>
             <article class="ops-kpi-card" data-stagger-item>
@@ -232,7 +234,7 @@
         @endforelse
     </div>
 
-    @if($masjids->hasPages())
+    @if(method_exists($masjids, 'hasPages') && $masjids->hasPages())
     <div class="pagination-shell pagination-shell--fixed">
         {{ $masjids->onEachSide(1)->links() }}
     </div>

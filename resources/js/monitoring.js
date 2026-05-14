@@ -247,23 +247,48 @@ window.generateInvoice = function(id) {
     return createSpkInvoice(id);
 };
 
-// === APPROVE INVOICE ===
+// === APPROVE INVOICE (Legacy — redirects to finalizeOrder) ===
 window.approveInvoice = async function(id) {
+    return finalizeOrder(id);
+};
+
+// === FINALIZE ORDER (Manager: waiting_review → completed) ===
+window.finalizeOrder = async function(id) {
     openConfirmModal({
         type: 'success',
-        heading: 'Approve SPK & Invoice?',
-        message: 'Invoice akan disetujui dan order akan diselesaikan.',
-        confirmText: 'Ya, Setuju',
+        heading: 'Finalisasi Order?',
+        message: 'Order akan diselesaikan sepenuhnya. Pastikan semua pekerjaan sudah selesai.',
+        confirmText: 'Ya, Selesaikan',
         onConfirm: async () => {
             try {
-                const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.workflowApproveInvoice)
-                    ? ROUTES_MON.workflowApproveInvoice(id)
-                    : `/service-order/${id}/approve-invoice`;
+                const url = `/service-order/${id}/finalize-order`;
                 await apiFetch(url, 'POST');
-                showToast('SPK & Invoice berhasil disetujui.', 'success');
+                showToast('Service order berhasil diselesaikan.', 'success');
                 refreshMonitoringSurface?.();
             } catch (err) {
-                showToast('Gagal menyetujui SPK & Invoice: ' + (err.message || 'Error'), 'error');
+                showToast('Gagal: ' + (err.message || 'Error'), 'error');
+            }
+        }
+    });
+};
+
+// === CONFIRM PAYMENT ===
+window.confirmPayment = async function(id) {
+    openConfirmModal({
+        type: 'success',
+        heading: 'Konfirmasi Pembayaran?',
+        message: 'Pastikan pembayaran telah diterima sesuai nominal invoice.',
+        confirmText: 'Ya, Konfirmasi',
+        onConfirm: async () => {
+            try {
+                const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.workflowConfirmPayment)
+                    ? ROUTES_MON.workflowConfirmPayment(id)
+                    : `/service-order/${id}/confirm-payment`;
+                await apiFetch(url, 'POST');
+                showToast('Pembayaran berhasil dikonfirmasi.', 'success');
+                refreshMonitoringSurface?.();
+            } catch (err) {
+                showToast('Gagal konfirmasi pembayaran: ' + (err.message || 'Error'), 'error');
             }
         }
     });
@@ -478,7 +503,12 @@ function refreshMonitoringSurface() {
 window.refreshMonitoringSurface = refreshMonitoringSurface;
 
 // === OPEN ASSIGN TECHNICIAN POPUP ===
-window.openAssignTech = async function(orderId, orderNumber, masjidName) {
+window.openAssignTech = async function(orderId, orderNumber, masjidName, status) {
+    if (status && status !== 'payment_verified') {
+        showToast('Teknisi hanya dapat ditugaskan setelah pembayaran diverifikasi.', 'warning');
+        return;
+    }
+
     const serviceOrderId = Number(orderId);
     if (!Number.isInteger(serviceOrderId) || serviceOrderId <= 0) {
         showToast('Service order tidak valid', 'error');
@@ -1048,31 +1078,13 @@ window.manualRefreshMonitoring = function() {
 // ============================================
 // MARK TASK DONE
 // ============================================
-window.markTaskDone = async function(orderId) {
-    openConfirmModal({
-        type: 'success',
-        heading: 'Tandai Selesai?',
-        message: 'Order akan ditandai sebagai selesai dan menunggu approval pembayaran.',
-        confirmText: 'Ya, Selesai',
-        onConfirm: async () => {
-            try {
-                // Call the workflow progress endpoint with status='done'
-                const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.workflowBase)
-                    ? `${ROUTES_MON.workflowBase}/${orderId}/progress`
-                    : `/workflow/${orderId}/progress`;
-
-                await apiFetch(url, 'POST', {
-                    status: 'done',
-                    notes: 'Pekerjaan selesai',
-                });
-
-                showToast('Order ditandai selesai!', 'success');
-                refreshMonitoringSurface?.();
-            } catch (err) {
-                showToast('Gagal: ' + (err.message || 'Error'), 'error');
-            }
-        }
-    });
+window.markTaskDone = async function(orderId, status) {
+    if (status && status !== 'in_progress') {
+        showToast('Hanya dapat menandai selesai saat status sedang dikerjakan.', 'warning');
+        return;
+    }
+    // Redirect to field report popup instead of direct status change
+    openFieldReport(orderId, '');
 };
 
 // Fallback for openPopup/closePopup (in case ui/runtime not loaded yet)

@@ -225,7 +225,7 @@
         @endforelse
     </div>
 
-    @if($anggotas->hasPages())
+    @if(method_exists($anggotas, 'hasPages') && $anggotas->hasPages())
     <div class="pagination-shell pagination-shell--fixed">
         {{ $anggotas->onEachSide(1)->links() }}
     </div>

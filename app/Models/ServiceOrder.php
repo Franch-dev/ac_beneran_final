@@ -10,19 +10,22 @@ class ServiceOrder extends Model
     public const ACTIVE_STATUSES = [
         'spk_invoice_created',
         'approved',
+        'waiting_payment',
+        'payment_verified',
         'in_progress',
         'waiting_review',
-        'waiting_invoice',
         'completed',
     ];
 
     public const STATUS_LABELS = [
-        'spk_invoice_created' => 'SPK & Invoice Dibuat',
-        'approved' => 'SPK & Invoice Diterbitkan',
+        'spk_invoice_created' => 'Order Dibuat (SPK & Invoice)',
+        'approved' => 'Disetujui Manager',
+        'waiting_payment' => 'Menunggu Pembayaran',
+        'payment_verified' => 'Pembayaran Terverifikasi',
         'in_progress' => 'Sedang Dikerjakan',
-        'waiting_review' => 'Menunggu Review Biaya Tambahan',
-        'waiting_invoice' => 'Menunggu Pembayaran',
+        'waiting_review' => 'Menunggu Review Akhir',
         'completed' => 'Selesai',
+        'cancelled' => 'Dibatalkan',
     ];
 
     protected $connection = 'ac_service';
@@ -185,7 +188,7 @@ class ServiceOrder extends Model
 
     public function needsSpkInvoiceApproval(): bool
     {
-        return $this->status === 'waiting_invoice';
+        return $this->status === 'spk_invoice_created';
     }
 
     public function needsTechnicianReport(): bool
@@ -200,7 +203,7 @@ class ServiceOrder extends Model
 
     public function needsPayment(): bool
     {
-        return $this->status === 'waiting_invoice';
+        return $this->status === 'waiting_payment';
     }
 
     public function canPrintDocuments(): bool

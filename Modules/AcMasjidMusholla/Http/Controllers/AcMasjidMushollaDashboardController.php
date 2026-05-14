@@ -7,6 +7,7 @@ use App\Models\AcUnit;
 use App\Models\Masjid;
 use App\Models\ServiceOrder;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Throwable;
 
 class AcMasjidMushollaDashboardController extends Controller
@@ -63,7 +64,7 @@ class AcMasjidMushollaDashboardController extends Controller
             report($e);
 
             return [
-                'masjids' => collect(),
+                'masjids' => new LengthAwarePaginator([], 0, 12),
                 'dashboardMetrics' => [
                     'total_locations' => 0,
                     'total_units' => 0,

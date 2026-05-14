@@ -41,7 +41,9 @@ class MonitoringController extends Controller
     {
         $query = ServiceOrder::query()
             ->whereNull('archived_at')
-            ->select(['id', 'masjid_id', 'order_number', 'service_date', 'status', 'created_at'])
+            ->select(['id', 'masjid_id', 'order_number', 'service_date', 'status', 'created_at',
+                'field_report_additional_fee', 'manager_approved_additional_fee',
+                'frontdesk_confirmed_complete', 'manager_confirmed_complete'])
             ->with([
                 'masjid:id,custom_id,name',
                 'masjid.acUnits:id,masjid_id,quantity,last_service_date',

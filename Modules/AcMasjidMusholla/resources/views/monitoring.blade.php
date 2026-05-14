@@ -6,7 +6,7 @@
 @php
     $statusLabels = \App\Models\ServiceOrder::STATUS_LABELS;
     $pendingCount = (int) ($statusTotals['spk_invoice_created'] ?? 0);
-    $waitingInvoiceCount = (int) ($statusTotals['waiting_invoice'] ?? 0);
+    $waitingPaymentCount = (int) ($statusTotals['waiting_payment'] ?? 0);
     $waitingReviewCount = (int) ($statusTotals['waiting_review'] ?? 0);
     $searchTerm = request('search');
     $statusFilter = request('status');
@@ -40,7 +40,7 @@
                 tanpa kehilangan konteks lokasi, teknisi, dan dokumen pendukung.
             </p>
             <div class="ops-chip-row">
-                <span class="ops-chip"><i class="fas fa-list-check"></i> {{ $orders->total() }} order terindeks</span>
+                <span class="ops-chip"><i class="fas fa-list-check"></i> {{ method_exists($orders, 'total') ? $orders->total() : $orders->count() }} order terindeks</span>
                 <span class="ops-chip"><i class="fas fa-filter"></i> {{ $statusFilter ? 'Status: ' . ($statusLabels[$statusFilter] ?? $statusFilter) : 'Semua status' }}</span>
                 <span class="ops-chip"><i class="fas fa-magnifying-glass"></i> {{ $searchTerm ? 'Cari: "' . $searchTerm . '"' : 'Pencarian nonaktif' }}</span>
             </div>
@@ -127,7 +127,7 @@
             </div>
             <div class="ops-control-meta">
                 <span class="notification-badge notification-badge--warning">{{ $pendingCount }} pending</span>
-                <span class="notification-badge notification-badge--info">{{ $waitingInvoiceCount }} menunggu invoice</span>
+                <span class="notification-badge notification-badge--info">{{ $waitingPaymentCount }} menunggu pembayaran</span>
                 <span class="notification-badge notification-badge--accent">{{ $waitingReviewCount }} menunggu review</span>
             </div>
         </div>
@@ -161,7 +161,7 @@
             <div class="table-chip-wrap">
                 <span class="table-chip"><i class="fas fa-layer-group"></i> {{ $orders->count() }} order di halaman ini</span>
                 <span class="table-chip"><i class="fas fa-bolt"></i> {{ $pendingCount }} butuh tindakan cepat</span>
-                <span class="table-chip"><i class="fas fa-file-invoice"></i> {{ $waitingInvoiceCount + $waitingReviewCount }} butuh dokumen</span>
+                <span class="table-chip"><i class="fas fa-file-invoice"></i> {{ $waitingPaymentCount + $waitingReviewCount }} butuh dokumen</span>
             </div>
         </div>
         <div class="table-container ops-table-shell">
@@ -191,13 +191,14 @@
                         default => 'Belum Ada Data',
                     };
                     $progress = match($order->status) {
-                        'spk_invoice_created' => ['value' => 18, 'label' => 'Menunggu SPK & Invoice', 'tone' => 'warning'],
-                        'waiting_invoice' => ['value' => 35, 'label' => 'Menunggu Pembayaran', 'tone' => 'info'],
-                        'approved' => ['value' => 50, 'label' => 'Siap Ditugaskan', 'tone' => 'success'],
-                        'in_progress' => ['value' => 75, 'label' => 'Teknisi sedang bekerja', 'tone' => 'primary'],
+                        'spk_invoice_created' => ['value' => 15, 'label' => 'Menunggu SPK & Invoice', 'tone' => 'warning'],
+                        'approved' => ['value' => 30, 'label' => 'Menunggu Pembayaran', 'tone' => 'info'],
+                        'waiting_payment' => ['value' => 45, 'label' => 'Proses Pembayaran', 'tone' => 'info'],
+                        'payment_verified' => ['value' => 60, 'label' => 'Siap Ditugaskan', 'tone' => 'success'],
+                        'in_progress' => ['value' => 80, 'label' => 'Teknisi sedang bekerja', 'tone' => 'primary'],
                         'waiting_review' => ['value' => 90, 'label' => 'Menunggu review akhir', 'tone' => 'accent'],
                         'completed' => ['value' => 100, 'label' => 'Workflow selesai', 'tone' => 'success'],
-                        default => ['value' => 12, 'label' => 'Status belum dipetakan', 'tone' => 'neutral'],
+                        default => ['value' => 10, 'label' => 'Status belum dipetakan', 'tone' => 'neutral'],
                     };
                 @endphp
                 <tr>
@@ -281,75 +282,60 @@
                             </button>
 
                             {{-- Manager/Admin create SPK & invoice --}}
-                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && in_array($order->status, ['spk_invoice_created', 'waiting_invoice'], true) && ! $order->invoice)
+                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'spk_invoice_created' && ! $order->invoice)
                             <button class="btn btn-sm btn-primary" type="button" onclick="createSpkInvoice({{ $order->id }})">
                                 <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
                             </button>
                             @endif
 
-                            {{-- Assign technician after SPK --}}
-                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'approved')
+                            {{-- Assign technician after Payment Verified --}}
+                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'payment_verified')
                             <button class="btn btn-sm btn-outline btn-accent" type="button"
-                                onclick="openAssignTech({{ $order->id }}, @js($order->order_number), @js($order->masjid->name))">
+                                onclick="openAssignTech({{ $order->id }}, @js($order->order_number), @js($order->masjid->name), @js($order->status))">
                                 <i class="fas fa-user-hard-hat"></i> Tugaskan
                             </button>
                             @endif
 
                             {{-- Technician mark task done --}}
-                            @if(auth()->user()->isTechnician() && in_array($order->status, ['approved','in_progress']))
-                            <button class="btn btn-sm btn-warning" type="button" onclick="markTaskDone({{ $order->id }})">
+                            @if(auth()->user()->isTechnician() && $order->status === 'in_progress')
+                            <button class="btn btn-sm btn-warning" type="button" onclick="markTaskDone({{ $order->id }}, @js($order->status))">
                                 <i class="fas fa-check-double"></i> Task Done
                             </button>
                             @endif
 
-                            {{-- Manager/Frontdesk/Admin generate invoice --}}
-                            @if((auth()->user()->isFrontdesk() || auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_invoice' && ! $order->invoice)
-                            <button class="btn btn-sm btn-primary" type="button" onclick="createSpkInvoice({{ $order->id }})">
-                                <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
-                            </button>
-                            @endif
-
-
-
-
-                            {{-- Order Selesai button for 'completed' status --}}
-                    @if($order->status == 'completed' && (auth()->user()->isFrontdesk() || auth()->user()->isManager() || auth()->user()->isAdmin() || auth()->user()->isTechnician()))
-                    <button class="btn btn-sm btn-success" type="button" onclick="archiveOrder({{ $order->id }})" title="Archive to history">
-                        <i class="fas fa-archive"></i> Order Selesai (Archive)
-                    </button>
-                    <button class="btn btn-sm btn-danger" type="button" onclick="deleteServiceOrder({{ $order->id }})" title="Hapus permanen">
-                        <i class="fas fa-trash"></i> Hapus Permanen
-                    </button>
-                    @endif
-
-
-
                             {{-- Manager/Admin confirm payment --}}
-                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_invoice' && $order->invoice)
+                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_payment' && $order->invoice)
                             <button class="btn btn-sm btn-success" type="button" onclick="confirmPayment({{ $order->id }})">
                                 <i class="fas fa-money-check"></i> Konfirmasi Pembayaran
                             </button>
                             @endif
 
                             {{-- Manager/Admin finalize order --}}
-                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'payment_verified')
+                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && in_array($order->status, ['payment_verified', 'waiting_review']))
                             <button class="btn btn-sm btn-success" type="button" onclick="finalizeOrder({{ $order->id }})">
                                 <i class="fas fa-check-circle"></i> Selesaikan Order
                             </button>
                             @endif
 
-                            {{-- Frontdesk/Admin delete order --}}
+                            {{-- Order Selesai button for 'completed' status --}}
+                            @if($order->status == 'completed' && (auth()->user()->isFrontdesk() || auth()->user()->isManager() || auth()->user()->isAdmin() || auth()->user()->isTechnician()))
+                            <button class="btn btn-sm btn-success" type="button" onclick="archiveOrder({{ $order->id }})" title="Archive to history">
+                                <i class="fas fa-archive"></i> Order Selesai (Archive)
+                            </button>
+                            <button class="btn btn-sm btn-danger" type="button" onclick="deleteServiceOrder({{ $order->id }})" title="Hapus permanen">
+                                <i class="fas fa-trash"></i> Hapus Permanen
+                            </button>
+                            @endif
 
+                            {{-- Frontdesk/Admin delete order --}}
                             @if(auth()->user()->isFrontdesk() || auth()->user()->isAdmin())
                             <button class="btn btn-xs btn-danger btn-icon btn-delete-small" type="button" onclick="deleteServiceOrder({{ $order->id }})" title="Hapus Order" aria-label="Hapus order">
                                 <i class="fas fa-trash"></i>
                             </button>
                             @endif
 
-
-
                             {{-- SPK / Invoice viewer --}}
-                            @if(in_array($order->status, ['approved','in_progress','waiting_invoice','waiting_review','completed']))
+                            @if(in_array($order->status, ['approved','waiting_payment','payment_verified','in_progress','waiting_review','completed']))
                                 <a href="{{ route('spk.print', $order->id) }}" target="_blank" class="btn btn-sm btn-secondary">
                                     <i class="fas fa-print"></i> SPK
                                 </a>
@@ -359,11 +345,6 @@
                                     <i class="fas fa-file-invoice"></i> Invoice
                                 </a>
                             @endif
-
-                            {{-- Workflow timeline button (all manager/admin/frontdesk/tech) --}}
-
-                            {{-- Timeline removed, merged to detail --}}
-
                         </div>
                     </td>
                 </tr>
@@ -429,38 +410,32 @@
                     <i class="fas fa-eye"></i> Detail
                 </button>
 
-                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && in_array($order->status, ['spk_invoice_created', 'waiting_invoice'], true) && ! $order->invoice)
+                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'spk_invoice_created' && ! $order->invoice)
                 <button class="btn btn-sm btn-primary" type="button" onclick="createSpkInvoice({{ $order->id }})">
                     <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
                 </button>
                 @endif
 
-                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'approved')
+                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'payment_verified')
                 <button class="btn btn-sm btn-outline btn-accent" type="button"
-                    onclick="openAssignTech({{ $order->id }}, @js($order->order_number), @js($order->masjid->name))">
+                    onclick="openAssignTech({{ $order->id }}, @js($order->order_number), @js($order->masjid->name), @js($order->status))">
                     <i class="fas fa-user-hard-hat"></i> Tugaskan
                 </button>
                 @endif
 
-                @if(auth()->user()->isTechnician() && in_array($order->status, ['approved','in_progress']))
-                <button class="btn btn-sm btn-warning" type="button" onclick="markTaskDone({{ $order->id }})">
+                @if(auth()->user()->isTechnician() && $order->status === 'in_progress')
+                <button class="btn btn-sm btn-warning" type="button" onclick="markTaskDone({{ $order->id }}, @js($order->status))">
                     <i class="fas fa-check-double"></i> Task Done
                 </button>
                 @endif
 
-                @if((auth()->user()->isFrontdesk() || auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_invoice' && ! $order->invoice)
-                <button class="btn btn-sm btn-primary" type="button" onclick="createSpkInvoice({{ $order->id }})">
-                    <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
-                </button>
-                @endif
-
-                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_invoice' && $order->invoice)
+                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_payment' && $order->invoice)
                 <button class="btn btn-sm btn-success" type="button" onclick="confirmPayment({{ $order->id }})">
                     <i class="fas fa-money-check"></i> Konfirmasi Pembayaran
                 </button>
                 @endif
 
-                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'payment_verified')
+                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && in_array($order->status, ['payment_verified', 'waiting_review']))
                 <button class="btn btn-sm btn-success" type="button" onclick="finalizeOrder({{ $order->id }})">
                     <i class="fas fa-check-circle"></i> Selesaikan Order
                 </button>
@@ -472,7 +447,7 @@
                 </button>
                 @endif
 
-                @if(in_array($order->status, ['approved','in_progress','waiting_invoice','waiting_review','completed']))
+                @if(in_array($order->status, ['approved','waiting_payment','payment_verified','in_progress','waiting_review','completed']))
                 <a href="{{ route('spk.print', $order->id) }}" target="_blank" class="btn btn-sm btn-secondary">
                     <i class="fas fa-print"></i> SPK
                 </a>
@@ -501,7 +476,7 @@
     </div>
     @endif
 
-    @if($orders->hasPages())
+    @if(method_exists($orders, 'hasPages') && $orders->hasPages())
     <div class="pagination-shell pagination-shell--fixed">
         {{ $orders->onEachSide(1)->links() }}
     </div>
@@ -535,7 +510,7 @@
         @endforeach
     </div>
 
-    @if($masjids->hasPages())
+    @if(method_exists($masjids, 'hasPages') && $masjids->hasPages())
     <div class="pagination-shell">
         {{ $masjids->onEachSide(1)->links() }}
     </div>
@@ -561,15 +536,15 @@
             <div class="masjid-select-list" id="masjidSelectList">
                 @foreach($masjids as $m)
                 <div class="masjid-select-item"
-                     data-id="{{ $m->id }}"
-                     data-name="{{ $m->name }}"
-                     data-address="{{ $m->address }}"
-                     data-dkm="{{ $m->dkm_name }}"
-                     data-marbot="{{ $m->marbot_name }}"
-                     data-phone="{{ json_encode($m->phone_numbers) }}"
-                     data-ac="{{ json_encode($m->acUnits) }}"
-                     data-type="{{ $m->type }}"
-                     onclick="selectMasjidForSO(this)">
+                    data-id="{{ $m->id }}"
+                    data-name="{{ $m->name }}"
+                    data-address="{{ $m->address }}"
+                    data-dkm="{{ $m->dkm_name }}"
+                    data-marbot="{{ $m->marbot_name }}"
+                    data-phone="{{ json_encode($m->phone_numbers) }}"
+                    data-ac="{{ json_encode($m->acUnits) }}"
+                    data-type="{{ $m->type }}"
+                    onclick="selectMasjidForSO(this)">
                     <div class="msi-id">{{ $m->custom_id }}</div>
                     <div class="msi-name">{{ $m->name }}</div>
                     <div class="msi-units">{{ $m->acUnits->sum('quantity') }} unit AC</div>

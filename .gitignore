@@ -90,6 +90,9 @@ my-codebase.md
 repomix-output.xml
 my-codebase.xml
 GEMINI.md
+project-documentation/
+tests/Feature/WorkflowIntegrationTest.php
+tests/QA-TEST-FULL-SUMMARY.md
 
 # Dependencies venv
 venv/

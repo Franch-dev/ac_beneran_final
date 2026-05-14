@@ -6,7 +6,7 @@
 @php
     $statusLabels = \App\Models\ServiceOrder::STATUS_LABELS;
     $pendingCount = (int) ($statusTotals['spk_invoice_created'] ?? 0);
-    $waitingInvoiceCount = (int) ($statusTotals['waiting_invoice'] ?? 0);
+    $waitingPaymentCount = (int) ($statusTotals['waiting_payment'] ?? 0);
     $waitingReviewCount = (int) ($statusTotals['waiting_review'] ?? 0);
     $searchTerm = request('search');
     $statusFilter = request('status');
@@ -36,12 +36,13 @@
             'technician_reported',
             'invoice_edited',
             'payment_received',
+            'payment_verified',
             'printed',
             'completed',
             'cancelled',
         ];
 
-        return in_array($status, ['spk_invoice_created', 'approved', 'waiting_invoice'], true)
+        return in_array($status, ['spk_invoice_created', 'approved'], true)
             && ! in_array($latestStep, $spkAlreadyStartedSteps, true);
     };
 @endphp
@@ -161,7 +162,7 @@
             </div>
             <div class="ops-control-meta">
                 <span class="notification-badge notification-badge--warning">{{ $pendingCount }} pending</span>
-                <span class="notification-badge notification-badge--info">{{ $waitingInvoiceCount }} menunggu invoice</span>
+                <span class="notification-badge notification-badge--info">{{ $waitingPaymentCount }} menunggu pembayaran</span>
                 <span class="notification-badge notification-badge--accent">{{ $waitingReviewCount }} menunggu review</span>
             </div>
         </div>
@@ -195,7 +196,7 @@
             <div class="table-chip-wrap">
                 <span class="table-chip"><i class="fas fa-layer-group"></i> {{ $orders->count() }} order di halaman ini</span>
                 <span class="table-chip"><i class="fas fa-bolt"></i> {{ $pendingCount }} butuh tindakan cepat</span>
-                <span class="table-chip"><i class="fas fa-file-invoice"></i> {{ $waitingInvoiceCount + $waitingReviewCount }} butuh dokumen</span>
+                <span class="table-chip"><i class="fas fa-file-invoice"></i> {{ $waitingPaymentCount + $waitingReviewCount }} butuh dokumen</span>
             </div>
         </div>
         <div class="table-container ops-table-shell">
@@ -230,13 +231,14 @@
                         default => 'Belum Ada Data',
                     };
                     $progress = match($order->status) {
-                        'spk_invoice_created' => ['value' => 18, 'label' => 'Menunggu SPK & Invoice', 'tone' => 'warning'],
-                        'approved' => ['value' => 35, 'label' => 'Siap Ditugaskan', 'tone' => 'success'],
-                        'in_progress' => ['value' => 75, 'label' => 'Teknisi sedang bekerja', 'tone' => 'primary'],
-                        'waiting_invoice' => ['value' => 50, 'label' => 'Menunggu Pembayaran', 'tone' => 'info'],
-                        'waiting_review' => ['value' => 90, 'label' => 'Menunggu review pembayaran', 'tone' => 'accent'],
+                        'spk_invoice_created' => ['value' => 15, 'label' => 'Menunggu SPK & Invoice', 'tone' => 'warning'],
+                        'approved' => ['value' => 30, 'label' => 'Menunggu Pembayaran', 'tone' => 'info'],
+                        'waiting_payment' => ['value' => 45, 'label' => 'Proses Pembayaran', 'tone' => 'info'],
+                        'payment_verified' => ['value' => 60, 'label' => 'Siap Ditugaskan', 'tone' => 'success'],
+                        'in_progress' => ['value' => 80, 'label' => 'Teknisi sedang bekerja', 'tone' => 'primary'],
+                        'waiting_review' => ['value' => 90, 'label' => 'Menunggu review akhir', 'tone' => 'accent'],
                         'completed' => ['value' => 100, 'label' => 'Workflow selesai', 'tone' => 'success'],
-                        default => ['value' => 12, 'label' => 'Status belum dipetakan', 'tone' => 'neutral'],
+                        default => ['value' => 10, 'label' => 'Status belum dipetakan', 'tone' => 'neutral'],
                     };
                 @endphp
                 <tr>
@@ -326,27 +328,34 @@
                             $isTechnician = auth()->user()->isTechnician();
 
                             $isApproved = $orderStatus === 'approved';
-                            $isInProgressOrApproved = $isApproved || $orderStatus === 'in_progress';
-                            $isWaitingInvoice = $orderStatus === 'waiting_invoice';
+                            $isWaitingPayment = $orderStatus === 'waiting_payment';
+                            $isPaymentVerified = $orderStatus === 'payment_verified';
+                            $isInProgress = $orderStatus === 'in_progress';
                             $isWaitingReview = $orderStatus === 'waiting_review';
                             $isCompleted = $orderStatus === 'completed';
 
                             $hasInvoice = (bool) $order->invoice;
 
-                            $canAssignTech = $isManagerOrAdmin && $isApproved;
-                            $canSubmitReport = $isTechnician && in_array($orderStatus, ['approved','in_progress'], true);
+                            // Workflow Strict Rules — state machine gates
+                            $canAssignTech = $isManagerOrAdmin && $isPaymentVerified;
+                            $isAssignedTechnician = $isTechnician
+                                && $order->technicianAssignment
+                                && $order->technicianAssignment->technician_id === auth()->id();
+                            $canSubmitReport = $isAssignedTechnician && $isInProgress;
 
                             $canCreateSpk = $canCreateSpkInvoice($order);
-                            $canApprovePayment = $isManagerOrAdmin && $isWaitingInvoice && $hasInvoice;
+                            $canConfirmPayment = $isManagerOrAdmin && $isWaitingPayment && $hasInvoice;
 
+                            // Additional fee approval: only during waiting_review
                             $canApproveAdditionalFee = $isManagerOrAdmin
+                                && $isWaitingReview
                                 && ($order->field_report_additional_fee > 0)
                                 && ! $order->manager_approved_additional_fee;
 
-                            $canShowSpk = in_array($orderStatus, ['approved','in_progress','waiting_invoice','waiting_review','completed'], true);
+                            $canShowSpk = in_array($orderStatus, ['waiting_payment','payment_verified','in_progress','waiting_review','completed'], true);
 
-                            $frontdeskNeedsConfirm = $isFrontdeskOrAdmin && ! $order->frontdesk_confirmed_complete;
-                            $managerNeedsConfirm = ($isManagerOrAdmin) && ! $order->manager_confirmed_complete;
+                            $frontdeskNeedsConfirm = $isFrontdeskOrAdmin && $isCompleted && ! $order->frontdesk_confirmed_complete;
+                            $managerNeedsConfirm = $isManagerOrAdmin && $isCompleted && ! $order->manager_confirmed_complete;
 
                             $bothConfirmed = $order->frontdesk_confirmed_complete && $order->manager_confirmed_complete;
                         @endphp
@@ -355,10 +364,20 @@
                                 <i class="fas fa-eye"></i> Detail
                             </button>
 
-                            {{-- Assign technician after SPK --}}
+                            {{-- Terbitkan Invoice button removed: approve() now creates invoice
+                                 and transitions directly to waiting_payment --}}
+
+                            {{-- Manager: Confirm Payment --}}
+                            @if($canConfirmPayment)
+                            <button class="btn btn-sm btn-success" type="button" onclick="confirmPayment({{ $order->id }})">
+                                <i class="fas fa-check-circle"></i> Konfirmasi Pembayaran
+                            </button>
+                            @endif
+
+                            {{-- Assign technician after Payment Verified --}}
                             @if($canAssignTech)
                             <button class="btn btn-sm btn-outline btn-accent" type="button"
-                                onclick='openAssignTech(@json($order->id), @json($order->order_number), @json($masjidName))'>
+                                onclick='openAssignTech(@json($order->id), @json($order->order_number), @json($masjidName), @json($orderStatus))'>
                                 <i class="fas fa-user-hard-hat"></i> Tugaskan
                             </button>
                             @endif
@@ -398,10 +417,10 @@
                                 @endif
                             @endif
 
-                            {{-- Manager/Admin approve SPK & Invoice --}}
-                            @if($canApprovePayment)
-                            <button class="btn btn-sm btn-success" type="button" onclick="approveInvoice({{ $order->id }})">
-                                <i class="fas fa-check-circle"></i> Konfirmasi Pembayaran
+                            {{-- Manager: Finalize Order if ready (only if no pending additional fee) --}}
+                            @if($isWaitingReview && $isManagerOrAdmin && !$canApproveAdditionalFee)
+                            <button class="btn btn-sm btn-primary" type="button" onclick="finalizeOrder({{ $order->id }})">
+                                <i class="fas fa-flag-checkered"></i> Finalisasi Order
                             </button>
                             @endif
 
@@ -504,16 +523,21 @@
                     <i class="fas fa-eye"></i> Detail
                 </button>
 
-                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'approved')
+                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'payment_verified')
                 <button class="btn btn-sm btn-outline btn-accent" type="button"
-                    onclick='openAssignTech(@json($order->id), @json($order->order_number), @json($masjidName))'>
+                    onclick='openAssignTech(@json($order->id), @json($order->order_number), @json($masjidName), @json($order->status))'>
                     <i class="fas fa-user-hard-hat"></i> Tugaskan
                 </button>
                 @endif
 
-                @if(auth()->user()->isTechnician() && in_array($order->status, ['approved','in_progress']))
-                <button class="btn btn-sm btn-warning" type="button" onclick="markTaskDone({{ $order->id }})">
-                    <i class="fas fa-check-double"></i> Task Done
+                @php
+                    $mobileIsAssignedTech = auth()->user()->isTechnician()
+                        && $order->technicianAssignment
+                        && $order->technicianAssignment->technician_id === auth()->id();
+                @endphp
+                @if($mobileIsAssignedTech && $order->status === 'in_progress')
+                <button class="btn btn-sm btn-warning" type="button" onclick='openFieldReport(@json($order->id), @json($order->order_number))'>
+                    <i class="fas fa-clipboard-check"></i> Submit Laporan
                 </button>
                 @endif
 
@@ -523,8 +547,8 @@
                 </button>
                 @endif
 
-                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_invoice' && $order->invoice)
-                <button class="btn btn-sm btn-success" type="button" onclick="approveInvoice({{ $order->id }})">
+                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_payment')
+                <button class="btn btn-sm btn-success" type="button" onclick="confirmPayment({{ $order->id }})">
                     <i class="fas fa-check-circle"></i> Konfirmasi Pembayaran
                 </button>
                 @endif
@@ -535,7 +559,7 @@
                 </button>
                 @endif
 
-                @if(in_array($order->status, ['approved','in_progress','waiting_invoice','waiting_review','completed']))
+                @if(in_array($order->status, ['waiting_payment','payment_verified','in_progress','waiting_review','completed']))
                 <a href="{{ route('spk.print', $order->id) }}" target="_blank" class="btn btn-sm btn-secondary">
                     <i class="fas fa-print"></i> SPK
                 </a>
@@ -544,6 +568,27 @@
                 <a href="{{ route('invoice.print', $order->id) }}" target="_blank" class="btn btn-sm btn-primary">
                     <i class="fas fa-file-invoice"></i> Invoice
                 </a>
+                @endif
+
+                {{-- Mobile: Manager Finalize Order --}}
+                @php
+                    $mobileIsWaitingReview = $order->status === 'waiting_review';
+                    $mobileIsManagerOrAdmin = auth()->user()->isManager() || auth()->user()->isAdmin();
+                    $mobileHasPendingFee = $mobileIsManagerOrAdmin
+                        && ($order->field_report_additional_fee > 0)
+                        && ! $order->manager_approved_additional_fee;
+                @endphp
+                @if($mobileIsWaitingReview && $mobileIsManagerOrAdmin && !$mobileHasPendingFee)
+                <button class="btn btn-sm btn-primary" type="button" onclick="finalizeOrder({{ $order->id }})">
+                    <i class="fas fa-flag-checkered"></i> Finalisasi
+                </button>
+                @endif
+
+                {{-- Mobile: Approve Additional Fee --}}
+                @if($mobileIsWaitingReview && $mobileHasPendingFee)
+                <button class="btn btn-sm btn-warning" type="button" onclick="approveAdditionalFee({{ $order->id }})">
+                    <i class="fas fa-coins"></i> Approve Biaya Extra
+                </button>
                 @endif
 
                 <button class="btn btn-sm btn-info" type="button"
@@ -568,7 +613,7 @@
     </div>
     @endif
 
-    @if($orders->hasPages())
+    @if(method_exists($orders, 'hasPages') && $orders->hasPages())
     <div class="pagination-shell pagination-shell--fixed">
         {{ $orders->onEachSide(1)->links() }}
     </div>
@@ -602,7 +647,7 @@
         @endforeach
     </div>
 
-    @if($masjids->hasPages())
+    @if(method_exists($masjids, 'hasPages') && $masjids->hasPages())
     <div class="pagination-shell">
         {{ $masjids->onEachSide(1)->links() }}
     </div>

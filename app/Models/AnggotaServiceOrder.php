@@ -10,19 +10,21 @@ class AnggotaServiceOrder extends Model
     public const ACTIVE_STATUSES = [
         'spk_invoice_created',
         'approved',
+        'waiting_payment',
+        'payment_verified',
         'in_progress',
-        'waiting_invoice',
         'waiting_review',
         'completed',
     ];
 
     public const STATUS_LABELS = [
-        'spk_invoice_created' => 'SPK & Invoice Created',
-        'approved' => 'SPK Issued',
-        'in_progress' => 'In Progress',
-        'waiting_invoice' => 'Waiting Invoice',
-        'waiting_review' => 'Waiting Review',
-        'completed' => 'Completed',
+        'spk_invoice_created' => 'Order Dibuat (SPK & Invoice)',
+        'approved' => 'Disetujui Manager',
+        'waiting_payment' => 'Menunggu Pembayaran',
+        'payment_verified' => 'Pembayaran Terverifikasi',
+        'in_progress' => 'Sedang Dikerjakan',
+        'waiting_review' => 'Menunggu Review Akhir',
+        'completed' => 'Selesai',
     ];
 
     protected $connection = 'ac_service';

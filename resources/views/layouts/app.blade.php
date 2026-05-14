@@ -38,25 +38,6 @@
         :root {
             scroll-padding-top: 5rem;
         }
-        .skip-link {
-            position: absolute;
-            top: -40px;
-            left: 6px;
-            background: var(--primary);
-            color: white;
-            padding: 12px 1rem;
-            font-size: 0.875rem;
-            font-weight: 500;
-            border-radius: var(--radius);
-            transition: top 0.25s ease;
-            z-index: 9999;
-        }
-        .skip-link:focus {
-            top: 1rem;
-            padding: 12px 1.25rem;
-            outline: 3px solid white;
-            box-shadow: var(--shadow-md);
-        }
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after {
                 animation-duration: 0.01ms !important;

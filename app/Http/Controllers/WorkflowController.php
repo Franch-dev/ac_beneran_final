@@ -55,11 +55,9 @@ class WorkflowController extends Controller
             'notes' => 'nullable|string|max:500',
         ]);
 
-        if ($serviceOrder->status !== 'approved') {
-            return response()->json(['success' => false, 'message' => 'Order harus approved sebelum bisa ditugaskan.'], 422);
+        if ($serviceOrder->status !== 'payment_verified') {
+            return response()->json(['success' => false, 'message' => 'Order harus diverifikasi pembayarannya sebelum bisa ditugaskan.'], 422);
         }
-
-        // SPK & Invoice sudah dibuat dan disetujui sebelum assign
 
         $technician = User::findOrFail($validated['technician_id']);
 
@@ -98,7 +96,7 @@ class WorkflowController extends Controller
                 'service_order_id' => $serviceOrder->id,
                 'payload' => [
                     'technician_id' => $technician->id,
-                    'status' => 'approved',
+                    'status' => 'in_progress',
                 ],
             ]);
 
@@ -113,6 +111,10 @@ class WorkflowController extends Controller
             'status' => 'required|in:in_progress,done',
             'notes' => 'nullable|string|max:500',
         ]);
+
+        if (!in_array($serviceOrder->status, ['in_progress', 'payment_verified'])) {
+            return response()->json(['success' => false, 'message' => 'Order tidak sedang dalam pengerjaan atau belum diverifikasi pembayarannya.'], 422);
+        }
 
         $assignment = $serviceOrder->technicianAssignment;
 
@@ -133,7 +135,7 @@ class WorkflowController extends Controller
         return DB::connection('ac_service')->transaction(function () use ($assignment, $updateData, $validated, $serviceOrder) {
             $assignment->update($updateData);
 
-            $step = $validated['status'] === 'in_progress' ? 'in_progress' : 'completed';
+            $step = $validated['status'] === 'in_progress' ? 'in_progress' : 'technician_reported';
             $orderStatus = $validated['status'] === 'in_progress' ? 'in_progress' : 'waiting_review';
 
             WorkflowStep::create([
@@ -169,40 +171,39 @@ class WorkflowController extends Controller
             return response()->json(['success' => false, 'message' => 'Hanya frontdesk, manager, atau admin yang bisa membuat SPK & Invoice.'], 403);
         }
 
-        if ($serviceOrder->invoice || $serviceOrder->status === 'approved') {
-            return response()->json(['success' => false, 'message' => 'SPK & Invoice sudah dibuat dan disetujui.'], 422);
+        if ($serviceOrder->invoice) {
+            return response()->json(['success' => false, 'message' => 'Invoice sudah dibuat.'], 422);
         }
 
         $validated = $request->validate(['notes' => 'nullable|string|max:500']);
 
         $total = $serviceOrder->serviceDetails->sum(fn ($detail) => ($detail->quantity ?? 0) * ($detail->price_per_unit ?? 0));
 
-        // Create Invoice
-        $serviceOrder->invoice()->create([
-            'invoice_number' => Invoice::generateInvoiceNumber(),
-            'total_price' => $total,
-        ]);
-
-        return DB::connection('ac_service')->transaction(function () use ($validated, $serviceOrder) {
-            $serviceOrder->update(['status' => 'approved']);
+        $result = DB::connection('ac_service')->transaction(function () use ($validated, $serviceOrder, $total) {
+            $serviceOrder->invoice()->create([
+                'invoice_number' => Invoice::generateInvoiceNumber(),
+                'total_price' => $total,
+            ]);
+            $serviceOrder->update(['status' => 'waiting_payment']); // Transition to waiting_payment
 
             WorkflowStep::create([
                 'service_order_id' => $serviceOrder->id,
-                'step' => 'spk_invoice_approved',
+                'step' => 'payment_received', // Using an existing step that implies waiting for payment
                 'actor_id' => auth()->id(),
                 'actor_name' => auth()->user()->name,
                 'actor_role' => auth()->user()->role,
-                'notes' => $validated['notes'] ?? 'SPK & Invoice dibuat dan disetujui.',
+                'notes' => $validated['notes'] ?? 'Invoice diterbitkan, menunggu pembayaran.',
             ]);
 
             $this->flushMonitoringCaches();
-            RealtimeSync::afterCommit('workflow.spk_invoice_approved', [
+            RealtimeSync::afterCommit('service_order.waiting_payment', [ // Updated event name
                 'resource' => 'service_order',
                 'resource_id' => $serviceOrder->id,
                 'masjid_id' => $serviceOrder->masjid_id,
+                'payload' => ['status' => 'waiting_payment'],
             ]);
 
-            return response()->json(['success' => true, 'message' => 'SPK & Invoice berhasil dibuat dan disetujui.']);
+            return response()->json(['success' => true, 'message' => 'Invoice diterbitkan, menunggu pembayaran.']);
         });
     }
 
