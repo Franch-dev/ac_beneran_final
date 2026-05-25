@@ -82,7 +82,7 @@ if ($level === 'major') {
 $newVersion = "{$major}.{$minor}.{$patch}";
 $updated = preg_replace(
     "/('version'\\s*=>\\s*')\\d+\\.\\d+\\.\\d+(')/",
-    '$1' . $newVersion . '$2',
+    '${1}' . $newVersion . '${2}',
     $content,
     1
 );
