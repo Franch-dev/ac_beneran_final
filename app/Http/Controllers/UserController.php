@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\ApiResponse;
 use App\Support\UserRoles;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -63,11 +64,9 @@ class UserController extends Controller
             'role'     => $request->role,
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => "User {$user->name} berhasil dibuat.",
+        return ApiResponse::success([
             'user'    => $user,
-        ]);
+        ], "User {$user->name} berhasil dibuat.");
     }
 
     public function edit(User $user)
@@ -89,7 +88,7 @@ class UserController extends Controller
             'role'  => $request->role,
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Data user berhasil diperbarui.']);
+        return ApiResponse::success(message: 'Data user berhasil diperbarui.');
     }
 
     public function resetPassword(Request $request, User $user)
@@ -100,18 +99,18 @@ class UserController extends Controller
 
         $user->update(['password' => Hash::make($request->password)]);
 
-        return response()->json(['success' => true, 'message' => 'Password berhasil direset.']);
+        return ApiResponse::success(message: 'Password berhasil direset.');
     }
 
     public function destroy(User $user)
     {
         // Prevent admin from deleting themselves
         if ($user->id === auth()->id()) {
-            return response()->json(['success' => false, 'message' => 'Tidak bisa menghapus akun sendiri.'], 422);
+            return ApiResponse::error('Tidak bisa menghapus akun sendiri.', 422);
         }
 
         $user->delete();
 
-        return response()->json(['success' => true, 'message' => 'User berhasil dihapus.']);
+        return ApiResponse::success(message: 'User berhasil dihapus.');
     }
 }

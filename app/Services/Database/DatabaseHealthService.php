@@ -3,12 +3,13 @@
 namespace App\Services\Database;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class DatabaseHealthService
 {
     /**
-     * @return array<string, array{ok:bool,error:?string,database:?string}>
+     * @return array<string, array{ok:bool,error:?string}>
      */
     public function checkConnections(): array
     {
@@ -21,13 +22,16 @@ class DatabaseHealthService
                 $result[$name] = [
                     'ok' => true,
                     'error' => null,
-                    'database' => DB::connection($name)->getDatabaseName(),
                 ];
             } catch (Throwable $e) {
+                Log::warning('database_health_check_failed', [
+                    'connection' => $name,
+                    'exception' => $e::class,
+                ]);
+
                 $result[$name] = [
                     'ok' => false,
-                    'error' => $e->getMessage(),
-                    'database' => null,
+                    'error' => 'Connection check failed.',
                 ];
             }
         }
@@ -35,4 +39,3 @@ class DatabaseHealthService
         return $result;
     }
 }
-

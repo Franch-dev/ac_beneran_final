@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ServiceOrder;
+use App\Support\ApiResponse;
 use App\Support\RealtimeSync;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -42,10 +43,7 @@ class CloseOrderController extends Controller
         Cache::forget('monitoring:status_counts');
         Cache::forget('monitoring:status_totals');
 
-        return response()->json([
-            'success' => true,
-            'message' => $deleted . ' order selesai berhasil dihapus dari tabel.',
-        ]);
+        return ApiResponse::success(message: $deleted . ' order selesai berhasil dihapus dari tabel.');
     }
 
 }

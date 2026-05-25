@@ -350,9 +350,9 @@ return [
                 'method' => 'DELETE',
             ],
             [
-                'path' => '/service-order/{serviceOrder}/approve-invoice',
-                'name' => 'service-order.approve-invoice',
-                'description' => 'Approve invoice',
+                'path' => '/workflow/{serviceOrder}/approve-spk-invoice',
+                'name' => 'workflow.approve-spk-invoice.base',
+                'description' => 'Approve SPK & Invoice',
                 'method' => 'POST',
             ],
 

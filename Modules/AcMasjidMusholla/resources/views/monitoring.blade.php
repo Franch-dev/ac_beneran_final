@@ -5,11 +5,29 @@
 @section('content')
 @php
     $statusLabels = \App\Models\ServiceOrder::STATUS_LABELS;
-    $pendingCount = (int) ($statusTotals['spk_invoice_created'] ?? 0);
+    $pendingCount = (int) (($statusTotals['pending_review'] ?? 0) + ($statusTotals['approved'] ?? 0) + ($statusTotals['spk_invoice_created'] ?? 0) + ($statusTotals['spk_invoice_approved'] ?? 0));
     $waitingPaymentCount = (int) ($statusTotals['waiting_payment'] ?? 0);
     $waitingReviewCount = (int) ($statusTotals['waiting_review'] ?? 0);
     $searchTerm = request('search');
     $statusFilter = request('status');
+    $currentUser = auth()->user();
+    $canCreateSpkInvoice = static function ($order) use ($currentUser): bool {
+        return $currentUser
+            && ($currentUser->isFrontdesk() || $currentUser->isAdmin())
+            && $order->status === 'approved'
+            && ! $order->invoice;
+    };
+    $canApproveOrder = static function ($order) use ($currentUser): bool {
+        return $currentUser
+            && ($currentUser->isManager() || $currentUser->isAdmin())
+            && $order->status === 'pending_review';
+    };
+    $canApproveSpkInvoice = static function ($order) use ($currentUser): bool {
+        return $currentUser
+            && ($currentUser->isManager() || $currentUser->isAdmin())
+            && $order->status === 'spk_invoice_created'
+            && (bool) $order->invoice;
+    };
 @endphp
 <div id="monitoringSyncRoot">
 <div class="page-container page-operations page-operations--monitoring">
@@ -29,6 +47,9 @@
                     <button class="btn btn-primary" onclick="openPopup('serviceOrderPopup')">
                         <i class="fas fa-plus"></i> Buat Service Order
                     </button>
+                    <a href="{{ route('frontdesk.guest-orders') }}" class="btn btn-primary">
+                        <i class="fas fa-inbox"></i> Guest Orders
+                    </a>
                     @endif
                     <a href="{{ route('modules.ac-masjid-musholla.dashboard') }}" class="btn btn-outline">
                         <i class="fas fa-th-large"></i> Kembali ke Dashboard
@@ -191,12 +212,15 @@
                         default => 'Belum Ada Data',
                     };
                     $progress = match($order->status) {
-                        'spk_invoice_created' => ['value' => 15, 'label' => 'Menunggu SPK & Invoice', 'tone' => 'warning'],
-                        'approved' => ['value' => 30, 'label' => 'Menunggu Pembayaran', 'tone' => 'info'],
-                        'waiting_payment' => ['value' => 45, 'label' => 'Proses Pembayaran', 'tone' => 'info'],
-                        'payment_verified' => ['value' => 60, 'label' => 'Siap Ditugaskan', 'tone' => 'success'],
-                        'in_progress' => ['value' => 80, 'label' => 'Teknisi sedang bekerja', 'tone' => 'primary'],
-                        'waiting_review' => ['value' => 90, 'label' => 'Menunggu review akhir', 'tone' => 'accent'],
+                        'pending_review' => ['value' => 10, 'label' => 'Menunggu persetujuan manager', 'tone' => 'warning'],
+                        'approved' => ['value' => 20, 'label' => 'Menunggu SPK & Invoice', 'tone' => 'info'],
+                        'spk_invoice_created' => ['value' => 35, 'label' => 'Menunggu approval SPK & Invoice', 'tone' => 'warning'],
+                        'spk_invoice_approved' => ['value' => 45, 'label' => 'Siap ditugaskan ke teknisi', 'tone' => 'success'],
+                        'technician_assigned' => ['value' => 60, 'label' => 'Teknisi sudah ditugaskan', 'tone' => 'primary'],
+                        'in_progress' => ['value' => 72, 'label' => 'Teknisi sedang bekerja', 'tone' => 'primary'],
+                        'waiting_review' => ['value' => 82, 'label' => 'Menunggu finalisasi pekerjaan', 'tone' => 'accent'],
+                        'waiting_payment' => ['value' => 90, 'label' => 'Menunggu pembayaran', 'tone' => 'info'],
+                        'payment_verified' => ['value' => 96, 'label' => 'Pembayaran diverifikasi', 'tone' => 'success'],
                         'completed' => ['value' => 100, 'label' => 'Workflow selesai', 'tone' => 'success'],
                         default => ['value' => 10, 'label' => 'Status belum dipetakan', 'tone' => 'neutral'],
                     };
@@ -281,14 +305,25 @@
                                 <i class="fas fa-eye"></i> Detail
                             </button>
 
-                            {{-- Manager/Admin create SPK & invoice --}}
-                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'spk_invoice_created' && ! $order->invoice)
+                            @if($canApproveOrder($order))
+                            <button class="btn btn-sm btn-primary" type="button" onclick="approveOrder({{ $order->id }})">
+                                <i class="fas fa-check"></i> Setujui Order
+                            </button>
+                            @endif
+
+                            @if($canCreateSpkInvoice($order))
                             <button class="btn btn-sm btn-primary" type="button" onclick="createSpkInvoice({{ $order->id }})">
                                 <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
                             </button>
                             @endif
 
-                            {{-- Assign technician after Payment Verified --}}
+                            @if($canApproveSpkInvoice($order))
+                            <button class="btn btn-sm btn-success" type="button" onclick="approveSpkInvoice({{ $order->id }})">
+                                <i class="fas fa-stamp"></i> Approve SPK & Invoice
+                            </button>
+                            @endif
+
+                            {{-- Assign technician after SPK & Invoice approval --}}
                             @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'payment_verified')
                             <button class="btn btn-sm btn-outline btn-accent" type="button"
                                 onclick="openAssignTech({{ $order->id }}, @js($order->order_number), @js($order->masjid->name), @js($order->status))">
@@ -310,10 +345,17 @@
                             </button>
                             @endif
 
-                            {{-- Manager/Admin finalize order --}}
-                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && in_array($order->status, ['payment_verified', 'waiting_review']))
-                            <button class="btn btn-sm btn-success" type="button" onclick="finalizeOrder({{ $order->id }})">
-                                <i class="fas fa-check-circle"></i> Selesaikan Order
+                            {{-- Manager/Admin finalize field work into payment --}}
+                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_review')
+                            <button class="btn btn-sm btn-success" type="button" onclick="finalizeOrder({{ $order->id }}, null, null, null, @js($order->status))">
+                                <i class="fas fa-flag-checkered"></i> Finalisasi Pekerjaan
+                            </button>
+                            @endif
+
+                            {{-- Manager/Admin complete order after payment verified --}}
+                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'payment_verified' && $order->technicianAssignment && $order->technicianAssignment->status === 'done')
+                            <button class="btn btn-sm btn-success" type="button" onclick="finalizeOrder({{ $order->id }}, null, null, null, @js($order->status))">
+                                <i class="fas fa-check-double"></i> Selesaikan Order
                             </button>
                             @endif
 
@@ -335,7 +377,7 @@
                             @endif
 
                             {{-- SPK / Invoice viewer --}}
-                            @if(in_array($order->status, ['approved','waiting_payment','payment_verified','in_progress','waiting_review','completed']))
+                            @if($order->invoice)
                                 <a href="{{ route('spk.print', $order->id) }}" target="_blank" class="btn btn-sm btn-secondary">
                                     <i class="fas fa-print"></i> SPK
                                 </a>
@@ -410,9 +452,21 @@
                     <i class="fas fa-eye"></i> Detail
                 </button>
 
-                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'spk_invoice_created' && ! $order->invoice)
+                @if($canApproveOrder($order))
+                <button class="btn btn-sm btn-primary" type="button" onclick="approveOrder({{ $order->id }})">
+                    <i class="fas fa-check"></i> Setujui Order
+                </button>
+                @endif
+
+                @if($canCreateSpkInvoice($order))
                 <button class="btn btn-sm btn-primary" type="button" onclick="createSpkInvoice({{ $order->id }})">
                     <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
+                </button>
+                @endif
+
+                @if($canApproveSpkInvoice($order))
+                <button class="btn btn-sm btn-success" type="button" onclick="approveSpkInvoice({{ $order->id }})">
+                    <i class="fas fa-stamp"></i> Approve SPK & Invoice
                 </button>
                 @endif
 
@@ -435,9 +489,15 @@
                 </button>
                 @endif
 
-                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && in_array($order->status, ['payment_verified', 'waiting_review']))
-                <button class="btn btn-sm btn-success" type="button" onclick="finalizeOrder({{ $order->id }})">
-                    <i class="fas fa-check-circle"></i> Selesaikan Order
+                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_review')
+                <button class="btn btn-sm btn-success" type="button" onclick="finalizeOrder({{ $order->id }}, null, null, null, @js($order->status))">
+                    <i class="fas fa-flag-checkered"></i> Finalisasi Pekerjaan
+                </button>
+                @endif
+
+                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'payment_verified' && $order->technicianAssignment && $order->technicianAssignment->status === 'done')
+                <button class="btn btn-sm btn-success" type="button" onclick="finalizeOrder({{ $order->id }}, null, null, null, @js($order->status))">
+                    <i class="fas fa-check-double"></i> Selesaikan Order
                 </button>
                 @endif
 
@@ -447,7 +507,7 @@
                 </button>
                 @endif
 
-                @if(in_array($order->status, ['approved','waiting_payment','payment_verified','in_progress','waiting_review','completed']))
+                @if($order->invoice)
                 <a href="{{ route('spk.print', $order->id) }}" target="_blank" class="btn btn-sm btn-secondary">
                     <i class="fas fa-print"></i> SPK
                 </a>
@@ -782,10 +842,10 @@ window.PAGE_SYNC_CONFIG = {
 };
 window.ROUTES_MON = {
     soStore: '/modules/ac-masjid-musholla/service-order',
-    soApprove: (id) => `/modules/ac-masjid-musholla/service-order/${id}/approve`,
-    soCancel: (id) => `/modules/ac-masjid-musholla/service-order/${id}/cancel-approve`,
-    soDelete: (id) => `/modules/ac-masjid-musholla/service-order/${id}`,
-    soDeleteMgr: (id) => `/modules/ac-masjid-musholla/service-order/${id}/manager`,
+    soApprove: (id) => `/service-order/${id}/approve`,
+    soCancel: (id) => `/service-order/${id}/cancel-approve`,
+    soDelete: (id) => `/service-order/${id}`,
+    soDeleteMgr: (id) => `/service-order/${id}/manager`,
     soHistory: (id) => `/modules/ac-masjid-musholla/masjid/${id}/history`,
     spk: (id) => `/service-order/${id}/spk`,
     invoice: (id) => `/service-order/${id}/invoice`,
@@ -843,6 +903,36 @@ window.HARGA_CONFIG = {
         };
     }
 
+    if (typeof window.approveOrder === 'undefined') {
+        window.approveOrder = async function(id) {
+            if (!confirm('Setujui order ini?')) return;
+            try {
+                const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.soApprove)
+                    ? ROUTES_MON.soApprove(id)
+                    : `/service-order/${id}/approve`;
+                await fallbackFetch(url, 'POST');
+                location.reload();
+            } catch (error) {
+                alert('Gagal menyetujui order: ' + error.message);
+            }
+        };
+    }
+
+    if (typeof window.approveSpkInvoice === 'undefined') {
+        window.approveSpkInvoice = async function(id) {
+            if (!confirm('Setujui SPK & Invoice ini?')) return;
+            try {
+                const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.workflowApproveSpkInvoice)
+                    ? ROUTES_MON.workflowApproveSpkInvoice(id)
+                    : `/modules/ac-masjid-musholla/workflow/${id}/approve-spk-invoice`;
+                await fallbackFetch(url, 'POST');
+                location.reload();
+            } catch (error) {
+                alert('Gagal menyetujui SPK & Invoice: ' + error.message);
+            }
+        };
+    }
+
     if (typeof window.confirmPayment === 'undefined') {
         window.confirmPayment = async function(id) {
             if (!confirm('Konfirmasi pembayaran telah diterima?')) return;
@@ -859,8 +949,9 @@ window.HARGA_CONFIG = {
     }
 
     if (typeof window.finalizeOrder === 'undefined') {
-        window.finalizeOrder = async function(id) {
-            if (!confirm('Selesaikan order ini?')) return;
+        window.finalizeOrder = async function(id, orderNumber, masjidName, serviceDate, currentStatus) {
+            const isClosingPaidOrder = currentStatus === 'payment_verified';
+            if (!confirm(isClosingPaidOrder ? 'Selesaikan order ini?' : 'Finalisasi pekerjaan dan lanjutkan ke pembayaran?')) return;
             try {
                 const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.workflowFinalizeOrder)
                     ? ROUTES_MON.workflowFinalizeOrder(id)

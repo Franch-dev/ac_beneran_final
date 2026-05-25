@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Anggota;
 use App\Models\AnggotaAcUnit;
 use App\Models\AnggotaServiceOrder;
+use App\Support\ApiResponse;
 use App\Support\RealtimeSync;
 use App\Support\SqlDateExpressions;
 use Illuminate\Http\JsonResponse;
@@ -20,9 +21,9 @@ class AnggotaController extends Controller
 
     public function snapshot(Request $request): JsonResponse
     {
-        return response()->json([
-            'html' => view('ac-anggota::dashboard', $this->buildDashboardViewData($request))->render(),
-        ]);
+        return ApiResponse::snapshot(
+            view('ac-anggota::dashboard', $this->buildDashboardViewData($request))->render()
+        );
     }
 
     public function store(Request $request): JsonResponse
@@ -97,8 +98,7 @@ class AnggotaController extends Controller
             ]);
         });
 
-        return response()->json([
-            'success' => true,
+        return ApiResponse::success([
             'anggota' => $anggota->fresh(),
             'custom_id' => $anggota->custom_id,
         ]);
@@ -169,8 +169,7 @@ class AnggotaController extends Controller
             ]);
         });
 
-        return response()->json([
-            'success' => true,
+        return ApiResponse::success([
             'anggota' => $anggota->fresh(),
         ]);
     }
@@ -189,8 +188,7 @@ class AnggotaController extends Controller
             ]);
         });
 
-        return response()->json([
-            'success' => true,
+        return ApiResponse::success([
             'anggota_id' => $anggotaId,
         ]);
     }
@@ -205,7 +203,7 @@ class AnggotaController extends Controller
                 ->latest(),
         ]);
 
-        return response()->json($anggota);
+        return ApiResponse::raw($anggota);
     }
 
     protected function buildDashboardViewData(Request $request): array

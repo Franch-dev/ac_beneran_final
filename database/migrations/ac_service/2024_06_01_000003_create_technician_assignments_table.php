@@ -17,8 +17,15 @@ return new class extends Migration
             $table->string('assigned_by_name');             // denormalized
             $table->enum('status', ['assigned', 'in_progress', 'done'])->default('assigned');
             $table->text('technician_notes')->nullable();
+            $table->timestamp('assigned_at')->nullable();
             $table->timestamp('started_at')->nullable();
             $table->timestamp('completed_at')->nullable();
+            $table->text('completion_notes')->nullable();
+            $table->boolean('fee_reported')->default(false);
+            $table->decimal('fee_amount', 12, 2)->nullable();
+            $table->text('fee_description')->nullable();
+            $table->text('fee_tools_materials')->nullable();
+            $table->timestamp('fee_reported_at')->nullable();
             $table->timestamps();
         });
     }

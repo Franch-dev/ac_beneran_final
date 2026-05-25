@@ -13,11 +13,24 @@ return new class extends Migration
             $table->foreignId('service_order_id')->constrained('service_orders')->cascadeOnDelete();
             $table->enum('step', [
                 'created',
+                'guest_created',
+                'frontdesk_created',
+                'spk_invoice_created',
+                'spk_invoice_approved',
                 'approved',
                 'assigned',
                 'in_progress',
+                'technician_reported',
+                'waiting_payment',
+                'payment_verified',
+                'waiting_review',
                 'completed',
                 'invoice_generated',
+                'edited_invoice_created',
+                'edited_invoice_approved',
+                'invoice_edited',
+                'payment_received',
+                'printed',
                 'closed',
                 'cancelled'
             ]);

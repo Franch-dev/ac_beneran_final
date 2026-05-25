@@ -16,11 +16,22 @@ class TechnicianAssignment extends Model
         'assigned_by_name',
         'status',
         'technician_notes',
+        'assigned_at',
+        'completion_notes',
+        'fee_reported',
+        'fee_amount',
+        'fee_description',
+        'fee_tools_materials',
+        'fee_reported_at',
         'started_at',
         'completed_at',
     ];
 
     protected $casts = [
+        'fee_reported' => 'boolean',
+        'fee_amount' => 'decimal:2',
+        'assigned_at' => 'datetime',
+        'fee_reported_at' => 'datetime',
         'started_at'   => 'datetime',
         'completed_at' => 'datetime',
     ];
@@ -29,5 +40,9 @@ class TechnicianAssignment extends Model
     {
         return $this->belongsTo(ServiceOrder::class);
     }
-}
 
+    public function technician()
+    {
+        return $this->belongsTo(User::class, 'technician_id');
+    }
+}

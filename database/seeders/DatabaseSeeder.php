@@ -11,6 +11,10 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        if (app()->environment('production')) {
+            throw new \RuntimeException('DatabaseSeeder creates demo users and must not run in production.');
+        }
+
         $this->truncateAcServiceTables();
 
         User::updateOrCreate(['email' => 'frontdesk@example.com'], [
@@ -64,10 +68,17 @@ class DatabaseSeeder extends Seeder
         $schema->disableForeignKeyConstraints();
 
         foreach ([
+            'photo_proofs',
+            'receipts',
+            'invoice_edits',
             'workflow_steps',
+            'masjid_change_requests',
+            'guest_orders',
             'technician_assignments',
             'invoices',
             'service_details',
+            'service_order_histories',
+            'sync_events',
             'service_orders',
             'anggota_service_orders',
             'anggota_ac_units',

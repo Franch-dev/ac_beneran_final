@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AcUnit;
 use App\Models\Masjid;
 use App\Models\ServiceOrder;
+use App\Support\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Throwable;
@@ -25,7 +26,7 @@ class AcMasjidMushollaDashboardController extends Controller
     {
         $metrics = $this->metrics($request);
 
-        return response()->json($metrics);
+        return ApiResponse::raw($metrics);
     }
 
     protected function metrics(Request $request): array
@@ -34,7 +35,14 @@ class AcMasjidMushollaDashboardController extends Controller
             $searchTerm = $request->get('search');
 
             $masjidsQuery = Masjid::query()
-                ->with(['acUnits', 'serviceOrders', 'serviceOrders.serviceDetails']);
+                ->with([
+                    'acUnits',
+                    'serviceOrders' => fn ($serviceOrders) => $serviceOrders
+                        ->whereNull('archived_at')
+                        ->latest('service_date')
+                        ->latest(),
+                    'serviceOrders.serviceDetails',
+                ]);
 
             if ($searchTerm) {
                 $masjidsQuery->where(function ($q) use ($searchTerm) {

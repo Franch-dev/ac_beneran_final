@@ -6,6 +6,7 @@ use App\Models\AcUnit;
 use App\Models\Invoice;
 use App\Models\Masjid;
 use App\Models\ServiceOrder;
+use App\Support\ApiResponse;
 use App\Support\SqlDateExpressions;
 use Illuminate\Http\JsonResponse;
 
@@ -18,16 +19,16 @@ class ViewerController extends Controller
 
     public function snapshot(): JsonResponse
     {
-        return response()->json([
-            'html' => view('viewer.dashboard', $this->buildDashboardViewData())->render(),
-        ]);
+        return ApiResponse::snapshot(view('viewer.dashboard', $this->buildDashboardViewData())->render());
     }
 
     protected function buildDashboardViewData(): array
     {
         $totalMasjid = Masjid::count();
         $totalUnit = (int) AcUnit::sum('quantity');
-        $totalOrders = ServiceOrder::count();
+        $totalOrders = ServiceOrder::query()
+            ->whereNull('archived_at')
+            ->count();
         $totalRevenue = (int) Invoice::sum('total_price');
 
         $unitAges = AcUnit::query()
@@ -44,7 +45,9 @@ class ViewerController extends Controller
             })
             ->count();
 
-        $recentOrders = ServiceOrder::with('masjid', 'serviceDetails')
+        $recentOrders = ServiceOrder::query()
+            ->whereNull('archived_at')
+            ->with('masjid', 'serviceDetails')
             ->latest()
             ->take(20)
             ->get();

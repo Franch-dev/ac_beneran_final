@@ -7,6 +7,7 @@ use App\Models\Masjid;
 use App\Models\ServiceOrder;
 use App\Models\ServiceDetail;
 use App\Models\AcUnit;
+use App\Support\ApiResponse;
 use App\Support\SqlDateExpressions;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -15,8 +16,7 @@ class ReportController extends Controller
 {
     public function index(Request $request)
     {
-        $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
-        $endDate   = $request->input('end_date', now()->toDateString());
+        [$startDate, $endDate] = $this->resolveDateRange($request);
 
         // Revenue summary
         $invoices = Invoice::with('serviceOrder.masjid')
@@ -40,7 +40,9 @@ class ReportController extends Controller
         $completedOrders = $ordersInPeriod->where('status', 'completed')->count();
 
         // Statuses are aligned to workflow (no legacy `pending` anymore)
-        $pendingOrders   = $ordersInPeriod->where('status', 'spk_invoice_created')->count();
+        $pendingOrders = $ordersInPeriod
+            ->whereIn('status', ['pending_review', 'approved', 'spk_invoice_created'])
+            ->count();
 
         // Overdue masjids
         $overdueMasjids = Masjid::with('acUnits')
@@ -94,8 +96,7 @@ class ReportController extends Controller
 
     public function exportJson(Request $request)
     {
-        $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
-        $endDate   = $request->input('end_date', now()->toDateString());
+        [$startDate, $endDate] = $this->resolveDateRange($request);
 
         $orders = ServiceOrder::with('masjid', 'serviceDetails', 'invoice')
             ->whereBetween('service_date', [$startDate, $endDate])
@@ -114,7 +115,19 @@ class ReportController extends Controller
                 ]),
             ]);
 
-        return response()->json($orders);
+        return ApiResponse::raw($orders);
+    }
+
+    private function resolveDateRange(Request $request): array
+    {
+        $validated = $request->validate([
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+        ]);
+
+        $startDate = $validated['start_date'] ?? now()->startOfMonth()->toDateString();
+        $endDate = $validated['end_date'] ?? now()->toDateString();
+
+        return [$startDate, $endDate];
     }
 }
-

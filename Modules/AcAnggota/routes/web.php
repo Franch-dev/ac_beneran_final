@@ -31,6 +31,7 @@ Route::get('/modules/ac-anggota/guest-order', function () {
 })->name('modules.ac-anggota.guest-order.index');
 
 Route::post('/modules/ac-anggota/guest-order', [ServiceOrderController::class, 'guestStore'])
+    ->middleware('throttle:writes')
     ->name('modules.ac-anggota.guest-order.store');
 
 $module = collect(config('modules.catalog', []))->firstWhere('key', 'ac-anggota');
@@ -51,14 +52,14 @@ Route::middleware('auth')->prefix('modules/ac-anggota')->group(function (): void
     Route::get('/dashboard/snapshot', [AcAnggotaDashboardController::class, 'snapshot'])->name('modules.ac-anggota.dashboard.snapshot');
     Route::get('/monitoring', [AcAnggotaMonitoringController::class, '__invoke'])->name('modules.ac-anggota.monitoring');
 
-    Route::prefix('anggota')->name('anggota.')->group(function () {
+    Route::prefix('anggota')->name('anggota.')->middleware(['role:frontdesk,admin', 'throttle:writes'])->group(function () {
         Route::post('/', [Modules\AcAnggota\Http\Controllers\AnggotaController::class, 'store'])->name('store');
         Route::get('{anggota}', [Modules\AcAnggota\Http\Controllers\AnggotaController::class, 'detail'])->name('detail');
         Route::match(['put', 'patch'], '{anggota}', [Modules\AcAnggota\Http\Controllers\AnggotaController::class, 'update'])->name('update');
         Route::delete('{anggota}', [Modules\AcAnggota\Http\Controllers\AnggotaController::class, 'destroy'])->name('destroy');
     });
 
-    Route::prefix('ac')->name('ac.')->group(function () {
+    Route::prefix('ac')->name('ac.')->middleware(['role:frontdesk,admin', 'throttle:writes'])->group(function () {
         Route::post('/bulk', [Modules\AcAnggota\Http\Controllers\AcAnggotaController::class, 'bulkStore'])->name('bulk');
         Route::match(['put', 'patch'], '{ac}', [Modules\AcAnggota\Http\Controllers\AcAnggotaController::class, 'update'])->name('update');
         Route::delete('{ac}', [Modules\AcAnggota\Http\Controllers\AcAnggotaController::class, 'destroy'])->name('destroy');

@@ -58,7 +58,11 @@ class CspReportOnlyMiddleware
             'connect-src '.implode(' ', $connectSrc),
         ]);
 
-        $response->headers->set('Content-Security-Policy-Report-Only', $policy);
+        $header = app()->environment('production')
+            ? 'Content-Security-Policy'
+            : 'Content-Security-Policy-Report-Only';
+
+        $response->headers->set($header, $policy);
 
         return $response;
     }

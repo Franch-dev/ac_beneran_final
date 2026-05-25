@@ -336,20 +336,25 @@ window.generateInvoice = function(id) {
 window.approveInvoice = function(id) {
     openConfirmModal({
         type: 'success',
-        heading: 'Approve Invoice?',
-        message: 'Invoice akan disetujui dan status order menjadi Completed.',
-        confirmText: 'Approve Invoice',
+        heading: 'Approve SPK & Invoice?',
+        message: 'SPK & Invoice akan disetujui dan order masuk ke tahap pembayaran.',
+        confirmText: 'Approve SPK & Invoice',
         onConfirm: async () => {
             try {
-                await apiFetch(`/service-order/${id}/approve-invoice`, 'POST');
-                showToast('Invoice disetujui.', 'success');
+                const url = ROUTES_MON?.workflowApproveSpkInvoice
+                    ? ROUTES_MON.workflowApproveSpkInvoice(id)
+                    : `/workflow/${id}/approve-spk-invoice`;
+                await apiFetch(url, 'POST');
+                showToast('SPK & Invoice berhasil disetujui.', 'success');
                 if (typeof refreshMonitoringSurface === 'function') refreshMonitoringSurface();
             } catch (err) {
-                showToast('Error: ' + (err.message || 'Gagal menyetujui invoice'), 'error');
+                showToast('Error: ' + (err.message || 'Gagal menyetujui SPK & Invoice'), 'error');
             }
         }
     });
 };
+
+window.approveSpkInvoice = window.approveInvoice;
 
 window.markTaskDone = function(id) {
     openConfirmModal({
@@ -417,7 +422,7 @@ window.showMasjidSideDetail = async function(masjidId) {
     try {
         const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.masjidDetail) 
                     ? ROUTES_MON.masjidDetail(masjidId) 
-                    : \`/modules/ac-masjid-musholla/masjid/\${masjidId}\`;
+                    : `/modules/ac-masjid-musholla/masjid/${masjidId}`;
         const data = await apiFetch(url);
         
         const safeText = window.escapeHtml || ((val) => String(val ?? ''));

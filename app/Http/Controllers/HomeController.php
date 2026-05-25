@@ -103,10 +103,6 @@ class HomeController extends Controller
                     'name',
                     'custom_id',
                     'type',
-                    'address',
-                    'dkm_name',
-                    'marbot_name',
-                    'phone_numbers',
                 ]);
         } catch (Throwable $exception) {
             report($exception);

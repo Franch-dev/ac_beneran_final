@@ -1,29 +1,4 @@
-@php
-    $popupAction = old('guest_order_action', $formActionRoute ?? route('modules.ac-service.guest-order.store'));
-    $oldMasjidId = old('masjid_id');
-    $oldDetails = old('details', []);
-    if (! is_array($oldDetails) || $oldDetails === []) {
-        $oldDetails = [[]];
-    }
-
-    $guestMasjidPayloads = collect();
-    foreach ($masjids as $masjid) {
-        $acUnitsArray = [];
-        foreach ($masjid->acUnits as $unit) {
-            $acUnitsArray[] = [
-                'pk_type' => $unit->pk_type,
-                'brand' => $unit->brand,
-                'quantity' => $unit->quantity,
-            ];
-        }
-        $guestMasjidPayloads[$masjid->id] = [
-            'phones' => $masjid->phone_numbers,
-            'ac_units' => $acUnitsArray,
-        ];
-    }
-@endphp
-
-<div class="popup popup-xl" id="guestOrderPopup" style="max-width: 1080px;">
+<div class="popup popup-lg" id="guestOrderPopup" style="max-width: 640px;">
     <div class="popup-header">
         <div>
             <span class="popup-kicker">Permintaan Servis</span>
@@ -32,126 +7,98 @@
         </div>
         <button class="popup-close" type="button" onclick="closePopup('guestOrderPopup')" aria-label="Tutup popup">&times;</button>
     </div>
-    <div class="popup-body popup-two-col">
-        <div class="popup-col-left">
-            <h4>Pilih Masjid</h4>
-            <div class="search-input-wrap" style="margin-bottom: 0.75rem">
-                <i class="fas fa-search"></i>
-                <input type="text" id="guestSoMasjidSearch" class="search-input" placeholder="Cari masjid...">
+    <div class="popup-body">
+        @if(session('success'))
+            <div class="alert alert-success glass-card" style="margin-bottom: 1rem; padding: 1rem;">
+                {{ session('success') }}
             </div>
-            <div class="masjid-select-list" id="guestMasjidSelectList">
-                @foreach($masjids as $masjid)
-                    <div
-                        class="masjid-select-item{{ (string) $oldMasjidId === (string) $masjid->id ? ' selected' : '' }}"
-                        data-id="{{ $masjid->id }}"
-                        data-name="{{ $masjid->name }}"
-                        data-address="{{ $masjid->address }}"
-                        data-dkm="{{ $masjid->dkm_name }}"
-                        data-marbot="{{ $masjid->marbot_name }}"
-                        data-type="{{ $masjid->type }}"
-                        data-phone='@json($guestMasjidPayloads[$masjid->id]["phones"] ?? [])'
-                        data-ac='@json($guestMasjidPayloads[$masjid->id]["ac_units"] ?? [])'
-                        onclick="selectMasjidForGuestSO(this)"
-                    >
-                        <div class="msi-id">{{ $masjid->custom_id }}</div>
-                        <div class="msi-name">{{ $masjid->name }}</div>
-                        <div class="msi-units">{{ $masjid->acUnits->sum('quantity') }} unit AC</div>
-                    </div>
-                @endforeach
+        @endif
+
+        @if($errors->any())
+            <div class="alert alert-danger glass-card" style="margin-bottom: 1rem; padding: 1rem;">
+                <strong>Perhatikan beberapa hal berikut:</strong>
+                <ul style="margin-top: 0.75rem; margin-left: 1rem;">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
             </div>
-        </div>
-        <div class="popup-col-right">
-            @if(session('success'))
-                <div class="alert alert-success glass-card" style="margin-bottom: 1rem; padding: 1rem;">
-                    {{ session('success') }}
+        @endif
+
+        <form id="guestOrderForm" action="{{ old('guest_order_action', $formActionRoute ?? route('modules.ac-service.guest-order.store')) }}" method="POST">
+            @csrf
+            <input type="hidden" name="guest_order_action" id="guest_order_action" value="{{ old('guest_order_action', $formActionRoute ?? route('modules.ac-service.guest-order.store')) }}">
+
+            <div class="form-group">
+                <label class="form-label" for="guest_so_name">Nama Pelapor</label>
+                <input type="text" id="guest_so_name" name="reporter_name" class="form-input" placeholder="Nama lengkap..." value="{{ old('reporter_name') }}" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="guest_so_masjid_name">Nama Masjid/Musholla</label>
+                <input type="text" id="guest_so_masjid_name" name="masjid_name" class="form-input" placeholder="Contoh: Masjid Al-Ikhlas" value="{{ old('masjid_name') }}" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="guest_so_masjid_address">Alamat Lokasi</label>
+                <textarea id="guest_so_masjid_address" name="masjid_address" class="form-textarea" rows="2" placeholder="Alamat lengkap masjid/musholla..." required>{{ old('masjid_address') }}</textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="guest_so_phone">Nomor HP</label>
+                    <input type="tel" id="guest_so_phone" name="phone" class="form-input" placeholder="0812xxxx..." value="{{ old('phone') }}" required>
                 </div>
-            @endif
-
-            @if($errors->any())
-                <div class="alert alert-danger glass-card" style="margin-bottom: 1rem; padding: 1rem;">
-                    <strong>Perhatikan beberapa hal berikut:</strong>
-                    <ul style="margin-top: 0.75rem; margin-left: 1rem;">
-                        @foreach($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
+                <div class="form-group">
+                    <label class="form-label" for="guest_so_meeting_person">Ditemui oleh</label>
+                    <select id="guest_so_meeting_person" name="meeting_person" class="form-select" required>
+                        <option value="dkm" {{ old('meeting_person', 'dkm') === 'dkm' ? 'selected' : '' }}>DKM</option>
+                        <option value="marbot" {{ old('meeting_person') === 'marbot' ? 'selected' : '' }}>Marbot</option>
+                    </select>
                 </div>
-            @endif
+            </div>
 
-            <form id="guestOrderForm" action="{{ $popupAction }}" method="POST">
-                @csrf
-                <input type="hidden" name="guest_order_action" id="guest_order_action" value="{{ old('guest_order_action', $popupAction) }}">
-                <input type="hidden" name="masjid_id" id="guest_so_masjid_id" value="{{ $oldMasjidId }}">
+            <div class="form-group">
+                <label class="form-label">Rincian Unit Servis</label>
+                <div id="guestSoDetailsList"></div>
+                <button type="button" class="btn btn-sm btn-outline" onclick="addGuestSODetail()">
+                    <i class="fas fa-plus"></i> Tambah Unit
+                </button>
+            </div>
 
-                <div id="guestSoFormContent" style="{{ $oldMasjidId ? '' : 'display:none' }}">
-                    <h4 id="guestSoMasjidName">{{ optional($masjids->firstWhere('id', $oldMasjidId))->name }}</h4>
-                    <p id="guestSoMasjidAddress" class="text-muted text-sm">{{ optional($masjids->firstWhere('id', $oldMasjidId))->address }}</p>
+            <div class="form-group">
+                <label class="form-label" for="guest_so_service_date">Tanggal Rencana Servis</label>
+                <input type="date" id="guest_so_service_date" name="service_date" class="form-input" min="{{ date('Y-m-d') }}" value="{{ old('service_date') }}" required>
+            </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label" for="guest_so_meeting_person">Ditemui oleh</label>
-                            <select id="guest_so_meeting_person" name="meeting_person" class="form-select" required>
-                                <option value="dkm" {{ old('meeting_person', 'dkm') === 'dkm' ? 'selected' : '' }}>DKM</option>
-                                <option value="marbot" {{ old('meeting_person') === 'marbot' ? 'selected' : '' }}>Marbot</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="guest_so_phone">Nomor HP</label>
-                            <input type="text" id="guest_so_phone" name="phone" class="form-input" placeholder="Nomor HP..." value="{{ old('phone') }}" required>
-                        </div>
-                    </div>
+            <div class="form-group">
+                <label class="form-label" for="guest_so_notes">Instruksi Tambahan</label>
+                <textarea id="guest_so_notes" name="notes" class="form-textarea" rows="3" placeholder="Contoh: Filter kotor, suara berisik, atau pendinginan kurang maksimal.">{{ old('notes') }}</textarea>
+            </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Rincian Unit Servis</label>
-                        <div id="guestSoDetailsList"></div>
-                        <button type="button" class="btn btn-sm btn-outline" onclick="addGuestSODetail()">
-                            <i class="fas fa-plus"></i> Tambah Unit
-                        </button>
-                    </div>
+            <div id="guestSoHargaInfo" class="info-banner" style="display:none;margin-top:0.5rem;font-size:0.78rem"></div>
 
-                    <div class="form-group">
-                        <label class="form-label" for="guest_so_service_date">Tanggal Rencana Servis</label>
-                        <input type="date" id="guest_so_service_date" name="service_date" class="form-input" min="{{ date('Y-m-d') }}" value="{{ old('service_date') }}" required>
-                    </div>
+            <div class="so-total-preview">
+                <span><i class="fas fa-receipt"></i> Estimasi Total</span>
+                <span id="guestSoTotalPreview">-</span>
+            </div>
 
-                    <div class="form-group">
-                        <label class="form-label" for="guest_so_notes">Instruksi Tambahan</label>
-                        <textarea id="guest_so_notes" name="notes" class="form-textarea" rows="2" placeholder="Catatan tambahan...">{{ old('notes') }}</textarea>
-                    </div>
-
-                    <div id="guestSoHargaInfo" class="info-banner" style="display:none;margin-top:0.5rem;font-size:0.78rem"></div>
-
-                    <div class="so-total-preview">
-                        <span><i class="fas fa-receipt"></i> Estimasi Total</span>
-                        <span id="guestSoTotalPreview">-</span>
-                    </div>
-
-                    <div class="popup-actions">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-paper-plane"></i> Kirim Order
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="closePopup('guestOrderPopup')">
-                            Batal
-                        </button>
-                    </div>
-                </div>
-                <div id="guestSoEmptyState" class="empty-state" style="{{ $oldMasjidId ? 'display:none' : '' }}">
-                    <i class="fas fa-hand-pointer"></i>
-                    <p>Pilih masjid dari daftar kiri</p>
-                </div>
-            </form>
-        </div>
+            <div class="popup-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> Kirim Order
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closePopup('guestOrderPopup')">
+                    Batal
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
 @push('scripts')
     <script>
         window.guestSODetailIndex = 0;
-        window.guestSOOldDetails = @json(array_values($oldDetails));
-        window.guestSOPriceMap = {
-            masjid: { '1PK': 40000, '2PK': 45000, '5PK': 80000 },
-            musholla: { '1PK': 40000, '2PK': 45000, '5PK': 80000 },
-        };
+        window.guestSOOldDetails = @json(old('details', []));
 
         function guestSOFormatCurrency(amount) {
             return new Intl.NumberFormat('id-ID', {
@@ -161,30 +108,7 @@
             }).format(Number(amount || 0));
         }
 
-        function guestSOParseJson(value, fallback) {
-            try {
-                return JSON.parse(value);
-            } catch (error) {
-                return fallback;
-            }
-        }
-
-        function guestSOSelectedMasjidCard() {
-            return document.querySelector('#guestMasjidSelectList .masjid-select-item.selected');
-        }
-
-        function guestSOListHasMeaningfulDetails() {
-            return Array.from(document.querySelectorAll('#guestSoDetailsList .so-detail-row')).some((row) => {
-                const pkType = row.querySelector('[data-role="pk-type"]')?.value || '';
-                const brand = row.querySelector('[data-role="brand"]')?.value || '';
-                const quantity = row.querySelector('[data-role="quantity"]')?.value || '';
-
-                return pkType !== '' || brand.trim() !== '' || quantity !== '1';
-            });
-        }
-
         function guestSORenderTotal() {
-            const selected = guestSOSelectedMasjidCard();
             const totalNode = document.getElementById('guestSoTotalPreview');
             const infoNode = document.getElementById('guestSoHargaInfo');
             const rows = document.querySelectorAll('#guestSoDetailsList .so-detail-row');
@@ -193,16 +117,7 @@
                 return;
             }
 
-            if (!selected || rows.length === 0) {
-                totalNode.textContent = '-';
-                if (infoNode) {
-                    infoNode.style.display = 'none';
-                }
-                return;
-            }
-
-            const type = selected.dataset.type || 'masjid';
-            const prices = window.guestSOPriceMap[type] || window.guestSOPriceMap.masjid;
+            const prices = { '1PK': 40000, '2PK': 45000, '5PK': 80000 };
             let total = 0;
             const summaries = [];
 
@@ -295,63 +210,6 @@
             guestSORenderTotal();
         };
 
-        window.selectMasjidForGuestSO = function (element) {
-            document.querySelectorAll('#guestMasjidSelectList .masjid-select-item').forEach((item) => item.classList.remove('selected'));
-            element.classList.add('selected');
-
-            const masjidIdField = document.getElementById('guest_so_masjid_id');
-            const formContent = document.getElementById('guestSoFormContent');
-            const emptyState = document.getElementById('guestSoEmptyState');
-            const nameNode = document.getElementById('guestSoMasjidName');
-            const addressNode = document.getElementById('guestSoMasjidAddress');
-            const phoneField = document.getElementById('guest_so_phone');
-            const meetingField = document.getElementById('guest_so_meeting_person');
-            const detailsList = document.getElementById('guestSoDetailsList');
-
-            if (masjidIdField) {
-                masjidIdField.value = element.dataset.id || '';
-            }
-
-            if (nameNode) {
-                nameNode.textContent = element.dataset.name || '';
-            }
-
-            if (addressNode) {
-                addressNode.textContent = element.dataset.address || '';
-            }
-
-            if (formContent) {
-                formContent.style.display = '';
-            }
-
-            if (emptyState) {
-                emptyState.style.display = 'none';
-            }
-
-            const phones = guestSOParseJson(element.dataset.phone || '[]', []);
-            if (phoneField && !phoneField.value && Array.isArray(phones) && phones.length > 0) {
-                phoneField.value = phones[0];
-            }
-
-            if (meetingField) {
-                const dkmName = (element.dataset.dkm || '').trim();
-                const marbotName = (element.dataset.marbot || '').trim();
-                meetingField.value = !dkmName && marbotName ? 'marbot' : (meetingField.value || 'dkm');
-            }
-
-            if (detailsList && !guestSOListHasMeaningfulDetails()) {
-                detailsList.innerHTML = '';
-                const acUnits = guestSOParseJson(element.dataset.ac || '[]', []);
-                if (Array.isArray(acUnits) && acUnits.length > 0) {
-                    acUnits.forEach((unit) => addGuestSODetail(unit));
-                } else {
-                    addGuestSODetail();
-                }
-            }
-
-            guestSORenderTotal();
-        };
-
         window.openGuestOrderPopup = function (action, moduleLabel = 'AC Service') {
             const popup = document.getElementById('guestOrderPopup');
             if (!popup) {
@@ -389,32 +247,16 @@
                 });
             });
 
-            document.getElementById('guestSoMasjidSearch')?.addEventListener('input', function () {
-                const keyword = this.value.trim().toLowerCase();
-                document.querySelectorAll('#guestMasjidSelectList .masjid-select-item').forEach((item) => {
-                    const haystack = [
-                        item.dataset.name || '',
-                        item.querySelector('.msi-id')?.textContent || '',
-                    ].join(' ').toLowerCase();
-
-                    item.style.display = haystack.includes(keyword) ? '' : 'none';
-                });
-            });
-
-            if (window.guestSOOldDetails.length > 0) {
-                window.guestSOOldDetails.forEach((detail) => addGuestSODetail(detail));
+            const oldDetails = window.guestSOOldDetails;
+            if (oldDetails && oldDetails.length > 0) {
+                oldDetails.forEach((detail) => addGuestSODetail(detail));
             } else {
                 addGuestSODetail();
             }
 
-            const selectedCard = guestSOSelectedMasjidCard();
-            if (selectedCard) {
-                selectMasjidForGuestSO(selectedCard);
-            }
-
             const hasGuestOrderErrors = {{ $errors->any() && old('guest_order_action') ? 'true' : 'false' }};
             if (hasGuestOrderErrors) {
-                openGuestOrderPopup('{{ $popupAction }}', @js($popupTitle ?? 'Service Order'));
+                openGuestOrderPopup('{{ old('guest_order_action', $formActionRoute ?? route('modules.ac-service.guest-order.store')) }}', @js($popupTitle ?? 'Service Order'));
             }
         });
     </script>

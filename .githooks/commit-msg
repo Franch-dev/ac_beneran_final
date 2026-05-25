@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+
+php scripts/bump-version.php "$1"
+git add config/sitemap.php

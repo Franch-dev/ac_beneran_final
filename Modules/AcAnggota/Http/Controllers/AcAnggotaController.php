@@ -5,6 +5,7 @@ namespace Modules\AcAnggota\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Anggota;
 use App\Models\AnggotaAcUnit;
+use App\Support\ApiResponse;
 use App\Support\RealtimeSync;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,8 +21,8 @@ class AcAnggotaController extends Controller
             'anggota_id' => ['required', Rule::exists('ac_service.anggotas', 'id')],
             'units' => 'required|array|min:1',
             'units.*.pk_type' => 'required|in:1PK,2PK,5PK',
-            'units.*.brand' => 'required|string',
-            'units.*.quantity' => 'required|integer|min:1',
+            'units.*.brand' => ['required', 'string', 'max:100', 'regex:/^[\pL\pN\s.\-+\/()]+$/u'],
+            'units.*.quantity' => 'required|integer|min:1|max:100',
             'units.*.last_service_date' => 'nullable|date',
         ]);
 
@@ -33,8 +34,8 @@ class AcAnggotaController extends Controller
     public function update(Request $request, AnggotaAcUnit $acUnit): JsonResponse
     {
         $validated = $request->validate([
-            'brand' => 'required|string',
-            'quantity' => 'required|integer|min:1',
+            'brand' => ['required', 'string', 'max:100', 'regex:/^[\pL\pN\s.\-+\/()]+$/u'],
+            'quantity' => 'required|integer|min:1|max:100',
             'last_service_date' => 'nullable|date',
         ]);
 
@@ -51,8 +52,7 @@ class AcAnggotaController extends Controller
             ]);
         });
 
-        return response()->json([
-            'success' => true,
+        return ApiResponse::success([
             'ac_unit' => $acUnit->fresh(),
             'anggota' => $anggota->fresh('acUnits'),
         ]);
@@ -74,8 +74,7 @@ class AcAnggotaController extends Controller
             ]);
         });
 
-        return response()->json([
-            'success' => true,
+        return ApiResponse::success([
             'ac_unit_id' => $unitId,
             'anggota' => $anggota->fresh('acUnits'),
         ]);
@@ -103,10 +102,8 @@ class AcAnggotaController extends Controller
             ]);
         });
 
-        return response()->json([
-            'success' => true,
+        return ApiResponse::success([
             'anggota' => $anggota->fresh('acUnits'),
         ]);
     }
 }
-

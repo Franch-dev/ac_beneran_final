@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Masjid extends Model
 {
+    use HasFactory;
+
     protected $connection = 'ac_service';
 
     protected $fillable = [
@@ -31,6 +34,16 @@ class Masjid extends Model
         'max_days_since_service',
         'setup_status_label',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Masjid $masjid): void {
+            $type = strtolower((string) ($masjid->type ?? 'masjid'));
+            $masjid->type = in_array($type, ['masjid', 'musholla'], true) ? $type : 'masjid';
+            $masjid->custom_id ??= self::generateCustomId($masjid->type);
+            $masjid->setup_status ??= 'pending_ac';
+        });
+    }
 
     public function acUnits()
     {

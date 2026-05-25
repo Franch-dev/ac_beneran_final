@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -36,7 +37,7 @@ class ProfileController extends Controller
             'email' => $request->email,
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Profil berhasil diperbarui.']);
+        return ApiResponse::success(message: 'Profil berhasil diperbarui.');
     }
 
     public function updatePassword(Request $request)
@@ -49,15 +50,12 @@ class ProfileController extends Controller
         $user = auth()->user();
 
         if (!Hash::check($request->current_password, $user->password)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Password lama tidak sesuai.',
-            ], 422);
+            return ApiResponse::error('Password lama tidak sesuai.', 422);
         }
 
         $user->update(['password' => Hash::make($request->password)]);
 
-        return response()->json(['success' => true, 'message' => 'Password berhasil diubah.']);
+        return ApiResponse::success(message: 'Password berhasil diubah.');
     }
 }
 

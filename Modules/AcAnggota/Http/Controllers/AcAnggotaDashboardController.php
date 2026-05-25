@@ -3,6 +3,7 @@
 namespace Modules\AcAnggota\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Support\ApiResponse;
 use Illuminate\Http\Request;
 use App\Models\Anggota;
 use App\Models\AnggotaAcUnit;
@@ -23,7 +24,7 @@ class AcAnggotaDashboardController extends Controller
     {
         $metrics = $this->metrics($request);
 
-        return response()->json($metrics);
+        return ApiResponse::raw($metrics);
     }
 
     protected function metrics(Request $request): array

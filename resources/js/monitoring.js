@@ -3,6 +3,14 @@
  * Handles service order management, invoicing, and workflow actions
  */
 
+const escapeMonitoringHtml = (value) => {
+    const div = document.createElement('div');
+    div.textContent = String(value ?? '');
+    return div.innerHTML;
+};
+
+const escapeMonitoringJsString = (value) => JSON.stringify(String(value ?? '')).slice(1, -1);
+
 // === ORDER DETAIL MODAL ===
 window.showOrderDetail = async function(orderId, orderNumber, masjidName, serviceDate) {
     const serviceOrderId = Number(orderId);
@@ -121,7 +129,7 @@ window.showOrderDetail = async function(orderId, orderNumber, masjidName, servic
                         <span class="status-badge status-${safeText(orderData.status || '')}">${safeText(statusLabel)}</span>
                     </div>
                     
-                    ${(orderData.status !== 'spk_invoice_created' && orderData.invoice) ? `
+                    ${orderData.invoice ? `
                     <div style="margin-top:1rem; display:flex; gap:0.5rem;">
                         <a href="${spkRoute}" target="_blank" class="btn btn-sm btn-secondary">
                             <i class="fas fa-file-alt"></i> SPK
@@ -182,10 +190,10 @@ window.loadOrderHistory = async function(orderId) {
         listEl.innerHTML = histories.map(h => {
             const when = h.archived_at ? new Date(h.archived_at).toLocaleString() : '';
             const snapshot = h.order_snapshot || {};
-            const details = Object.entries(snapshot).map(([k,v]) => `<div><strong>${k}</strong>: ${String(v)}</div>`).join('');
+            const details = Object.entries(snapshot).map(([k,v]) => `<div><strong>${escapeMonitoringHtml(k)}</strong>: ${escapeMonitoringHtml(v)}</div>`).join('');
             return `<div class="history-item" style="padding:0.4rem 0;border-bottom:1px solid var(--border);">
-                        <div class="history-meta" style="font-size:0.8rem;color:var(--muted);">${when}</div>
-                        ${h.summary ? `<div class="history-summary" style="font-weight:600;margin-top:0.25rem;">${h.summary}</div>` : ''}
+                        <div class="history-meta" style="font-size:0.8rem;color:var(--muted);">${escapeMonitoringHtml(when)}</div>
+                        ${h.summary ? `<div class="history-summary" style="font-weight:600;margin-top:0.25rem;">${escapeMonitoringHtml(h.summary)}</div>` : ''}
                         <div class="history-snapshot" style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas; font-size:0.75rem; margin-top:0.25rem;">
                             ${details}
                         </div>
@@ -199,12 +207,13 @@ window.loadOrderHistory = async function(orderId) {
 
 // Helper: ensure we have a global csrf token for fetch calls
 // === CREATE SPK & INVOICE ===
-window.createSpkInvoice = async function(id) {
+window.createSpkInvoice = async function(id, orderNumber, masjidName, serviceDate) {
     openConfirmModal({
         type: 'success',
         heading: 'Buat SPK & Invoice?',
         message: 'Order akan diproses, SPK dan Invoice akan dibuat sekaligus.',
         confirmText: 'Ya, Buat',
+        orderData: { orderNumber, masjidName, serviceDate },
         onConfirm: async () => {
             try {
                 showToast('Membuat SPK & Invoice...', 'info');
@@ -248,22 +257,44 @@ window.generateInvoice = function(id) {
 };
 
 // === APPROVE INVOICE (Legacy — redirects to finalizeOrder) ===
-window.approveInvoice = async function(id) {
-    return finalizeOrder(id);
+window.approveOrder = async function(id, orderNumber, masjidName, serviceDate) {
+    openConfirmModal({
+        type: 'success',
+        heading: 'Setujui Order?',
+        message: 'Order akan masuk ke tahap pembuatan SPK dan invoice oleh frontdesk.',
+        confirmText: 'Ya, Setujui',
+        orderData: { orderNumber, masjidName, serviceDate },
+        onConfirm: async () => {
+            try {
+                const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.soApprove)
+                    ? ROUTES_MON.soApprove(id)
+                    : `/service-order/${id}/approve`;
+                await apiFetch(url, 'POST');
+                showToast('Order berhasil disetujui.', 'success');
+                refreshMonitoringSurface?.();
+            } catch (err) {
+                showToast('Gagal menyetujui order: ' + (err.message || 'Error'), 'error');
+            }
+        }
+    });
 };
 
 // === FINALIZE ORDER (Manager: waiting_review → completed) ===
-window.finalizeOrder = async function(id) {
+window.finalizeOrder = async function(id, orderNumber, masjidName, serviceDate, currentStatus) {
+    const isClosingPaidOrder = currentStatus === 'payment_verified';
     openConfirmModal({
         type: 'success',
-        heading: 'Finalisasi Order?',
-        message: 'Order akan diselesaikan sepenuhnya. Pastikan semua pekerjaan sudah selesai.',
-        confirmText: 'Ya, Selesaikan',
+        heading: isClosingPaidOrder ? 'Selesaikan Order?' : 'Finalisasi Pekerjaan?',
+        message: isClosingPaidOrder
+            ? 'Pembayaran sudah diverifikasi. Order akan ditandai selesai.'
+            : 'Pekerjaan lapangan sudah selesai. Order akan masuk ke tahap menunggu pembayaran.',
+        confirmText: isClosingPaidOrder ? 'Ya, Selesaikan' : 'Ya, Lanjut ke Pembayaran',
+        orderData: { orderNumber, masjidName, serviceDate },
         onConfirm: async () => {
             try {
                 const url = `/service-order/${id}/finalize-order`;
-                await apiFetch(url, 'POST');
-                showToast('Service order berhasil diselesaikan.', 'success');
+                const response = await apiFetch(url, 'POST');
+                showToast(response?.message || 'Status order berhasil diperbarui.', 'success');
                 refreshMonitoringSurface?.();
             } catch (err) {
                 showToast('Gagal: ' + (err.message || 'Error'), 'error');
@@ -273,12 +304,13 @@ window.finalizeOrder = async function(id) {
 };
 
 // === CONFIRM PAYMENT ===
-window.confirmPayment = async function(id) {
+window.confirmPayment = async function(id, orderNumber, masjidName, serviceDate) {
     openConfirmModal({
         type: 'success',
         heading: 'Konfirmasi Pembayaran?',
         message: 'Pastikan pembayaran telah diterima sesuai nominal invoice.',
         confirmText: 'Ya, Konfirmasi',
+        orderData: { orderNumber, masjidName, serviceDate },
         onConfirm: async () => {
             try {
                 const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.workflowConfirmPayment)
@@ -294,17 +326,38 @@ window.confirmPayment = async function(id) {
     });
 };
 
-window.approveSpkInvoice = window.approveInvoice;
+window.approveSpkInvoice = async function(id, orderNumber, masjidName, serviceDate) {
+    openConfirmModal({
+        type: 'success',
+        heading: 'Setujui SPK & Invoice?',
+        message: 'Order akan masuk ke tahap menunggu pembayaran.',
+        confirmText: 'Ya, Setujui',
+        orderData: { orderNumber, masjidName, serviceDate },
+        onConfirm: async () => {
+            try {
+                const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.workflowApproveSpkInvoice)
+                    ? ROUTES_MON.workflowApproveSpkInvoice(id)
+                    : `/workflow/${id}/approve-spk-invoice`;
+                await apiFetch(url, 'POST');
+                showToast('SPK & Invoice berhasil disetujui.', 'success');
+                refreshMonitoringSurface?.();
+            } catch (err) {
+                showToast('Gagal menyetujui SPK & Invoice: ' + (err.message || 'Error'), 'error');
+            }
+        }
+    });
+};
 
 // === DELETE SERVICE ORDER ===
-window.deleteServiceOrder = function(id, e) {
+window.deleteServiceOrder = function(id, e, orderNumber, masjidName, serviceDate) {
     if (e) e.preventDefault();
 
     openConfirmModal({
         type: 'danger',
         heading: 'Hapus Order?',
-        message: 'Order akan dihapus secara permanen.',
+        message: 'Order akan dihapus secara permanen dan tidak dapat dikembalikan.',
         confirmText: 'Ya, Hapus',
+        orderData: { orderNumber, masjidName, serviceDate },
         onConfirm: async () => {
             try {
                 const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.soDelete)
@@ -337,86 +390,6 @@ window.archiveOrder = async function(orderId) {
 // Wrapper: Delete order (hard delete) via existing route
 window.deleteOrder = function(orderId) {
     deleteServiceOrder(orderId);
-};
-
-// Wrapper: Approve SPK & Invoice using existing flow
-window.approveSpkInvoice = async function(orderId) {
-    return window.approveInvoice(orderId);
-};
-
-// === MODAL CONFIRMATION HELPERS ===
-function createModalOverlay() {
-    const id = 'confirm-modal-overlay';
-    let overlay = document.getElementById(id);
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.id = id;
-        overlay.className = 'modal-overlay';
-        overlay.innerHTML = `
-            <div class="modal-container">
-                <div class="modal-header">
-                    <h3 class="modal-heading"></h3>
-                    <button type="button" class="modal-close" aria-label="Tutup">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <p class="modal-message"></p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary modal-cancel">Batal</button>
-                    <button type="button" class="btn modal-confirm"></button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(overlay);
-
-        // Close handlers
-        overlay.querySelector('.modal-close').addEventListener('click', () => closeConfirmModal());
-        overlay.querySelector('.modal-cancel').addEventListener('click', () => closeConfirmModal());
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) closeConfirmModal();
-        });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeConfirmModal();
-        });
-    }
-    return overlay;
-}
-
-function closeConfirmModal() {
-    const overlay = document.getElementById('confirm-modal-overlay');
-    if (overlay) overlay.classList.remove('active');
-}
-
-window.openConfirmModal = function(options) {
-    const { type = 'danger', heading, message, confirmText, onConfirm, orderData } = options;
-    const overlay = createModalOverlay();
-    const container = overlay.querySelector('.modal-container');
-
-    // Style based on type
-    container.className = 'modal-container modal-' + type;
-    overlay.querySelector('.modal-heading').textContent = heading || 'Konfirmasi';
-    overlay.querySelector('.modal-message').innerHTML = message || (orderData ? `
-        <div class="order-data-summary">
-            <p><strong>No. Order:</strong> ${orderData.orderNumber || '-'}</p>
-            <p><strong>Lokasi:</strong> ${orderData.masjidName || '-'}</p>
-            <p><strong>Tanggal:</strong> ${orderData.serviceDate || '-'}</p>
-        </div>
-    ` : '');
-
-    const confirmBtn = overlay.querySelector('.modal-confirm');
-    confirmBtn.textContent = confirmText || 'Ya, Lanjutkan';
-    confirmBtn.className = 'btn modal-confirm btn-' + type;
-
-    // Replace old handler
-    const newConfirmBtn = confirmBtn.cloneNode(true);
-    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-
-    newConfirmBtn.addEventListener('click', () => {
-        closeConfirmModal();
-        if (typeof onConfirm === 'function') onConfirm();
-    });
-
-    overlay.classList.add('active');
 };
 
 // === TOAST NOTIFICATIONS ===
@@ -493,6 +466,11 @@ async function apiFetch(url, method = 'GET', body = null) {
 function refreshMonitoringSurface() {
     if (typeof window.refreshMonitoringData === 'function') {
         window.refreshMonitoringData();
+    } else if (typeof PageSyncManager !== 'undefined' && typeof PageSyncManager.refreshCurrentPageSnapshot === 'function') {
+        // Use PageSyncManager from public/js/app.js if available for partial refresh
+        PageSyncManager.refreshCurrentPageSnapshot(true).catch(() => {
+            window.location.reload();
+        });
     } else {
         // Fallback: reload page
         window.location.reload();
@@ -502,10 +480,19 @@ function refreshMonitoringSurface() {
 // Make refreshMonitoringSurface available globally
 window.refreshMonitoringSurface = refreshMonitoringSurface;
 
+// Make refreshMonitoringData available globally as a debounced page reload (prevents undefined errors)
+window.refreshMonitoringData = function() {
+    // Debounce: avoid rapid successive reloads
+    if (window.__refreshTimer) clearTimeout(window.__refreshTimer);
+    window.__refreshTimer = setTimeout(() => {
+        window.location.reload();
+    }, 300);
+};
+
 // === OPEN ASSIGN TECHNICIAN POPUP ===
 window.openAssignTech = async function(orderId, orderNumber, masjidName, status) {
-    if (status && status !== 'payment_verified') {
-        showToast('Teknisi hanya dapat ditugaskan setelah pembayaran diverifikasi.', 'warning');
+    if (status && status !== 'spk_invoice_approved') {
+        showToast('Teknisi hanya dapat ditugaskan setelah SPK & Invoice disetujui.', 'warning');
         return;
     }
 
@@ -516,17 +503,26 @@ window.openAssignTech = async function(orderId, orderNumber, masjidName, status)
     }
 
     const orderIdField = document.getElementById('assignTechOrderId');
-    const orderInfo = document.getElementById('assignTechOrderInfo');
-    const technicianSelect = document.getElementById('technicianSelect');
     const notesField = document.getElementById('assignTechNotes');
+    const technicianSelect = document.getElementById('technicianSelect');
 
-    if (!orderIdField || !orderInfo || !technicianSelect || !notesField) {
+    if (!orderIdField || !notesField || !technicianSelect) {
         showToast('Form penugasan tidak ditemukan', 'error');
         return;
     }
 
+    // Populate order context card
     orderIdField.value = serviceOrderId;
-    orderInfo.textContent = `Order: ${String(orderNumber ?? '-')} - ${String(masjidName ?? '-')}`;
+    const assignTechOrderNumEl = document.getElementById('assignTechOrderNumber');
+    if (assignTechOrderNumEl) assignTechOrderNumEl.textContent = String(orderNumber ?? '-');
+    const assignTechMasjidEl = document.getElementById('assignTechMasjidName');
+    if (assignTechMasjidEl) assignTechMasjidEl.textContent = String(masjidName ?? '-');
+    const assignTechStatusEl = document.getElementById('assignTechStatus');
+    if (assignTechStatusEl) {
+        assignTechStatusEl.innerHTML = status
+            ? `<span class="status-badge status-${String(status)}">${String(status).replaceAll('_', ' ')}</span>`
+            : '-';
+    }
     notesField.value = '';
     technicianSelect.innerHTML = '<option value="">Memuat daftar teknisi...</option>';
 
@@ -537,22 +533,18 @@ window.openAssignTech = async function(orderId, orderNumber, masjidName, status)
             ? window.ROUTES_MON.workflowTechnicians
             : `${window.ROUTES_MON?.workflowBase ?? '/workflow'}/technicians`;
         const techniciansResponse = await apiFetch(techniciansUrl, 'GET');
-        console.log('DEBUG: Technicians API response:', techniciansResponse);
         const technicians = Array.isArray(techniciansResponse)
             ? techniciansResponse
             : Array.isArray(techniciansResponse.data)
                 ? techniciansResponse.data
                 : [];
-        console.log('DEBUG: Final technicians array:', technicians);
 
         if (technicians.length > 0) {
             technicianSelect.innerHTML = '<option value="">- Pilih Teknisi -</option>' + technicians.map(t => {
                 const label = [t.name, t.email].filter(Boolean).join(' - ');
                 return `<option value="${t.id}">${label}</option>`;
             }).join('');
-            console.log('DEBUG: Technician select innerHTML updated.');
         } else {
-            console.log('DEBUG: Technicians array empty.');
             technicianSelect.innerHTML = '<option value="">Tidak ada teknisi terdaftar</option>';
         }
     } catch (err) {
@@ -563,9 +555,23 @@ window.openAssignTech = async function(orderId, orderNumber, masjidName, status)
 };
 
 window.submitAssignTech = async function() {
-    const orderId = document.getElementById('assignTechOrderId').value;
-    const technicianId = document.getElementById('technicianSelect').value;
-    const notes = document.getElementById('assignTechNotes').value;
+    const orderIdEl = document.getElementById('assignTechOrderId');
+    const techSelectEl = document.getElementById('technicianSelect');
+    const notesEl = document.getElementById('assignTechNotes');
+
+    if (!orderIdEl || !techSelectEl) {
+        showToast('Form penugasan tidak lengkap.', 'error');
+        return;
+    }
+
+    const orderId = orderIdEl.value;
+    const technicianId = techSelectEl.value;
+    const notes = notesEl ? notesEl.value : '';
+
+    if (!orderId) {
+        showToast('ID order tidak valid.', 'error');
+        return;
+    }
 
     if (!technicianId) {
         showToast('Pilih teknisi terlebih dahulu.', 'warning');
@@ -690,9 +696,9 @@ window.selectMasjidForSO = function(element) {
         const firstUnit = acUnits.find(u => u.pk_type === pk);
         const brand = firstUnit ? firstUnit.brand : 'General';
         return `<button type="button" class="pk-badge"
-            onclick="addPKRowGroup('${pk}', ${qty}, '${brand}')">
-            <span class="pk-badge__type">${pk}</span>
-            <span class="pk-badge__qty">&times;${qty}</span>
+            onclick="addPKRowGroup('${escapeMonitoringJsString(pk)}', ${Number(qty) || 0}, '${escapeMonitoringJsString(brand)}')">
+            <span class="pk-badge__type">${escapeMonitoringHtml(pk)}</span>
+            <span class="pk-badge__qty">&times;${Number(qty) || 0}</span>
         </button>`;
     }).join('');
 
@@ -700,7 +706,7 @@ window.selectMasjidForSO = function(element) {
     document.getElementById('soAcSummary').innerHTML =
         `<i class="fas fa-box"></i> Total <strong>${pkTotal}</strong> unit | ` +
         `<strong>${pkTypes.length}</strong> tipe (` +
-        pkTypes.join(', ') + `)`;
+        pkTypes.map(escapeMonitoringHtml).join(', ') + `)`;
 
     // Reset groups
     soActiveGroups = [];
@@ -856,8 +862,8 @@ function updatePricingPreview() {
 
 // Submit service order
 window.submitServiceOrder = async function() {
-    const masjidName = document.getElementById('soMasjidName').textContent;
-    if (!masjidName) {
+    const masjidNameEl = document.getElementById('soMasjidName');
+    if (!masjidNameEl || !masjidNameEl.textContent) {
         showToast('Silakan pilih masjid terlebih dahulu', 'warning');
         return;
     }
@@ -866,11 +872,16 @@ window.submitServiceOrder = async function() {
         return;
     }
 
-    const meetingPerson = document.getElementById('soMeetingPerson').value;
-    const phone = document.getElementById('soPhone').value;
-    const serviceDate = document.getElementById('soServiceDate').value;
-    const notes = document.getElementById('soNotes').value;
+    const meetingPersonEl = document.getElementById('soMeetingPerson');
+    const phoneEl = document.getElementById('soPhone');
+    const serviceDateEl = document.getElementById('soServiceDate');
+    const notesEl = document.getElementById('soNotes');
     const selectedItem = document.querySelector('.masjid-select-item.selected');
+
+    const meetingPerson = meetingPersonEl ? meetingPersonEl.value : 'dkm';
+    const phone = phoneEl ? phoneEl.value : '';
+    const serviceDate = serviceDateEl ? serviceDateEl.value : '';
+    const notes = notesEl ? notesEl.value : '';
     const masjidId = selectedItem ? selectedItem.dataset.id : null;
 
     if (!masjidId) {
@@ -888,7 +899,10 @@ window.submitServiceOrder = async function() {
 
     try {
         showToast('Membuat service order...', 'info');
-        const response = await apiFetch('/service-order', 'POST', {
+        const storeUrl = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.soStore)
+            ? ROUTES_MON.soStore
+            : '/service-order';
+        await apiFetch(storeUrl, 'POST', {
             masjid_id: masjidId,
             meeting_person: meetingPerson,
             phone,
@@ -906,14 +920,21 @@ window.submitServiceOrder = async function() {
 };
 
 window.resetServiceOrderForm = function() {
-    document.getElementById('soMasjidName').textContent = '';
-    document.getElementById('soMasjidAddress').textContent = '';
-    document.getElementById('soPhone').value = '';
-    document.getElementById('soServiceDate').value = '';
-    document.getElementById('soNotes').value = '';
+    const nameEl = document.getElementById('soMasjidName');
+    const addrEl = document.getElementById('soMasjidAddress');
+    const phoneEl = document.getElementById('soPhone');
+    const dateEl = document.getElementById('soServiceDate');
+    const notesEl = document.getElementById('soNotes');
+    const formContentEl = document.getElementById('soFormContent');
+
+    if (nameEl) nameEl.textContent = '';
+    if (addrEl) addrEl.textContent = '';
+    if (phoneEl) phoneEl.value = '';
+    if (dateEl) dateEl.value = '';
+    if (notesEl) notesEl.value = '';
     soActiveGroups = [];
     soGroupCounter = 0;
-    document.getElementById('soFormContent').style.display = 'none';
+    if (formContentEl) formContentEl.style.display = 'none';
     document.querySelectorAll('.masjid-select-item').forEach(i => i.classList.remove('selected'));
 };
 
@@ -1047,11 +1068,71 @@ window.submitServiceOrderDuplicate = async function() {
 // ============================================
 // REPLACE ORDER FLOW
 // ============================================
-window.confirmReplaceOrder = function() {
-    showToast('Konfirmasi Replace Order', 'info');
+// Holds the pending replace data set by selectMasjidForSO when a conflict is detected
+let pendingReplaceData = null;
+
+window.setPendingReplace = function(orderData, newOrderPayload) {
+    pendingReplaceData = {
+        existingOrder: orderData,
+        newOrderPayload: newOrderPayload
+    };
+
+    // Populate replace popup context
+    const numEl = document.getElementById('rcOrderNumber');
+    const statusEl = document.getElementById('rcStatus');
+    const dateEl = document.getElementById('rcServiceDate');
+
+    if (numEl) numEl.textContent = orderData.order_number || '-';
+    if (statusEl) statusEl.textContent = (orderData.status || '').replaceAll('_', ' ');
+    if (dateEl) dateEl.textContent = orderData.service_date || '-';
+};
+
+window.confirmReplaceOrder = async function() {
+    if (!pendingReplaceData) {
+        showToast('Tidak ada data order yang akan diganti.', 'error');
+        closePopup('replaceConfirmPopup');
+        return;
+    }
+
+    const { existingOrder, newOrderPayload } = pendingReplaceData;
+    const oldOrderId = existingOrder.id;
+
+    if (!oldOrderId || !newOrderPayload) {
+        showToast('Data replace tidak lengkap.', 'error');
+        closePopup('replaceConfirmPopup');
+        return;
+    }
+
+    try {
+        showToast('Menghapus order lama...', 'info');
+
+        // Delete the existing order first
+        const deleteUrl = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.soDelete)
+            ? ROUTES_MON.soDelete(oldOrderId)
+            : `/service-order/${oldOrderId}`;
+        await apiFetch(deleteUrl, 'DELETE');
+
+        showToast('Order lama dihapus. Membuat order baru...', 'info');
+
+        // Then create the new order
+        const storeUrl = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.soStore)
+            ? ROUTES_MON.soStore
+            : '/service-order';
+        await apiFetch(storeUrl, 'POST', newOrderPayload);
+
+        showToast('Order baru berhasil dibuat!', 'success');
+        closePopup('replaceConfirmPopup');
+        pendingReplaceData = null;
+        resetServiceOrderForm();
+        refreshMonitoringSurface?.();
+    } catch (err) {
+        showToast('Gagal mengganti order: ' + (err.message || 'Error'), 'error');
+    }
 };
 
 window.cancelReplaceOrder = function() {
+    pendingReplaceData = null;
+    closePopup('replaceConfirmPopup');
     showToast('Replace Order dibatalkan.', 'info');
 };
 
@@ -1059,12 +1140,30 @@ window.cancelReplaceOrder = function() {
 // CUSTOM CONFIRM MODAL
 // ============================================
 window.closeConfirmModal = function() {
-    document.getElementById('confirmModal')?.classList.remove('active');
+    // Close the dynamic overlay modal (from resources/js/app.js)
+    const overlay = document.getElementById('confirm-modal-overlay');
+    if (overlay) overlay.classList.remove('active');
+
+    // Also close the Blade static confirm popup if open
+    const bladeModal = document.getElementById('confirmModal');
+    if (bladeModal) bladeModal.classList.remove('active');
+
+    // Try to notify any popup-state sync handler if it exists
+    if (typeof syncPopupState === 'function') syncPopupState();
 };
 
+// Track the current pending confirm action from Blade static confirmModal
+let pendingBladeConfirmAction = null;
+
 window.executeConfirmAction = function() {
-    showToast('Action executed.', 'success');
-    closeConfirmModal();
+    if (typeof pendingBladeConfirmAction === 'function') {
+        pendingBladeConfirmAction();
+        pendingBladeConfirmAction = null;
+    } else {
+        // Fallback: close the modal
+        showToast('Tidak ada aksi tertunda.', 'info');
+        closeConfirmModal();
+    }
 };
 
 // ============================================
@@ -1242,6 +1341,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ============================================
 window.openFieldReport = function(orderId, orderNumber) {
     document.getElementById('fieldReportOrderId').value = orderId;
+    document.getElementById('fieldReportOrderNumber').textContent = String(orderNumber ?? '-');
     document.getElementById('fieldReportNotes').value = '';
     document.getElementById('fieldReportAdditionalFee').value = '0';
     document.getElementById('toolsMaterialsList').innerHTML = '';
@@ -1265,63 +1365,120 @@ window.addToolMaterialRow = function() {
     container.appendChild(row);
 };
 
-document.getElementById('fieldReportForm')?.addEventListener('submit', async function(e) {
-    e.preventDefault();
+// Field Report Form - use DOMContentLoaded to ensure the form element exists
+function initFieldReportForm() {
+    const form = document.getElementById('fieldReportForm');
+    if (!form) {
+        // Form not yet in DOM, retry after a short delay
+        setTimeout(initFieldReportForm, 100);
+        return;
+    }
 
-    const orderId = document.getElementById('fieldReportOrderId').value;
-    const notes = document.getElementById('fieldReportNotes').value;
-    const additionalFee = parseFloat(document.getElementById('fieldReportAdditionalFee').value) || 0;
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
 
-    const toolsMaterials = [];
-    document.querySelectorAll('.tools-material-row').forEach(row => {
-        const name = row.querySelector('[name="tm_name[]"]').value;
-        const qty = parseInt(row.querySelector('[name="tm_quantity[]"]').value) || 1;
-        const price = parseFloat(row.querySelector('[name="tm_price[]"]').value) || 0;
-        if (name && name.trim()) {
-            toolsMaterials.push({ name, quantity: qty, price });
+        const orderIdEl = document.getElementById('fieldReportOrderId');
+        const notesEl = document.getElementById('fieldReportNotes');
+        const feeEl = document.getElementById('fieldReportAdditionalFee');
+
+        if (!orderIdEl || !notesEl || !feeEl) {
+            showToast('Form laporan tidak lengkap.', 'error');
+            return;
         }
-    });
 
-    try {
-        showToast('Mengirim laporan pekerjaan...', 'info');
+        const orderId = orderIdEl.value;
+        if (!orderId) {
+            showToast('ID order tidak valid.', 'error');
+            return;
+        }
 
-        const response = await apiFetch(`/service-order/${orderId}/field-report`, 'POST', {
-            field_report_notes: notes,
-            field_report_additional_fee: additionalFee,
-            field_report_tools_materials: toolsMaterials.length > 0 ? toolsMaterials : null
+        const notes = notesEl.value;
+        if (!notes || !notes.trim()) {
+            showToast('Deskripsi pekerjaan wajib diisi.', 'warning');
+            return;
+        }
+
+        const additionalFee = parseFloat(feeEl.value) || 0;
+
+        const toolsMaterials = [];
+        document.querySelectorAll('.tools-material-row').forEach(row => {
+            const nameInput = row.querySelector('[name="tm_name[]"]');
+            const qtyInput = row.querySelector('[name="tm_quantity[]"]');
+            const priceInput = row.querySelector('[name="tm_price[]"]');
+            const name = nameInput ? nameInput.value : '';
+            const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
+            const price = priceInput ? parseFloat(priceInput.value) || 0 : 0;
+            if (name && name.trim()) {
+                toolsMaterials.push({ name, quantity: qty, price });
+            }
         });
 
-        showToast('Laporan berhasil dikirim!', 'success');
-        closePopup('fieldReportPopup');
-        refreshMonitoringSurface?.();
-    } catch (err) {
-        showToast('Gagal mengirim laporan: ' + (err.message || 'Error'), 'error');
-    }
-});
+        try {
+            showToast('Mengirim laporan pekerjaan...', 'info');
+
+            await apiFetch(`/service-order/${orderId}/field-report`, 'POST', {
+                field_report_notes: notes,
+                field_report_additional_fee: additionalFee,
+                field_report_tools_materials: toolsMaterials.length > 0 ? toolsMaterials : null
+            });
+
+            showToast('Laporan berhasil dikirim!', 'success');
+            closePopup('fieldReportPopup');
+            refreshMonitoringSurface?.();
+        } catch (err) {
+            showToast('Gagal mengirim laporan: ' + (err.message || 'Error'), 'error');
+        }
+    });
+}
+
+// Initialize field report form handler when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initFieldReportForm);
+} else {
+    initFieldReportForm();
+}
 
 // ============================================
 // ADDITIONAL FEE APPROVAL (Manager)
 // ============================================
-window.approveAdditionalFee = function(orderId) {
-    document.getElementById('additionalFeeInfo').innerHTML = `
-        <i class="fas fa-exclamation-circle"></i>
-        <span>Teknisi mengajukan biaya tambahan. Apakah Anda menyetujui?</span>
-    `;
-    document.getElementById('approveAdditionalFeeOrderId')?.remove();
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.id = 'approveAdditionalFeeOrderId';
-    input.value = orderId;
-    document.getElementById('additionalFeeApprovalPopup').appendChild(input);
+window.approveAdditionalFee = function(orderId, orderNumber, masjidName, additionalFee) {
+    const orderIdEl = document.getElementById('approveAdditionalFeeOrderId');
+    if (orderIdEl) orderIdEl.value = orderId;
+
+    const feeOrderNumEl = document.getElementById('additionalFeeOrderNumber');
+    if (feeOrderNumEl) feeOrderNumEl.textContent = String(orderNumber ?? '-');
+
+    const feeMasjidEl = document.getElementById('additionalFeeMasjidName');
+    if (feeMasjidEl) feeMasjidEl.textContent = String(masjidName ?? '-');
+
+    const feeAmountEl = document.getElementById('additionalFeeAmount');
+    if (feeAmountEl) {
+        feeAmountEl.textContent = additionalFee
+            ? `Rp ${Number(additionalFee).toLocaleString('id-ID')}`
+            : '-';
+    }
+
+    const approvalNotesEl = document.getElementById('approvalNotes');
+    if (approvalNotesEl) approvalNotesEl.value = '';
+
     openPopup('additionalFeeApprovalPopup');
 };
 
 window.confirmAdditionalFee = async function() {
-    const orderId = document.getElementById('approveAdditionalFeeOrderId')?.value;
-    if (!orderId) return;
+    const orderIdEl = document.getElementById('approveAdditionalFeeOrderId');
+    if (!orderIdEl) {
+        showToast('Form persetujuan biaya tidak ditemukan.', 'error');
+        return;
+    }
+
+    const orderId = orderIdEl.value;
+    if (!orderId) {
+        showToast('ID order tidak valid.', 'error');
+        return;
+    }
 
     try {
-        showToast('Menyetuju biaya tambahan...', 'info');
+        showToast('Menyetujui biaya tambahan...', 'info');
 
         await apiFetch(`/service-order/${orderId}/approve-additional-fee`, 'POST');
 
@@ -1338,9 +1495,23 @@ window.confirmAdditionalFee = async function() {
 // ============================================
 let pendingDualConfirm = { orderId: null, role: null };
 
-window.openDualConfirmation = function(orderId, role, message) {
+window.openDualConfirmation = function(orderId, role, message, orderNumber, masjidName) {
     pendingDualConfirm = { orderId, role };
-    document.getElementById('dualConfirmMessage').innerHTML = message || 'Konfirmasi bahwa service order telah selesai?';
+
+    const ctxEl = document.getElementById('dualConfirmContext');
+    const msgEl = document.getElementById('dualConfirmMessage');
+    const fallbackEl = document.getElementById('dualConfirmMessageFallback');
+
+    if (orderNumber || masjidName) {
+        ctxEl.style.display = 'flex';
+        msgEl.innerHTML = `Order <strong>${orderNumber || '-'}</strong> untuk <strong>${masjidName || '-'}</strong> akan ditandai sebagai selesai.`;
+        fallbackEl.style.display = 'none';
+    } else {
+        ctxEl.style.display = 'none';
+        fallbackEl.style.display = 'block';
+        fallbackEl.textContent = message || 'Konfirmasi bahwa service order telah selesai dan siap untuk tahap berikutnya?';
+    }
+
     openPopup('dualConfirmPopup');
 };
 

@@ -17,6 +17,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (DB::connection('ac_service')->getDriverName() !== 'mysql') {
+            return;
+        }
+
         // First: migrate any rows stuck on 'waiting_invoice' to 'waiting_payment'
         // (waiting_invoice was the old name for the same concept)
         DB::connection('ac_service')->statement("
@@ -57,6 +61,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::connection('ac_service')->getDriverName() !== 'mysql') {
+            return;
+        }
+
         // Revert: put 'waiting_invoice' back
         DB::connection('ac_service')->statement("
             ALTER TABLE service_orders

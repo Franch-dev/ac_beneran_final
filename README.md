@@ -135,6 +135,21 @@ Comprehensive guides are available in the `project-docs/` directory:
 - [Deployment Guide](project-docs/Deployment.md)
 - [UI/UX Design System](project-docs/UIUX.md)
 
+## Versioning
+
+This project uses **Semantic Versioning (SemVer)** with format `MAJOR.MINOR.PATCH`:
+
+- `MAJOR`: breaking or big changes
+- `MINOR`: medium/feature upgrades
+- `PATCH`: small fixes or maintenance updates
+
+Version source of truth is `config/sitemap.php` (`app.version`).
+Commits are expected to follow Conventional Commits. A local `commit-msg` hook auto-bumps version on commit:
+
+- `feat!` or `BREAKING CHANGE` -> `MAJOR`
+- `feat` -> `MINOR`
+- other valid types (`fix`, `chore`, `refactor`, `docs`, `style`, `test`, `perf`, etc.) -> `PATCH`
+
 ## License
 This project is licensed under the MIT License.
 

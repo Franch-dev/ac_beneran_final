@@ -8,6 +8,7 @@ use App\Models\ServiceOrder;
 use App\Models\TechnicianAssignment;
 use App\Models\User;
 use App\Models\WorkflowStep;
+use App\Support\ApiResponse;
 use App\Support\RealtimeSync;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -36,7 +37,7 @@ class WorkflowController extends Controller
 
         $assignment = $serviceOrder->technicianAssignment;
 
-        return response()->json([
+        return ApiResponse::success([
             'steps' => $steps,
             'assignment' => $assignment ? [
                 'technician_name' => $assignment->technician_name,
@@ -55,14 +56,22 @@ class WorkflowController extends Controller
             'notes' => 'nullable|string|max:500',
         ]);
 
-        if ($serviceOrder->status !== 'payment_verified') {
-            return response()->json(['success' => false, 'message' => 'Order harus diverifikasi pembayarannya sebelum bisa ditugaskan.'], 422);
+        $existingAssignment = $serviceOrder->technicianAssignment;
+        $canInitialAssign = $serviceOrder->status === 'payment_verified';
+        $canReassignBeforeWorkStarts = $serviceOrder->status === 'technician_assigned'
+            && $existingAssignment
+            && $existingAssignment->status === 'assigned'
+            && is_null($existingAssignment->started_at)
+            && is_null($existingAssignment->completed_at);
+
+        if (! $canInitialAssign && ! $canReassignBeforeWorkStarts) {
+            return ApiResponse::error('Order hanya bisa ditugaskan setelah pembayaran diverifikasi.', 422);
         }
 
         $technician = User::findOrFail($validated['technician_id']);
 
         if (! $technician->isTechnician()) {
-            return response()->json(['success' => false, 'message' => 'User yang dipilih bukan teknisi.'], 422);
+            return ApiResponse::error('User yang dipilih bukan teknisi.', 422);
         }
 
         return DB::connection('ac_service')->transaction(function () use ($validated, $serviceOrder, $technician) {
@@ -78,7 +87,7 @@ class WorkflowController extends Controller
                 'assigned_at' => now(),
             ]);
 
-            $serviceOrder->update(['status' => 'in_progress']);
+            $serviceOrder->update(['status' => 'technician_assigned']);
 
             WorkflowStep::create([
                 'service_order_id' => $serviceOrder->id,
@@ -86,7 +95,7 @@ class WorkflowController extends Controller
                 'actor_id' => auth()->id(),
                 'actor_name' => auth()->user()->name,
                 'actor_role' => auth()->user()->role,
-                'notes' => "Ditugaskan ke {$technician->name}".($validated['notes'] ? ". {$validated['notes']}" : ''),
+                'notes' => "Ditugaskan ke {$technician->name}".(! empty($validated['notes']) ? ". {$validated['notes']}" : ''),
             ]);
 
             RealtimeSync::afterCommit('workflow.assigned', [
@@ -96,12 +105,12 @@ class WorkflowController extends Controller
                 'service_order_id' => $serviceOrder->id,
                 'payload' => [
                     'technician_id' => $technician->id,
-                    'status' => 'in_progress',
+                    'status' => 'technician_assigned',
                 ],
             ]);
 
             $this->flushMonitoringCaches();
-            return response()->json(['success' => true, 'message' => "Order berhasil ditugaskan ke {$technician->name}."]);
+            return ApiResponse::success([], "Order berhasil ditugaskan ke {$technician->name}.");
         });
     }
 
@@ -112,14 +121,21 @@ class WorkflowController extends Controller
             'notes' => 'nullable|string|max:500',
         ]);
 
-        if (!in_array($serviceOrder->status, ['in_progress', 'payment_verified'])) {
-            return response()->json(['success' => false, 'message' => 'Order tidak sedang dalam pengerjaan atau belum diverifikasi pembayarannya.'], 422);
+        if (!in_array($serviceOrder->status, ['technician_assigned', 'in_progress'], true)) {
+            return ApiResponse::error('Order tidak sedang dalam pengerjaan.', 422);
         }
 
         $assignment = $serviceOrder->technicianAssignment;
 
         if (! $assignment || $assignment->technician_id !== auth()->id()) {
-            return response()->json(['success' => false, 'message' => 'Anda tidak ditugaskan ke order ini.'], 403);
+            return ApiResponse::error('Anda tidak ditugaskan ke order ini.', 403);
+        }
+
+        if (
+            $validated['status'] === 'done'
+            && ($serviceOrder->status !== 'in_progress' || $assignment->status !== 'in_progress')
+        ) {
+            return ApiResponse::error('Teknisi hanya bisa menandai selesai setelah pekerjaan dimulai.', 422);
         }
 
         $updateData = ['status' => $validated['status'], 'technician_notes' => $validated['notes'] ?? null];
@@ -135,8 +151,9 @@ class WorkflowController extends Controller
         return DB::connection('ac_service')->transaction(function () use ($assignment, $updateData, $validated, $serviceOrder) {
             $assignment->update($updateData);
 
-            $step = $validated['status'] === 'in_progress' ? 'in_progress' : 'technician_reported';
-            $orderStatus = $validated['status'] === 'in_progress' ? 'in_progress' : 'waiting_review';
+            $isDone = $validated['status'] === 'done';
+            $step = $isDone ? 'waiting_review' : 'in_progress';
+            $orderStatus = $isDone ? 'waiting_review' : 'in_progress';
 
             WorkflowStep::create([
                 'service_order_id' => $serviceOrder->id,
@@ -147,7 +164,16 @@ class WorkflowController extends Controller
                 'notes' => $validated['notes'] ?? null,
             ]);
 
-            $serviceOrder->update(['status' => $orderStatus]);
+            if ($isDone) {
+                $serviceOrder->update([
+                    'status' => $orderStatus,
+                    'field_report_notes' => $validated['notes'] ?? $serviceOrder->field_report_notes,
+                    'field_report_additional_fee' => $serviceOrder->field_report_additional_fee ?? 0,
+                    'field_report_submitted_at' => $serviceOrder->field_report_submitted_at ?? now(),
+                ]);
+            } else {
+                $serviceOrder->update(['status' => $orderStatus]);
+            }
 
             RealtimeSync::afterCommit('workflow.progress_updated', [
                 'resource' => 'service_order',
@@ -161,49 +187,139 @@ class WorkflowController extends Controller
             ]);
 
             $this->flushMonitoringCaches();
-            return response()->json(['success' => true, 'message' => 'Progress berhasil diperbarui.']);
+            return ApiResponse::success([], 'Progress berhasil diperbarui.');
+        });
+    }
+
+    public function close(Request $request, ServiceOrder $serviceOrder): JsonResponse
+    {
+        $validated = $request->validate([
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        if ($serviceOrder->status !== 'completed') {
+            return ApiResponse::error('Order harus berstatus selesai sebelum ditutup.', 422);
+        }
+
+        if (! $serviceOrder->frontdesk_confirmed_complete || ! $serviceOrder->manager_confirmed_complete) {
+            return ApiResponse::error('Order harus dikonfirmasi frontdesk dan manager sebelum ditutup.', 422);
+        }
+
+        $alreadyClosed = $serviceOrder->workflowSteps()
+            ->where('step', 'closed')
+            ->exists();
+
+        if ($alreadyClosed) {
+            return ApiResponse::success([], 'Order sudah ditutup sebelumnya.');
+        }
+
+        return DB::connection('ac_service')->transaction(function () use ($validated, $serviceOrder) {
+            WorkflowStep::create([
+                'service_order_id' => $serviceOrder->id,
+                'step' => 'closed',
+                'actor_id' => auth()->id(),
+                'actor_name' => auth()->user()->name,
+                'actor_role' => auth()->user()->role,
+                'notes' => $validated['notes'] ?? 'Order ditutup oleh manager.',
+            ]);
+
+            RealtimeSync::afterCommit('workflow.closed', [
+                'resource' => 'service_order',
+                'resource_id' => $serviceOrder->id,
+                'masjid_id' => $serviceOrder->masjid_id,
+                'service_order_id' => $serviceOrder->id,
+                'payload' => ['status' => 'completed', 'closed' => true],
+            ]);
+
+            $this->flushMonitoringCaches();
+
+            return ApiResponse::success([], 'Order berhasil ditutup.');
         });
     }
 
     public function createSpkInvoice(Request $request, ServiceOrder $serviceOrder): JsonResponse
     {
-        if (!auth()->user()->isFrontdesk() && !auth()->user()->isManager() && !auth()->user()->isAdmin()) {
-            return response()->json(['success' => false, 'message' => 'Hanya frontdesk, manager, atau admin yang bisa membuat SPK & Invoice.'], 403);
+        if (!auth()->user()->isFrontdesk() && !auth()->user()->isAdmin()) {
+            return ApiResponse::error('Hanya frontdesk atau admin yang bisa membuat SPK & Invoice.', 403);
         }
 
         if ($serviceOrder->invoice) {
-            return response()->json(['success' => false, 'message' => 'Invoice sudah dibuat.'], 422);
+            return ApiResponse::error('Invoice sudah dibuat.', 422);
+        }
+
+        if (!in_array($serviceOrder->status, ['approved'])) {
+            return ApiResponse::error('Order harus dalam status Disetujui untuk membuat SPK & Invoice.', 422);
         }
 
         $validated = $request->validate(['notes' => 'nullable|string|max:500']);
 
         $total = $serviceOrder->serviceDetails->sum(fn ($detail) => ($detail->quantity ?? 0) * ($detail->price_per_unit ?? 0));
 
-        $result = DB::connection('ac_service')->transaction(function () use ($validated, $serviceOrder, $total) {
+        return DB::connection('ac_service')->transaction(function () use ($validated, $serviceOrder, $total) {
             $serviceOrder->invoice()->create([
                 'invoice_number' => Invoice::generateInvoiceNumber(),
                 'total_price' => $total,
             ]);
-            $serviceOrder->update(['status' => 'waiting_payment']); // Transition to waiting_payment
+            $serviceOrder->update(['status' => 'spk_invoice_created']);
 
             WorkflowStep::create([
                 'service_order_id' => $serviceOrder->id,
-                'step' => 'payment_received', // Using an existing step that implies waiting for payment
+                'step' => 'spk_invoice_created',
                 'actor_id' => auth()->id(),
                 'actor_name' => auth()->user()->name,
                 'actor_role' => auth()->user()->role,
-                'notes' => $validated['notes'] ?? 'Invoice diterbitkan, menunggu pembayaran.',
+                'notes' => $validated['notes'] ?? 'SPK & Invoice diterbitkan, menunggu persetujuan manager.',
             ]);
 
             $this->flushMonitoringCaches();
-            RealtimeSync::afterCommit('service_order.waiting_payment', [ // Updated event name
-                'resource' => 'service_order',
-                'resource_id' => $serviceOrder->id,
-                'masjid_id' => $serviceOrder->masjid_id,
-                'payload' => ['status' => 'waiting_payment'],
+
+            return ApiResponse::success([], 'SPK & Invoice diterbitkan. Menunggu persetujuan manager.');
+        });
+    }
+
+    /**
+     * Manager approves SPK & Invoice → spk_invoice_approved
+     */
+    public function approveSpkInvoice(Request $request, ServiceOrder $serviceOrder): JsonResponse
+    {
+        if (!auth()->user()->isManager() && !auth()->user()->isAdmin()) {
+            return ApiResponse::error('Hanya manager atau admin yang bisa menyetujui SPK & Invoice.', 403);
+        }
+
+        if ($serviceOrder->status !== 'spk_invoice_created') {
+            return ApiResponse::error('Order harus dalam status SPK & Invoice dibuat.', 422);
+        }
+
+        if (! $serviceOrder->invoice) {
+            return ApiResponse::error('Invoice belum dibuat oleh frontdesk.', 422);
+        }
+
+        $validated = $request->validate(['notes' => 'nullable|string|max:500']);
+
+        return DB::connection('ac_service')->transaction(function () use ($validated, $serviceOrder) {
+            $serviceOrder->update(['status' => 'waiting_payment']);
+
+            WorkflowStep::create([
+                'service_order_id' => $serviceOrder->id,
+                'step' => 'spk_invoice_approved',
+                'actor_id' => auth()->id(),
+                'actor_name' => auth()->user()->name,
+                'actor_role' => auth()->user()->role,
+                'notes' => $validated['notes'] ?? 'SPK & Invoice disetujui manager.',
             ]);
 
-            return response()->json(['success' => true, 'message' => 'Invoice diterbitkan, menunggu pembayaran.']);
+            WorkflowStep::create([
+                'service_order_id' => $serviceOrder->id,
+                'step' => 'waiting_payment',
+                'actor_id' => auth()->id(),
+                'actor_name' => auth()->user()->name,
+                'actor_role' => auth()->user()->role,
+                'notes' => 'Menunggu konfirmasi pembayaran sebelum teknisi ditugaskan.',
+            ]);
+
+            $this->flushMonitoringCaches();
+
+            return ApiResponse::success([], 'SPK & Invoice disetujui. Order masuk tahap menunggu pembayaran.');
         });
     }
 
@@ -214,7 +330,7 @@ class WorkflowController extends Controller
             ->orderBy('name')
             ->get();
 
-        return response()->json($techs);
+        return ApiResponse::raw($techs);
     }
 
     // New: Retrieve history entries for a specific service order
@@ -224,14 +340,14 @@ class WorkflowController extends Controller
             ->orderByDesc('archived_at')
             ->get(['archived_at', 'summary', 'order_snapshot']);
 
-        return response()->json(['histories' => $histories]);
+        return ApiResponse::success(['histories' => $histories]);
     }
 
     // New: Archive a service order into the service_order_histories table
     public function archiveOrder(Request $request, ServiceOrder $serviceOrder): JsonResponse
     {
         if ($serviceOrder->archived_at) {
-            return response()->json(['success' => true, 'archived' => true]);
+            return ApiResponse::success(['archived' => true]);
         }
 
         $snapshot = [
@@ -256,13 +372,7 @@ class WorkflowController extends Controller
         // Clear relevant caches if any
         $this->flushMonitoringCaches();
 
-        return response()->json(['success' => true, 'archived' => true]);
-    }
-
-    // New: Approve SPK & Invoice via existing flow (wrapper for reuse)
-    public function approveSpkInvoice(Request $request, ServiceOrder $serviceOrder): JsonResponse
-    {
-        return $this->createSpkInvoice($request, $serviceOrder);
+        return ApiResponse::success(['archived' => true]);
     }
 
     protected function flushMonitoringCaches(): void

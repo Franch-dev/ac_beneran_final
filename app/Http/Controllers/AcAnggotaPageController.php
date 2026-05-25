@@ -6,6 +6,7 @@ use App\Models\Anggota;
 use App\Models\AnggotaAcUnit;
 use App\Support\PlatformNavigation;
 use Illuminate\Contracts\View\View;
+use Throwable;
 
 class AcAnggotaPageController extends Controller
 {

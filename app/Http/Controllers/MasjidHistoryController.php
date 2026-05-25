@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Masjid;
 use App\Models\ServiceOrder;
+use App\Support\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -64,6 +65,6 @@ class MasjidHistoryController extends Controller
                 ]),
             ]);
 
-        return response()->json($orders);
+        return ApiResponse::raw($orders);
     }
 }

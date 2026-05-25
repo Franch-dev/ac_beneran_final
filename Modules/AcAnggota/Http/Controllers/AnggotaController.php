@@ -5,6 +5,7 @@ namespace Modules\AcAnggota\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Anggota;
 use App\Models\AnggotaAcUnit;
+use App\Support\ApiResponse;
 use App\Support\RealtimeSync;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,8 +42,7 @@ class AnggotaController extends Controller
             ]);
         });
 
-        return response()->json([
-            'success' => true,
+        return ApiResponse::success([
             'anggota' => $anggota->fresh(),
             'custom_id' => $anggota->custom_id,
         ]);
@@ -70,8 +70,7 @@ class AnggotaController extends Controller
             ]);
         });
 
-        return response()->json([
-            'success' => true,
+        return ApiResponse::success([
             'anggota' => $anggota->fresh(),
         ]);
     }
@@ -89,8 +88,7 @@ class AnggotaController extends Controller
             ]);
         });
 
-        return response()->json([
-            'success' => true,
+        return ApiResponse::success([
             'anggota_id' => $anggotaId,
         ]);
     }
@@ -101,6 +99,6 @@ class AnggotaController extends Controller
             'acUnits:id,anggota_id,pk_type,brand,quantity,last_service_date',
         ]);
 
-        return response()->json($anggota);
+        return ApiResponse::raw($anggota);
     }
 }

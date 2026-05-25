@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AcUnit;
 use App\Models\Masjid;
 use App\Models\ServiceOrder;
+use App\Support\ApiResponse;
 use App\Support\RealtimeSync;
 use App\Support\SqlDateExpressions;
 use Illuminate\Http\JsonResponse;
@@ -20,9 +21,7 @@ class MasjidController extends Controller
 
     public function snapshot(Request $request): JsonResponse
     {
-        return response()->json([
-            'html' => view('dashboard', $this->buildDashboardViewData($request))->render(),
-        ]);
+        return ApiResponse::snapshot(view('dashboard', $this->buildDashboardViewData($request))->render());
     }
 
     public function store(Request $request): JsonResponse
@@ -61,8 +60,7 @@ class MasjidController extends Controller
             ]);
         });
 
-        return response()->json([
-            'success' => true,
+        return ApiResponse::success([
             'masjid' => $masjid->fresh(),
             'custom_id' => $masjid->custom_id,
         ]);
@@ -95,8 +93,7 @@ class MasjidController extends Controller
             ]);
         });
 
-        return response()->json([
-            'success' => true,
+        return ApiResponse::success([
             'masjid' => $masjid->fresh(),
         ]);
     }
@@ -115,8 +112,7 @@ class MasjidController extends Controller
             ]);
         });
 
-        return response()->json([
-            'success' => true,
+        return ApiResponse::success([
             'masjid_id' => $masjidId,
         ]);
     }
@@ -131,7 +127,7 @@ class MasjidController extends Controller
                 ->latest(),
         ]);
 
-        return response()->json($masjid);
+        return ApiResponse::raw($masjid);
     }
 
     protected function buildDashboardViewData(Request $request): array
@@ -141,6 +137,7 @@ class MasjidController extends Controller
             ->with([
             'acUnits:id,masjid_id,quantity,last_service_date',
             'serviceOrders' => fn ($serviceOrders) => $serviceOrders
+                ->whereNull('archived_at')
                 ->select(['id', 'masjid_id', 'order_number', 'service_date', 'status', 'created_at'])
                 ->latest('service_date')
                 ->latest(),

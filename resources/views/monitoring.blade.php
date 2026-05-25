@@ -5,7 +5,7 @@
 @section('content')
 @php
     $statusLabels = \App\Models\ServiceOrder::STATUS_LABELS;
-    $pendingCount = (int) ($statusTotals['spk_invoice_created'] ?? 0);
+    $pendingCount = (int) (($statusTotals['pending_review'] ?? 0) + ($statusTotals['approved'] ?? 0) + ($statusTotals['spk_invoice_created'] ?? 0) + ($statusTotals['spk_invoice_approved'] ?? 0));
     $waitingPaymentCount = (int) ($statusTotals['waiting_payment'] ?? 0);
     $waitingReviewCount = (int) ($statusTotals['waiting_review'] ?? 0);
     $searchTerm = request('search');
@@ -13,37 +13,22 @@
     $currentUser = auth()->user();
     $canCreateSpkInvoice = static function ($order) use ($currentUser): bool {
         $status = strtolower(trim((string) ($order->status ?? '')));
-        $latestStep = strtolower(trim((string) optional($order->latestWorkflowStep)->step));
-        $hasAllowedRole = $currentUser && (
-            $currentUser->isFrontdesk()
-            || $currentUser->isManager()
-            || $currentUser->isAdmin()
-        );
+        $hasAllowedRole = $currentUser && ($currentUser->isFrontdesk() || $currentUser->isAdmin());
 
-        if (! $hasAllowedRole || $order->invoice) {
-            return false;
-        }
-
-        if (in_array($status, ['completed', 'closed', 'cancelled', 'selesai'], true)) {
-            return false;
-        }
-
-        $spkAlreadyStartedSteps = [
-            'spk_invoice_created',
-            'spk_invoice_approved',
-            'assigned',
-            'in_progress',
-            'technician_reported',
-            'invoice_edited',
-            'payment_received',
-            'payment_verified',
-            'printed',
-            'completed',
-            'cancelled',
-        ];
-
-        return in_array($status, ['spk_invoice_created', 'approved'], true)
-            && ! in_array($latestStep, $spkAlreadyStartedSteps, true);
+        return $hasAllowedRole
+            && $status === 'approved'
+            && ! $order->invoice;
+    };
+    $canApproveOrder = static function ($order) use ($currentUser): bool {
+        return $currentUser
+            && ($currentUser->isManager() || $currentUser->isAdmin())
+            && strtolower(trim((string) ($order->status ?? ''))) === 'pending_review';
+    };
+    $canApproveSpkInvoice = static function ($order) use ($currentUser): bool {
+        return $currentUser
+            && ($currentUser->isManager() || $currentUser->isAdmin())
+            && strtolower(trim((string) ($order->status ?? ''))) === 'spk_invoice_created'
+            && (bool) $order->invoice;
     };
 @endphp
 <div id="monitoringSyncRoot">
@@ -64,6 +49,9 @@
                     <button class="btn btn-primary" onclick="openPopup('serviceOrderPopup')">
                         <i class="fas fa-plus"></i> Buat Service Order
                     </button>
+                    <a href="{{ route('frontdesk.guest-orders') }}" class="btn btn-primary">
+                        <i class="fas fa-inbox"></i> Guest Orders
+                    </a>
                     @endif
                     <a href="{{ route('dashboard') }}" class="btn btn-outline">
                         <i class="fas fa-th-large"></i> Kembali ke Dashboard
@@ -231,12 +219,15 @@
                         default => 'Belum Ada Data',
                     };
                     $progress = match($order->status) {
-                        'spk_invoice_created' => ['value' => 15, 'label' => 'Menunggu SPK & Invoice', 'tone' => 'warning'],
-                        'approved' => ['value' => 30, 'label' => 'Menunggu Pembayaran', 'tone' => 'info'],
-                        'waiting_payment' => ['value' => 45, 'label' => 'Proses Pembayaran', 'tone' => 'info'],
-                        'payment_verified' => ['value' => 60, 'label' => 'Siap Ditugaskan', 'tone' => 'success'],
-                        'in_progress' => ['value' => 80, 'label' => 'Teknisi sedang bekerja', 'tone' => 'primary'],
-                        'waiting_review' => ['value' => 90, 'label' => 'Menunggu review akhir', 'tone' => 'accent'],
+                        'pending_review' => ['value' => 10, 'label' => 'Menunggu persetujuan manager', 'tone' => 'warning'],
+                        'approved' => ['value' => 20, 'label' => 'Menunggu SPK & Invoice', 'tone' => 'info'],
+                        'spk_invoice_created' => ['value' => 35, 'label' => 'Menunggu approval SPK & Invoice', 'tone' => 'warning'],
+                        'spk_invoice_approved' => ['value' => 45, 'label' => 'Siap ditugaskan ke teknisi', 'tone' => 'success'],
+                        'technician_assigned' => ['value' => 60, 'label' => 'Teknisi sudah ditugaskan', 'tone' => 'primary'],
+                        'in_progress' => ['value' => 72, 'label' => 'Teknisi sedang bekerja', 'tone' => 'primary'],
+                        'waiting_review' => ['value' => 82, 'label' => 'Menunggu finalisasi pekerjaan', 'tone' => 'accent'],
+                        'waiting_payment' => ['value' => 90, 'label' => 'Menunggu pembayaran', 'tone' => 'info'],
+                        'payment_verified' => ['value' => 96, 'label' => 'Pembayaran diverifikasi', 'tone' => 'success'],
                         'completed' => ['value' => 100, 'label' => 'Workflow selesai', 'tone' => 'success'],
                         default => ['value' => 10, 'label' => 'Status belum dipetakan', 'tone' => 'neutral'],
                     };
@@ -327,7 +318,10 @@
                             $isFrontdeskOrAdmin = auth()->user()->isFrontdesk() || auth()->user()->isAdmin();
                             $isTechnician = auth()->user()->isTechnician();
 
+                            $isPendingReview = $orderStatus === 'pending_review';
                             $isApproved = $orderStatus === 'approved';
+                            $isSpkCreated = $orderStatus === 'spk_invoice_created';
+                            $isSpkApproved = $orderStatus === 'spk_invoice_approved';
                             $isWaitingPayment = $orderStatus === 'waiting_payment';
                             $isPaymentVerified = $orderStatus === 'payment_verified';
                             $isInProgress = $orderStatus === 'in_progress';
@@ -337,13 +331,25 @@
                             $hasInvoice = (bool) $order->invoice;
 
                             // Workflow Strict Rules — state machine gates
-                            $canAssignTech = $isManagerOrAdmin && $isPaymentVerified;
+                            $canAssignTech = $isManagerOrAdmin && (
+                                $isPaymentVerified
+                                || (
+                                    $orderStatus === 'technician_assigned'
+                                    && $order->technicianAssignment
+                                    && $order->technicianAssignment->status === 'assigned'
+                                    && ! $order->technicianAssignment->started_at
+                                    && ! $order->technicianAssignment->completed_at
+                                )
+                            );
+                            $assignmentDone = $order->technicianAssignment && $order->technicianAssignment->status === 'done';
                             $isAssignedTechnician = $isTechnician
                                 && $order->technicianAssignment
                                 && $order->technicianAssignment->technician_id === auth()->id();
                             $canSubmitReport = $isAssignedTechnician && $isInProgress;
 
+                            $canApproveCurrentOrder = $canApproveOrder($order);
                             $canCreateSpk = $canCreateSpkInvoice($order);
+                            $canApproveSpk = $canApproveSpkInvoice($order);
                             $canConfirmPayment = $isManagerOrAdmin && $isWaitingPayment && $hasInvoice;
 
                             // Additional fee approval: only during waiting_review
@@ -352,7 +358,7 @@
                                 && ($order->field_report_additional_fee > 0)
                                 && ! $order->manager_approved_additional_fee;
 
-                            $canShowSpk = in_array($orderStatus, ['waiting_payment','payment_verified','in_progress','waiting_review','completed'], true);
+                            $canShowSpk = $hasInvoice;
 
                             $frontdeskNeedsConfirm = $isFrontdeskOrAdmin && $isCompleted && ! $order->frontdesk_confirmed_complete;
                             $managerNeedsConfirm = $isManagerOrAdmin && $isCompleted && ! $order->manager_confirmed_complete;
@@ -364,17 +370,31 @@
                                 <i class="fas fa-eye"></i> Detail
                             </button>
 
-                            {{-- Terbitkan Invoice button removed: approve() now creates invoice
-                                 and transitions directly to waiting_payment --}}
+                            @if($canApproveCurrentOrder)
+                            <button class="btn btn-sm btn-primary" type="button" onclick="approveOrder({{ $order->id }}, @json($order->order_number), @json($masjidName), @json($order->service_date->format('d M Y')))">
+                                <i class="fas fa-check"></i> Setujui Order
+                            </button>
+                            @endif
 
-                            {{-- Manager: Confirm Payment --}}
+                            @if($canCreateSpk)
+                            <button class="btn btn-sm btn-primary" type="button" onclick="createSpkInvoice({{ $order->id }}, @json($order->order_number), @json($masjidName), @json($order->service_date->format('d M Y')))">
+                                <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
+                            </button>
+                            @endif
+
+                            @if($canApproveSpk)
+                            <button class="btn btn-sm btn-success" type="button" onclick="approveSpkInvoice({{ $order->id }}, @json($order->order_number), @json($masjidName), @json($order->service_date->format('d M Y')))">
+                                <i class="fas fa-stamp"></i> Approve SPK & Invoice
+                            </button>
+                            @endif
+
                             @if($canConfirmPayment)
-                            <button class="btn btn-sm btn-success" type="button" onclick="confirmPayment({{ $order->id }})">
+                            <button class="btn btn-sm btn-success" type="button" onclick="confirmPayment({{ $order->id }}, @json($order->order_number), @json($masjidName), @json($order->service_date->format('d M Y')))">
                                 <i class="fas fa-check-circle"></i> Konfirmasi Pembayaran
                             </button>
                             @endif
 
-                            {{-- Assign technician after Payment Verified --}}
+                            {{-- Assign technician after SPK & Invoice approval --}}
                             @if($canAssignTech)
                             <button class="btn btn-sm btn-outline btn-accent" type="button"
                                 onclick='openAssignTech(@json($order->id), @json($order->order_number), @json($masjidName), @json($orderStatus))'>
@@ -389,23 +409,16 @@
                             </button>
                             @endif
 
-                            {{-- Manager/Frontdesk/Admin generate SPK & Invoice --}}
-                            @if($canCreateSpk)
-                            <button class="btn btn-sm btn-primary" type="button" onclick="createSpkInvoice({{ $order->id }})">
-                                <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
-                            </button>
-                            @endif
-
                             {{-- Order Selesai button for 'completed' status with dual confirmation --}}
                             @if($isCompleted)
                                 @if($frontdeskNeedsConfirm)
-                                <button class="btn btn-sm btn-success" type="button" onclick="openDualConfirmation({{ $order->id }}, 'frontdesk', 'Apakah Anda (Frontdesk) menyetujui bahwa service order ini sudah selesai?')" title="Konfirmasi Selesai">
+                                <button class="btn btn-sm btn-success" type="button" onclick="openDualConfirmation({{ $order->id }}, 'frontdesk', '', @json($order->order_number), @json($masjidName))" title="Konfirmasi Selesai">
                                     <i class="fas fa-check"></i> Konfirmasi Selesai
                                 </button>
                                 @endif
 
                                 @if($managerNeedsConfirm)
-                                <button class="btn btn-sm btn-success" type="button" onclick="openDualConfirmation({{ $order->id }}, 'manager', 'Apakah Anda (Manager) menyetujui bahwa service order ini sudah selesai?')" title="Konfirmasi Selesai">
+                                <button class="btn btn-sm btn-success" type="button" onclick="openDualConfirmation({{ $order->id }}, 'manager', '', @json($order->order_number), @json($masjidName))" title="Konfirmasi Selesai">
                                     <i class="fas fa-check"></i> Konfirmasi Selesai
                                 </button>
                                 @endif
@@ -417,23 +430,30 @@
                                 @endif
                             @endif
 
-                            {{-- Manager: Finalize Order if ready (only if no pending additional fee) --}}
+                            {{-- Manager: Finalize field work into payment --}}
                             @if($isWaitingReview && $isManagerOrAdmin && !$canApproveAdditionalFee)
-                            <button class="btn btn-sm btn-primary" type="button" onclick="finalizeOrder({{ $order->id }})">
-                                <i class="fas fa-flag-checkered"></i> Finalisasi Order
+                            <button class="btn btn-sm btn-primary" type="button" onclick="finalizeOrder({{ $order->id }}, @json($order->order_number), @json($masjidName), @json($order->service_date->format('d M Y')), @json($orderStatus))">
+                                <i class="fas fa-flag-checkered"></i> Finalisasi Pekerjaan
+                            </button>
+                            @endif
+
+                            {{-- Manager: Complete order after payment verified --}}
+                            @if($isPaymentVerified && $isManagerOrAdmin && $assignmentDone)
+                            <button class="btn btn-sm btn-primary" type="button" onclick="finalizeOrder({{ $order->id }}, @json($order->order_number), @json($masjidName), @json($order->service_date->format('d M Y')), @json($orderStatus))">
+                                <i class="fas fa-check-double"></i> Selesaikan Order
                             </button>
                             @endif
 
                             {{-- Manager: Approve Additional Fee if field report submitted --}}
                             @if($canApproveAdditionalFee)
-                            <button class="btn btn-sm btn-warning" type="button" onclick="approveAdditionalFee({{ $order->id }})">
+                            <button class="btn btn-sm btn-warning" type="button" onclick="approveAdditionalFee({{ $order->id }}, @json($order->order_number), @json($masjidName), @json($order->field_report_additional_fee))">
                                 <i class="fas fa-coins"></i> Approve Biaya Extra
                             </button>
                             @endif
 
                             {{-- Frontdesk/Admin delete order --}}
                             @if(auth()->user()->isFrontdesk() || auth()->user()->isAdmin())
-                            <button class="btn btn-xs btn-danger btn-icon btn-delete-small" type="button" onclick="deleteServiceOrder({{ $order->id }})" title="Hapus Order" aria-label="Hapus order">
+                            <button class="btn btn-xs btn-danger btn-icon btn-delete-small" type="button" onclick="deleteServiceOrder({{ $order->id }}, event, @json($order->order_number), @json($masjidName), @json($order->service_date->format('d M Y')))" title="Hapus Order" aria-label="Hapus order">
                                 <i class="fas fa-trash"></i>
                             </button>
                             @endif
@@ -523,6 +543,24 @@
                     <i class="fas fa-eye"></i> Detail
                 </button>
 
+                @if($canApproveOrder($order))
+                <button class="btn btn-sm btn-primary" type="button" onclick="approveOrder({{ $order->id }}, @json($order->order_number), @json($masjidName), @json($order->service_date->format('d M Y')))">
+                    <i class="fas fa-check"></i> Setujui Order
+                </button>
+                @endif
+
+                @if($canCreateSpkInvoice($order))
+                <button class="btn btn-sm btn-primary" type="button" onclick="createSpkInvoice({{ $order->id }}, @json($order->order_number), @json($masjidName), @json($order->service_date->format('d M Y')))">
+                    <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
+                </button>
+                @endif
+
+                @if($canApproveSpkInvoice($order))
+                <button class="btn btn-sm btn-success" type="button" onclick="approveSpkInvoice({{ $order->id }}, @json($order->order_number), @json($masjidName), @json($order->service_date->format('d M Y')))">
+                    <i class="fas fa-stamp"></i> Approve SPK & Invoice
+                </button>
+                @endif
+
                 @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'payment_verified')
                 <button class="btn btn-sm btn-outline btn-accent" type="button"
                     onclick='openAssignTech(@json($order->id), @json($order->order_number), @json($masjidName), @json($order->status))'>
@@ -541,25 +579,19 @@
                 </button>
                 @endif
 
-                @if($canCreateSpkInvoice($order))
-                <button class="btn btn-sm btn-primary" type="button" onclick="createSpkInvoice({{ $order->id }})">
-                    <i class="fas fa-file-invoice"></i> Buat SPK & Invoice
-                </button>
-                @endif
-
                 @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_payment')
-                <button class="btn btn-sm btn-success" type="button" onclick="confirmPayment({{ $order->id }})">
+                <button class="btn btn-sm btn-success" type="button" onclick="confirmPayment({{ $order->id }}, @json($order->order_number), @json($masjidName), @json($order->service_date->format('d M Y')))">
                     <i class="fas fa-check-circle"></i> Konfirmasi Pembayaran
                 </button>
                 @endif
 
                 @if(auth()->user()->isFrontdesk() || auth()->user()->isAdmin())
-                <button class="btn btn-sm btn-danger" type="button" onclick="deleteServiceOrder({{ $order->id }})">
+                <button class="btn btn-sm btn-danger" type="button" onclick="deleteServiceOrder({{ $order->id }}, event, @json($order->order_number), @json($masjidName), @json($order->service_date->format('d M Y')))">
                     <i class="fas fa-trash"></i> Hapus
                 </button>
                 @endif
 
-                @if(in_array($order->status, ['waiting_payment','payment_verified','in_progress','waiting_review','completed']))
+                @if($order->invoice)
                 <a href="{{ route('spk.print', $order->id) }}" target="_blank" class="btn btn-sm btn-secondary">
                     <i class="fas fa-print"></i> SPK
                 </a>
@@ -574,19 +606,26 @@
                 @php
                     $mobileIsWaitingReview = $order->status === 'waiting_review';
                     $mobileIsManagerOrAdmin = auth()->user()->isManager() || auth()->user()->isAdmin();
+                    $mobileAssignmentDone = $order->technicianAssignment && $order->technicianAssignment->status === 'done';
                     $mobileHasPendingFee = $mobileIsManagerOrAdmin
                         && ($order->field_report_additional_fee > 0)
                         && ! $order->manager_approved_additional_fee;
                 @endphp
                 @if($mobileIsWaitingReview && $mobileIsManagerOrAdmin && !$mobileHasPendingFee)
-                <button class="btn btn-sm btn-primary" type="button" onclick="finalizeOrder({{ $order->id }})">
-                    <i class="fas fa-flag-checkered"></i> Finalisasi
+                <button class="btn btn-sm btn-primary" type="button" onclick="finalizeOrder({{ $order->id }}, @json($order->order_number), @json($masjidName), @json($order->service_date->format('d M Y')), @json($order->status))">
+                    <i class="fas fa-flag-checkered"></i> Finalisasi Pekerjaan
+                </button>
+                @endif
+
+                @if($order->status === 'payment_verified' && $mobileIsManagerOrAdmin && $mobileAssignmentDone)
+                <button class="btn btn-sm btn-primary" type="button" onclick="finalizeOrder({{ $order->id }}, @json($order->order_number), @json($masjidName), @json($order->service_date->format('d M Y')), @json($order->status))">
+                    <i class="fas fa-check-double"></i> Selesaikan Order
                 </button>
                 @endif
 
                 {{-- Mobile: Approve Additional Fee --}}
                 @if($mobileIsWaitingReview && $mobileHasPendingFee)
-                <button class="btn btn-sm btn-warning" type="button" onclick="approveAdditionalFee({{ $order->id }})">
+                <button class="btn btn-sm btn-warning" type="button" onclick="approveAdditionalFee({{ $order->id }}, @json($order->order_number), @json($masjidName), @json($order->field_report_additional_fee))">
                     <i class="fas fa-coins"></i> Approve Biaya Extra
                 </button>
                 @endif
@@ -768,7 +807,10 @@
 <!-- Order Detail Popup -->
 <div class="popup popup-lg" id="orderDetailPopup">
     <div class="popup-header">
-        <h3><i class="fas fa-clipboard-list"></i> Detail Service Order</h3>
+        <div class="popup-title-group">
+            <h3><i class="fas fa-clipboard-list"></i> Detail Service Order</h3>
+            <p class="popup-kicker">Informasi lengkap unit AC, timeline workflow, dan riwayat order</p>
+        </div>
         <button class="popup-close" type="button" onclick="closePopup('orderDetailPopup')" aria-label="Tutup detail service order">&times;</button>
     </div>
     <div class="popup-body" id="orderDetailBody">
@@ -782,36 +824,82 @@
 <!-- History Popup -->
 <div class="popup popup-lg" id="historyPopup">
     <div class="popup-header">
-        <h3><i class="fas fa-history"></i> Riwayat Service Order</h3>
+        <div class="popup-title-group">
+            <h3><i class="fas fa-history"></i> Riwayat Service Order</h3>
+            <p class="popup-kicker">Semua order sebelumnya untuk masjid ini — klik untuk melihat detail</p>
+        </div>
         <button class="popup-close" onclick="closePopup('historyPopup')">&times;</button>
     </div>
-    <div class="popup-body" id="historyBody"></div>
+    <div class="popup-body" id="historyBody">
+        <div class="empty-state">
+            <i class="fas fa-history"></i>
+            <p>Pilih masjid untuk melihat riwayat order</p>
+        </div>
+    </div>
 </div>
 
 <!-- Assign Technician Popup -->
 <div class="popup popup-lg" id="assignTechPopup">
     <div class="popup-header">
-        <h3><i class="fas fa-user-hard-hat"></i> Tugaskan Teknisi</h3>
+        <div class="popup-title-group">
+            <h3><i class="fas fa-user-hard-hat"></i> Tugaskan Teknisi</h3>
+            <p class="popup-kicker">Pilih teknisi yang akan menangani pekerjaan di lapangan</p>
+        </div>
         <button class="popup-close" onclick="closePopup('assignTechPopup')">&times;</button>
     </div>
     <div class="popup-body">
         <input type="hidden" id="assignTechOrderId">
-        <div class="info-banner">
-            <i class="fas fa-info-circle"></i>
-            <span id="assignTechOrderInfo">Order: -</span>
+
+        {{-- Order Context Card --}}
+        <div class="order-context-card">
+            <div class="order-context-header">
+                <i class="fas fa-clipboard-list"></i>
+                <span>Order yang akan ditugaskan</span>
+            </div>
+            <div class="order-context-details" id="assignTechOrderInfo">
+                <div class="ocd-row">
+                    <span class="ocd-label">No. Order</span>
+                    <span class="ocd-value" id="assignTechOrderNumber">-</span>
+                </div>
+                <div class="ocd-row">
+                    <span class="ocd-label">Masjid</span>
+                    <span class="ocd-value" id="assignTechMasjidName">-</span>
+                </div>
+                <div class="ocd-row">
+                    <span class="ocd-label">Status</span>
+                    <span class="ocd-value" id="assignTechStatus">-</span>
+                </div>
+            </div>
         </div>
-        <div class="form-group" style="margin-top:1rem;">
-            <label class="form-label" for="technicianSelect">Pilih Teknisi <span class="required">*</span></label>
-            <select id="technicianSelect" class="form-select">
-                <option value="">Memuat daftar teknisi...</option>
-            </select>
-        </div>        <div class="form-group" style="margin-top:0.75rem;">
-            <label class="form-label">Catatan untuk teknisi</label>
-            <textarea id="assignTechNotes" class="form-textarea" rows="3" placeholder="Instruksi tambahan..."></textarea>
+
+        {{-- Technician Selection --}}
+        <div class="popup-section">
+            <div class="popup-section-title">
+                <i class="fas fa-users"></i> Pilih Teknisi
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="technicianSelect">Teknisi yang tersedia <span class="required">*</span></label>
+                <select id="technicianSelect" class="form-select">
+                    <option value="">Memuat daftar teknisi...</option>
+                </select>
+                <small class="form-hint">Hanya teknisi aktif yang ditampilkan</small>
+            </div>
         </div>
+
+        {{-- Notes --}}
+        <div class="popup-section">
+            <div class="popup-section-title">
+                <i class="fas fa-sticky-note"></i> Catatan Tambahan
+            </div>
+            <div class="form-group">
+                <textarea id="assignTechNotes" class="form-textarea" rows="3" placeholder="Instruksi khusus untuk teknisi (opsional)..."></textarea>
+                <small class="form-hint">Tambahkan detail lokasi, akses masuk, atau informasi penting lainnya</small>
+            </div>
+        </div>
+
         <div class="popup-actions">
             <button class="btn btn-primary" onclick="submitAssignTech()">
-                <i class="fas fa-paper-plane"></i> Tugaskan
+                <i class="fas fa-paper-plane"></i> Tugaskan Teknisi
             </button>
             <button class="btn btn-secondary" onclick="closePopup('assignTechPopup')">
                 Batal
@@ -821,47 +909,67 @@
 </div>
 
 <!-- Popup Konfirmasi Ganti Order Lama -->
-<div class="popup" id="replaceConfirmPopup" style="max-width:480px;z-index:500">
+<div class="popup" id="replaceConfirmPopup" style="max-width:520px;z-index:1000">
     <div class="popup-header">
-        <h3><i class="fas fa-exclamation-triangle" style="color:var(--warning)"></i> &nbsp;Order Aktif Sudah Ada!</h3>
+        <div class="popup-title-group">
+            <h3><i class="fas fa-exclamation-triangle" style="color:var(--warning)"></i> Order Aktif Sudah Ada!</h3>
+            <p class="popup-kicker">Masjid ini memiliki service order yang belum selesai</p>
+        </div>
         <button class="popup-close" onclick="closePopup('replaceConfirmPopup')">&times;</button>
     </div>
     <div class="popup-body">
 
-        {{-- Info order lama --}}
-        <div style="background:var(--warning-soft);border:1.5px solid var(--warning);border-radius:var(--radius);padding:1rem;margin-bottom:1.1rem">
-            <div style="font-size:0.78rem;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.6rem">
-                <i class="fas fa-clipboard-list"></i> &nbsp;Order yang sudah ada:
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid rgba(0,0,0,0.06)">
-                <span style="font-size:0.82rem;color:#92400e">No. Order</span>
-                <strong class="order-num" id="rcOrderNumber" style="color:var(--primary)"></strong>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid rgba(0,0,0,0.06)">
-                <span style="font-size:0.82rem;color:#92400e">Status</span>
-                <strong id="rcStatus"></strong>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:0.3rem 0">
-                <span style="font-size:0.82rem;color:#92400e">Tgl. Servis</span>
-                <span style="font-size:0.82rem;font-weight:600" id="rcServiceDate"></span>
+        {{-- Warning Banner --}}
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div>
+                <strong>Perhatian!</strong> Tindakan ini akan menghapus order lama secara permanen.
             </div>
         </div>
 
-        <p style="font-size:0.875rem;color:var(--text-muted);margin-bottom:1.35rem;line-height:1.6">
-            Masjid ini sudah punya service order aktif. Apakah ingin
-            <strong style="color:var(--danger)">menghapus order lama</strong>
-            dan menggantinya dengan order baru yang baru saja kamu buat?
-        </p>
+        {{-- Info order lama --}}
+        <div class="order-context-card" style="border-color:var(--warning);background:var(--warning-soft)">
+            <div class="order-context-header" style="color:var(--warning)">
+                <i class="fas fa-clipboard-list"></i>
+                <span>Order yang sudah ada</span>
+            </div>
+            <div class="order-context-details">
+                <div class="ocd-row">
+                    <span class="ocd-label">No. Order</span>
+                    <strong class="ocd-value" id="rcOrderNumber" style="color:var(--primary)">-</strong>
+                </div>
+                <div class="ocd-row">
+                    <span class="ocd-label">Status</span>
+                    <span class="ocd-value" id="rcStatus">-</span>
+                </div>
+                <div class="ocd-row">
+                    <span class="ocd-label">Tgl. Servis</span>
+                    <span class="ocd-value" id="rcServiceDate">-</span>
+                </div>
+            </div>
+        </div>
+
+        {{-- Consequences --}}
+        <div class="consequences-list">
+            <div class="consequences-title">
+                <i class="fas fa-info-circle"></i> Yang akan terjadi:
+            </div>
+            <ul>
+                <li>Order lama <strong>akan dihapus</strong> dari sistem</li>
+                <li>Order baru <strong>akan dibuat</strong> dengan data yang baru saja kamu input</li>
+                <li>Riwayat order lama <strong>tetap tersimpan</strong> di arsip</li>
+            </ul>
+        </div>
 
         {{-- Tombol --}}
-        <div style="display:flex;flex-direction:column;gap:0.6rem">
+        <div class="popup-actions" style="flex-direction:column;gap:0.6rem">
             <button class="btn btn-danger"
-                    style="width:100%;justify-content:center;padding:0.75rem;font-size:0.95rem;font-weight:700"
+                    style="width:100%;justify-content:center;padding:0.85rem;font-size:0.95rem;font-weight:700"
                     onclick="confirmReplaceOrder()">
                 <i class="fas fa-sync-alt"></i> &nbsp;Ya, Hapus Order Lama &amp; Buat Baru
             </button>
             <button class="btn btn-secondary"
-                    style="width:100%;justify-content:center;padding:0.65rem;font-size:0.875rem"
+                    style="width:100%;justify-content:center;padding:0.75rem;font-size:0.875rem"
                     onclick="cancelReplaceOrder()">
                 <i class="fas fa-arrow-left"></i> &nbsp;Tidak, Kembali &amp; Biarkan Order Lama
             </button>
@@ -873,13 +981,15 @@
 <!-- Account Manager Confirmation Modal -->
 <div class="popup confirm-modal" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
     <div class="popup-header">
-        <h3 id="confirmModalTitle">
-            <span class="confirm-icon" id="confirmModalIcon" aria-hidden="true">
-                <i class="fas fa-check-circle"></i>
-            </span>
-            <span id="confirmModalHeading">Konfirmasi Aksi</span>
-        </h3>
-        {{-- Tombol close dihapus untuk manager --}}
+        <div class="popup-title-group" style="text-align:center;justify-content:center;width:100%">
+            <h3 id="confirmModalTitle">
+                <span class="confirm-icon" id="confirmModalIcon" aria-hidden="true">
+                    <i class="fas fa-check-circle"></i>
+                </span>
+                <span id="confirmModalHeading">Konfirmasi Aksi</span>
+            </h3>
+            <p class="popup-kicker" id="confirmModalKicker" style="display:none"></p>
+        </div>
         @if(!auth()->user()->isManager())
         <button class="popup-close" onclick="closeConfirmModal()" aria-label="Tutup modal">
             <i class="fas fa-times" aria-hidden="true"></i>
@@ -920,39 +1030,79 @@
 <!-- Field Report Popup (Technician) -->
 <div class="popup popup-lg" id="fieldReportPopup">
     <div class="popup-header">
-        <h3><i class="fas fa-clipboard-check"></i> Laporan Pekerjaan Lapangan</h3>
+        <div class="popup-title-group">
+            <h3><i class="fas fa-clipboard-check"></i> Laporan Pekerjaan Lapangan</h3>
+            <p class="popup-kicker">Laporkan pekerjaan yang telah dilakukan di lokasi</p>
+        </div>
         <button class="popup-close" onclick="closePopup('fieldReportPopup')">&times;</button>
     </div>
     <div class="popup-body">
         <form id="fieldReportForm">
             <input type="hidden" id="fieldReportOrderId">
 
-            <div class="form-group">
-                <label class="form-label">Laporan Pekerjaan <span class="required">*</span></label>
-                <textarea id="fieldReportNotes" class="form-textarea" rows="4" placeholder="Jelaskan pekerjaan yang dilakukan di lapangan..." required></textarea>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Biaya Tambahan (Rp)</label>
-                <input type="number" id="fieldReportAdditionalFee" class="form-input" placeholder="0" min="0" value="0">
-                <small class="text-muted">Isi jika ada biaya ekstra (misal: perbaikan leak freon, ganti sparepart, dll)</small>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Alat/Bahan Tambahan</label>
-                <div id="toolsMaterialsList">
-                    <div class="tools-material-row">
-                        <input type="text" name="tm_name[]" class="form-input" placeholder="Nama alat/bahan">
-                        <input type="number" name="tm_quantity[]" class="form-input" placeholder="Qty" min="1" value="1">
-                        <input type="number" name="tm_price[]" class="form-input" placeholder="Harga">
-                        <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('.tools-material-row').remove()">
-                            <i class="fas fa-times"></i>
-                        </button>
+            {{-- Order Context --}}
+            <div class="order-context-card" id="fieldReportOrderContext">
+                <div class="order-context-header">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>Order yang sedang dikerjakan</span>
+                </div>
+                <div class="order-context-details">
+                    <div class="ocd-row">
+                        <span class="ocd-label">No. Order</span>
+                        <span class="ocd-value" id="fieldReportOrderNumber">-</span>
+                    </div>
+                    <div class="ocd-row">
+                        <span class="ocd-label">Status</span>
+                        <span class="ocd-value"><span class="status-badge status-in_progress">Sedang Dikerjakan</span></span>
                     </div>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline" onclick="addToolMaterialRow()">
-                    <i class="fas fa-plus"></i> Tambah Alat/Bahan
-                </button>
+            </div>
+
+            {{-- Laporan --}}
+            <div class="popup-section">
+                <div class="popup-section-title">
+                    <i class="fas fa-pen-to-square"></i> Laporan Pekerjaan
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Deskripsi pekerjaan yang dilakukan <span class="required">*</span></label>
+                    <textarea id="fieldReportNotes" class="form-textarea" rows="4" placeholder="Jelaskan pekerjaan yang dilakukan di lapangan..." required></textarea>
+                    <small class="form-hint">Contoh: Cuci AC 3 unit, ganti kapasitor 1 unit, tambah freon 2 unit</small>
+                </div>
+            </div>
+
+            {{-- Biaya Tambahan --}}
+            <div class="popup-section">
+                <div class="popup-section-title">
+                    <i class="fas fa-coins"></i> Biaya Tambahan
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nominal biaya tambahan (Rp)</label>
+                    <input type="number" id="fieldReportAdditionalFee" class="form-input" placeholder="0" min="0" value="0">
+                    <small class="form-hint">Isi jika ada biaya ekstra (misal: perbaikan leak freon, ganti sparepart, dll)</small>
+                </div>
+            </div>
+
+            {{-- Alat/Bahan --}}
+            <div class="popup-section">
+                <div class="popup-section-title">
+                    <i class="fas fa-toolbox"></i> Alat & Bahan Tambahan
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Daftar alat atau bahan yang digunakan</label>
+                    <div id="toolsMaterialsList">
+                        <div class="tools-material-row">
+                            <input type="text" name="tm_name[]" class="form-input" placeholder="Nama alat/bahan">
+                            <input type="number" name="tm_quantity[]" class="form-input" placeholder="Qty" min="1" value="1">
+                            <input type="number" name="tm_price[]" class="form-input" placeholder="Harga">
+                            <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('.tools-material-row').remove()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline" onclick="addToolMaterialRow()">
+                        <i class="fas fa-plus"></i> Tambah Alat/Bahan
+                    </button>
+                </div>
             </div>
 
             <div class="popup-actions">
@@ -970,15 +1120,46 @@
 <!-- Additional Fee Approval Popup (Manager) -->
 <div class="popup popup-lg" id="additionalFeeApprovalPopup">
     <div class="popup-header">
-        <h3><i class="fas fa-coins"></i> Persetujuan Biaya Tambahan</h3>
+        <div class="popup-title-group">
+            <h3><i class="fas fa-coins"></i> Persetujuan Biaya Tambahan</h3>
+            <p class="popup-kicker">Review dan setujui biaya tambahan yang diajukan teknisi</p>
+        </div>
         <button class="popup-close" onclick="closePopup('additionalFeeApprovalPopup')">&times;</button>
     </div>
     <div class="popup-body">
-        <div id="additionalFeeInfo" class="info-banner"></div>
+        <input type="hidden" id="approveAdditionalFeeOrderId">
 
-        <div class="form-group">
-            <label class="form-label">Catatan Persetujuan</label>
-            <textarea id="approvalNotes" class="form-textarea" rows="2" placeholder="Catatan opsional..."></textarea>
+        {{-- Order Context --}}
+        <div class="order-context-card" id="additionalFeeOrderContext">
+            <div class="order-context-header">
+                <i class="fas fa-clipboard-list"></i>
+                <span>Detail pengajuan biaya</span>
+            </div>
+            <div class="order-context-details" id="additionalFeeInfo">
+                <div class="ocd-row">
+                    <span class="ocd-label">No. Order</span>
+                    <span class="ocd-value" id="additionalFeeOrderNumber">-</span>
+                </div>
+                <div class="ocd-row">
+                    <span class="ocd-label">Masjid</span>
+                    <span class="ocd-value" id="additionalFeeMasjidName">-</span>
+                </div>
+                <div class="ocd-row">
+                    <span class="ocd-label">Biaya Tambahan</span>
+                    <span class="ocd-value" id="additionalFeeAmount" style="color:var(--warning);font-weight:700">-</span>
+                </div>
+            </div>
+        </div>
+
+        {{-- Approval Notes --}}
+        <div class="popup-section">
+            <div class="popup-section-title">
+                <i class="fas fa-sticky-note"></i> Catatan Persetujuan
+            </div>
+            <div class="form-group">
+                <textarea id="approvalNotes" class="form-textarea" rows="2" placeholder="Catatan opsional..."></textarea>
+                <small class="form-hint">Tambahkan catatan jika diperlukan (opsional)</small>
+            </div>
         </div>
 
         <div class="popup-actions">
@@ -993,16 +1174,40 @@
 </div>
 
 <!-- Dual Confirmation Popup -->
-<div class="popup" id="dualConfirmPopup">
+<div class="popup" id="dualConfirmPopup" style="max-width:520px">
     <div class="popup-header">
-        <h3><i class="fas fa-check-double"></i> Konfirmasi Order Selesai</h3>
+        <div class="popup-title-group">
+            <h3><i class="fas fa-check-double" style="color:var(--success)"></i> Konfirmasi Order Selesai</h3>
+            <p class="popup-kicker">Pastikan semua pekerjaan telah selesai dan diverifikasi</p>
+        </div>
         <button class="popup-close" onclick="closePopup('dualConfirmPopup')">&times;</button>
     </div>
     <div class="popup-body">
-        <p id="dualConfirmMessage"></p>
+
+        {{-- Checklist --}}
+        <div class="completion-checklist">
+            <div class="checklist-title">
+                <i class="fas fa-clipboard-check"></i> Sebelum konfirmasi, pastikan:
+            </div>
+            <ul>
+                <li>Semua unit AC telah diservis sesuai order</li>
+                <li>Laporan pekerjaan sudah diisi dengan lengkap</li>
+                <li>Foto dokumentasi sudah diunggah</li>
+                <li>Biaya tambahan (jika ada) sudah dicatat</li>
+            </ul>
+        </div>
+
+        <div class="alert alert-info" id="dualConfirmContext" style="display:none">
+            <i class="fas fa-info-circle"></i>
+            <span id="dualConfirmMessage"></span>
+        </div>
+        <p id="dualConfirmMessageFallback" style="color:var(--text-muted);font-size:0.875rem;margin-bottom:1rem">
+            Konfirmasi bahwa service order telah selesai dan siap untuk tahap berikutnya?
+        </p>
+
         <div class="popup-actions">
-            <button class="btn btn-primary" onclick="submitDualConfirmation()">
-                <i class="fas fa-check"></i> Konfirmasi
+            <button class="btn btn-success" onclick="submitDualConfirmation()">
+                <i class="fas fa-check"></i> Ya, Konfirmasi Selesai
             </button>
             <button class="btn btn-secondary" onclick="closePopup('dualConfirmPopup')">
                 Batal
@@ -1029,6 +1234,10 @@ window.ROUTES_MON = {
     soHistory: (id) => `/masjid/${id}/history`,
     spk: (id) => `/service-order/${id}/spk`,
     invoice: (id) => `/service-order/${id}/invoice`,
+    workflowCreateSpkInvoice: (id) => `/service-order/${id}/create-spk-invoice`,
+    workflowConfirmPayment: (id) => `/service-order/${id}/confirm-payment`,
+    workflowFinalizeOrder: (id) => `/service-order/${id}/finalize-order`,
+    workflowApproveSpkInvoice: (id) => `/workflow/${id}/approve-spk-invoice`,
     workflowBase: "{{ url('/workflow') }}",
     workflowTechnicians: "{{ route('workflow.technicians') }}",
 };

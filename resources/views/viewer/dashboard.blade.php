@@ -19,48 +19,106 @@
 
     <div class="summary-grid">
         <div class="summary-card">
-            <div class="summary-content">
+            <div class="summary-icon bg-info">
+                <i class="fas fa-mosque"></i>
+            </div>
+            <div>
                 <div class="summary-num">{{ $totalMasjid }}</div>
-                <div class="summary-label">Masjids</div>
+                <div class="summary-label">Masjid/Musholla</div>
             </div>
         </div>
         <div class="summary-card">
-            <div class="summary-content">
+            <div class="summary-icon bg-primary">
+                <i class="fas fa-clipboard-list"></i>
+            </div>
+            <div>
                 <div class="summary-num">{{ $totalOrders }}</div>
-                <div class="summary-label">Orders</div>
+                <div class="summary-label">Total Orders</div>
             </div>
         </div>
         <div class="summary-card">
-            <div class="summary-content">
+            <div class="summary-icon bg-danger">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div>
                 <div class="summary-num">{{ $overdueMasjids }}</div>
-                <div class="summary-label">Overdue Masjids</div>
+                <div class="summary-label">Overdue</div>
             </div>
         </div>
     </div>
 
     <div class="table-container">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Order</th>
-                    <th>Masjid</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($recentOrders as $order)
+        <div class="card-header" style="padding: 16px 20px; border-bottom: 1px solid var(--border);">
+            <h3 style="font-size: 0.9375rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-clock" style="color: var(--primary);"></i> Order Terbaru
+            </h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="data-table">
+                <thead>
                     <tr>
-                        <td>{{ $order->order_number }}</td>
-                        <td>{{ $order->masjid?->name }}</td>
-                        <td>{{ $order->status }}</td>
+                        <th>Order Number</th>
+                        <th>Masjid</th>
+                        <th>Tanggal Service</th>
+                        <th>Status</th>
                     </tr>
-                @empty
+                </thead>
+                <tbody>
+                    @forelse($recentOrders as $order)
                     <tr>
-                        <td colspan="3">Belum ada order terbaru.</td>
+                        <td>
+                            <span class="order-num">{{ $order->order_number }}</span>
+                        </td>
+                        <td>
+                            <div style="font-weight: 500;">{{ $order->masjid?->name }}</div>
+                            @if($order->masjid?->address)
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ Str::limit($order->masjid->address, 40) }}</div>
+                            @endif
+                        </td>
+                        <td>
+                            <div style="font-size: 0.8125rem;">{{ $order->service_date?->format('d M Y') }}</div>
+                        </td>
+                        <td>
+                            @php
+                                $statusLabels = \App\Models\ServiceOrder::STATUS_LABELS;
+                                $label = $statusLabels[$order->status] ?? ucfirst($order->status);
+                                $isCompleted = in_array($order->status, ['completed', 'cancelled']);
+                                $isActive = in_array($order->status, [
+                                    'pending_review',
+                                    'approved',
+                                    'spk_invoice_created',
+                                    'waiting_payment',
+                                    'payment_verified',
+                                    'technician_assigned',
+                                    'in_progress',
+                                    'waiting_review',
+                                ]);
+                            @endphp
+                            @if(in_array($order->status, ['pending_review', 'approved', 'spk_invoice_created'], true))
+                                <span class="status-badge status-pending"><i class="fas fa-file-alt"></i> {{ $label }}</span>
+                            @elseif($isActive)
+                                <span class="status-badge" style="background: var(--primary-soft); color: var(--primary);"><i class="fas fa-spinner"></i> {{ $label }}</span>
+                            @elseif($isCompleted)
+                                <span class="status-badge" style="background: var(--success-bg); color: var(--success);"><i class="fas fa-check"></i> {{ $label }}</span>
+                            @else
+                                <span class="status-badge" style="background: var(--warning-bg); color: var(--warning);"><i class="fas fa-clock"></i> {{ $label }}</span>
+                            @endif
+                        </td>
                     </tr>
-                @endforelse
-            </tbody>
-        </table>
+                    @empty
+                    <tr>
+                        <td colspan="4">
+                            <div class="empty-state">
+                                <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+                                <h3>Belum ada order</h3>
+                                <p>Order service akan muncul di sini</p>
+                            </div>
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 </div>
@@ -72,17 +130,13 @@ window.PAGE_SYNC_CONFIG = {
     rootSelector: '#viewerSyncRoot',
     snapshotRoute: '{{ route("viewer.snapshot") }}',
 };
-</script>
-@endpush
 
-// Manual refresh function for viewer dashboard (replaces auto-sync)
 function manualRefreshViewer() {
     const btn = event.currentTarget;
     const originalHtml = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-sync fa-spin"></i> Memuat...';
     btn.disabled = true;
 
-    // Trigger manual snapshot refresh
     window.refreshCurrentPageSnapshot()
         .then(() => {
             showToast('Data berhasil diperbarui!', 'success');
@@ -96,3 +150,5 @@ function manualRefreshViewer() {
             btn.disabled = false;
         });
 }
+</script>
+@endpush

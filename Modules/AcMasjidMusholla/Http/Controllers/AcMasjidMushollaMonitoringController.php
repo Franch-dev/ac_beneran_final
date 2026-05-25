@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AcUnit;
 use App\Models\Masjid;
 use App\Models\ServiceOrder;
+use App\Support\ApiResponse;
 use App\Support\SqlDateExpressions;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -27,14 +28,26 @@ class AcMasjidMushollaMonitoringController extends Controller
     {
         $data = $this->buildMonitoringViewData($request);
 
-        return response()->json($data);
+        return ApiResponse::raw($data);
     }
 
     protected function buildMonitoringViewData(Request $request): array
     {
         try {
             $query = ServiceOrder::query()
-                ->select(['id', 'masjid_id', 'order_number', 'service_date', 'status', 'created_at'])
+                ->select([
+                    'id',
+                    'masjid_id',
+                    'order_number',
+                    'service_date',
+                    'status',
+                    'created_at',
+                    'field_report_notes',
+                    'field_report_additional_fee',
+                    'manager_approved_additional_fee',
+                    'frontdesk_confirmed_complete',
+                    'manager_confirmed_complete',
+                ])
                 ->with([
                     'masjid:id,custom_id,name',
                     'masjid.acUnits:id,masjid_id,quantity,last_service_date',

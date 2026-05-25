@@ -3,26 +3,41 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class ServiceOrder extends Model
 {
+    use HasFactory;
+
     public const ACTIVE_STATUSES = [
+        'pending_review',
         'spk_invoice_created',
         'approved',
+        'spk_invoice_approved',
         'waiting_payment',
         'payment_verified',
+        'technician_assigned',
         'in_progress',
+        'work_completed',
+        'pending_fee_approval',
+        'fee_approved',
         'waiting_review',
         'completed',
     ];
 
     public const STATUS_LABELS = [
-        'spk_invoice_created' => 'Order Dibuat (SPK & Invoice)',
+        'pending_review' => 'Menunggu Persetujuan Manager',
+        'spk_invoice_created' => 'SPK & Invoice Dibuat',
         'approved' => 'Disetujui Manager',
+        'spk_invoice_approved' => 'SPK & Invoice Disetujui',
         'waiting_payment' => 'Menunggu Pembayaran',
         'payment_verified' => 'Pembayaran Terverifikasi',
+        'technician_assigned' => 'Teknisi Ditugaskan',
         'in_progress' => 'Sedang Dikerjakan',
+        'work_completed' => 'Pekerjaan Selesai',
+        'pending_fee_approval' => 'Menunggu Persetujuan Biaya',
+        'fee_approved' => 'Biaya Disetujui',
         'waiting_review' => 'Menunggu Review Akhir',
         'completed' => 'Selesai',
         'cancelled' => 'Dibatalkan',
@@ -33,6 +48,7 @@ class ServiceOrder extends Model
     protected $fillable = [
         'masjid_id', 'order_number', 'meeting_person',
         'phone', 'service_date', 'notes', 'status',
+        'archived_at',
         // Field report fields
         'field_report_notes', 'field_report_additional_fee', 'field_report_tools_materials', 'field_report_submitted_at',
         // Additional fee approval
@@ -44,7 +60,9 @@ class ServiceOrder extends Model
 
     protected $casts = [
         'service_date' => 'date',
+        'archived_at' => 'datetime',
         'field_report_additional_fee' => 'decimal:2',
+        'field_report_tools_materials' => 'array',
         'manager_approved_additional_fee' => 'boolean',
         'frontdesk_confirmed_complete' => 'boolean',
         'manager_confirmed_complete' => 'boolean',
@@ -91,7 +109,9 @@ class ServiceOrder extends Model
 
     public function scopeActive(Builder $query): Builder
     {
-        return $query->whereIn('status', self::activeStatuses());
+        return $query
+            ->whereNull('archived_at')
+            ->whereIn('status', self::activeStatuses());
     }
 
     public static function activeStatuses(): array
@@ -110,7 +130,8 @@ class ServiceOrder extends Model
 
     public function isActive(): bool
     {
-        return in_array($this->status, self::activeStatuses(), true);
+        return is_null($this->archived_at)
+            && in_array($this->status, self::activeStatuses(), true);
     }
 
     public static function generateOrderNumber(): string
@@ -126,7 +147,8 @@ class ServiceOrder extends Model
 
     public function isExpired(): bool
     {
-        return $this->service_date < now()->toDateString() && $this->status === 'spk_invoice_created';
+        return $this->service_date < now()->toDateString()
+            && in_array($this->status, ['pending_review', 'approved', 'spk_invoice_created'], true);
     }
 
     public function hasFieldReport(): bool
@@ -183,12 +205,12 @@ class ServiceOrder extends Model
 
     public function needsSpkInvoiceCreation(): bool
     {
-        return false; // SPK is created when order is created
+        return $this->status === 'approved' && ! $this->invoice;
     }
 
     public function needsSpkInvoiceApproval(): bool
     {
-        return $this->status === 'spk_invoice_created';
+        return $this->status === 'spk_invoice_created' && (bool) $this->invoice;
     }
 
     public function needsTechnicianReport(): bool

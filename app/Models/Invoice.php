@@ -8,7 +8,23 @@ class Invoice extends Model
 {
     protected $connection = 'ac_service';
 
-    protected $fillable = ['service_order_id', 'invoice_number', 'total_price', 'payment_verified_at'];
+    protected $fillable = [
+        'service_order_id',
+        'invoice_number',
+        'total_price',
+        'payment_method',
+        'payment_verified_at',
+        'payment_verified_by',
+        'payment_verified_by_name',
+        'payment_notes',
+        'payment_metadata',
+    ];
+
+    protected $casts = [
+        'total_price' => 'decimal:2',
+        'payment_verified_at' => 'datetime',
+        'payment_metadata' => 'array',
+    ];
 
     public function serviceOrder()
     {

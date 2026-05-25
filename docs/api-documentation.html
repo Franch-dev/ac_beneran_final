@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Documentation — AC Beneran System</title>
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-light: #3b82f6;
+    --primary-dark: #1d4ed8;
+    --bg: #0f172a;
+    --bg-card: #1e293b;
+    --bg-code: #0f172a;
+    --surface: #334155;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --text-heading: #f8fafc;
+    --border: #334155;
+    --success: #22c55e;
+    --error: #ef4444;
+    --warning: #f59e0b;
+    --info: #3b82f6;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --transition: all 0.2s ease;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  /* ── Layout ───────────────────────────────── */
+  .layout { display: flex; min-height: 100vh; }
+
+  /* ── Sidebar ──────────────────────────────── */
+  .sidebar {
+    width: 280px;
+    background: var(--bg-card);
+    border-right: 1px solid var(--border);
+    padding: 24px 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 100;
+    transition: var(--transition);
+  }
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--surface); border-radius: 4px; }
+
+  .sidebar-header {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .sidebar-header h1 {
+    font-size: 16px;
+    color: var(--text-heading);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sidebar-header .badge {
+    font-size: 10px;
+    background: var(--primary);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+  .sidebar-header .version {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .nav-group { margin-bottom: 8px; }
+  .nav-group-title {
+    padding: 8px 20px 4px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 20px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    transition: var(--transition);
+    border-left: 2px solid transparent;
+  }
+  .nav-link:hover {
+    color: var(--text);
+    background: rgba(255,255,255,0.04);
+  }
+  .nav-link.active {
+    color: var(--primary-light);
+    border-left-color: var(--primary);
+    background: rgba(37,99,235,0.08);
+  }
+
+  /* ── Main Content ─────────────────────────── */
+  .main {
+    margin-left: 280px;
+    flex: 1;
+    padding: 40px 48px 80px;
+    max-width: 960px;
+  }
+
+  .section {
+    margin-bottom: 48px;
+    scroll-margin-top: 24px;
+  }
+
+  .section-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-heading);
+    margin-bottom: 8px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--primary);
+    display: inline-block;
+  }
+
+  .section-desc {
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    font-size: 14px;
+  }
+
+  /* ── Cards ───────────────────────────────── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    overflow: hidden;
+    transition: var(--transition);
+  }
+  .card:hover { border-color: var(--surface); }
+  .card-header {
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .card-endpoint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .method {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 48px;
+    text-align: center;
+  }
+  .method.get { background: rgba(59,130,246,0.15); color: #60a5fa; }
+  .method.post { background: rgba(34,197,94,0.15); color: #4ade80; }
+  .method.put { background: rgba(245,158,11,0.15); color: #fbbf24; }
+  .method.delete { background: rgba(239,68,68,0.15); color: #f87171; }
+
+  .endpoint-path {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 13px;
+    color: var(--text);
+    word-break: break-all;
+  }
+  .card-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .card-body { padding: 0 20px 16px; display: none; }
+  .card.expanded .card-body { display: block; }
+  .expand-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: var(--transition);
+  }
+  .expand-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+
+  /* ── Code blocks ─────────────────────────── */
+  pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    overflow-x: auto;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 12px 0;
+  }
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 13px;
+  }
+  .hljs-string { color: #a5d6ff; }
+  .hljs-keyword { color: #c792ea; }
+  .hljs-number { color: #f78c6c; }
+  .hljs-comment { color: #546e7a; font-style: italic; }
+
+  /* ── Tables ──────────────────────────────── */
+  .table-wrap { overflow-x: auto; margin: 12px 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th, td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    background: rgba(255,255,255,0.03);
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  td { color: var(--text); }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .tag-required { background: rgba(239,68,68,0.12); color: #f87171; }
+  .tag-optional { background: rgba(148,163,184,0.12); color: #94a3b8; }
+  .tag-auth { background: rgba(245,158,11,0.12); color: #fbbf24; }
+  .tag-guest { background: rgba(34,197,94,0.12); color: #4ade80; }
+
+  /* ── Status badges ────────────────────────── */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+  .status-200 { background: rgba(34,197,94,0.1); color: #4ade80; }
+  .status-4xx { background: rgba(245,158,11,0.1); color: #fbbf24; }
+  .status-5xx { background: rgba(239,68,68,0.1); color: #f87171; }
+
+  /* ── Flow diagram ─────────────────────────── */
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 20px;
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin: 16px 0;
+  }
+  .flow-step {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg-card);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid var(--surface);
+  }
+  .flow-step .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .flow-arrow { color: var(--text-muted); font-size: 16px; }
+
+  .dot-pending { background: #f59e0b; }
+  .dot-active { background: #3b82f6; }
+  .dot-success { background: #22c55e; }
+  .dot-done { background: #6b7280; }
+
+  /* ── Scrollbar ───────────────────────────── */
+  .main::-webkit-scrollbar { width: 6px; }
+  .main::-webkit-scrollbar-thumb { background: var(--surface); border-radius: 4px; }
+
+  /* ── Responsive ──────────────────────────── */
+  @media (max-width: 768px) {
+    .sidebar { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--border); padding: 16px 0; }
+    .main { margin-left: 0; padding: 24px 16px; }
+    .flow { flex-direction: column; align-items: flex-start; }
+    .flow-arrow { transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- ═══ Sidebar ═══ -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <h1>📋 API Docs <span class="badge">v1.0</span></h1>
+      <div class="version">AC Beneran System</div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Overview</div>
+      <a href="#standard" class="nav-link active">📐 Response Standard</a>
+      <a href="#status-codes" class="nav-link">🔢 Status Codes</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Public</div>
+      <a href="#guest" class="nav-link">🔓 Guest Endpoints</a>
+      <a href="#guest-order" class="nav-link">📝 Guest Order</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Authenticated</div>
+      <a href="#dashboard" class="nav-link">📊 Dashboard</a>
+      <a href="#masjid" class="nav-link">🕌 Masjid</a>
+      <a href="#ac-units" class="nav-link">❄️ AC Units</a>
+      <a href="#anggota" class="nav-link">👥 Anggota</a>
+      <a href="#service-orders" class="nav-link">📋 Service Orders</a>
+      <a href="#workflow" class="nav-link">🛠 Workflow</a>
+      <a href="#payment" class="nav-link">💰 Payment</a>
+      <a href="#users" class="nav-link">👤 Users</a>
+      <a href="#monitoring" class="nav-link">📈 Monitoring</a>
+      <a href="#sync" class="nav-link">🔄 Real-time Sync</a>
+    </div>
+  </nav>
+
+  <!-- ═══ Main Content ═══ -->
+  <main class="main">
+
+    <!-- ── Response Standard ── -->
+    <section id="standard" class="section">
+      <h2 class="section-title">📐 Response Standard</h2>
+      <p class="section-desc">All JSON endpoints use a standardized response envelope via <code>App\Support\ApiResponse</code>.</p>
+
+      <div class="card expanded">
+        <div class="card-header">
+          <span class="card-desc"><strong>Success</strong> — <code>200 OK</code></span>
+          <span class="status-badge status-200">✓ 200</span>
+        </div>
+        <div class="card-body" style="display:block">
+          <pre>{
+  <span class="hljs-string">"success"</span>: <span class="hljs-keyword">true</span>,
+  <span class="hljs-string">"order"</span>: { <span class="hljs-string">"id"</span>: <span class="hljs-number">1</span>, <span class="hljs-string">"order_number"</span>: <span class="hljs-string">"SO-2024-0001"</span> },
+  <span class="hljs-string">"message"</span>: <span class="hljs-string">"Optional success message"</span>
+}</pre>
+        </div>
+      </div>
+
+      <div class="card expanded">
+        <div class="card-header">
+          <span class="card-desc"><strong>Error</strong> — <code>4xx</code></span>
+          <span class="status-badge status-4xx">⚠ 4xx</span>
+        </div>
+        <div class="card-body" style="display:block">
+          <pre>{
+  <span class="hljs-string">"success"</span>: <span class="hljs-keyword">false</span>,
+  <span class="hljs-string">"message"</span>: <span class="hljs-string">"Error description"</span>,
+  <span class="hljs-string">"errors"</span>: {
+    <span class="hljs-string">"field"</span>: [<span class="hljs-string">"Validation message"</span>]
+  }
+}</pre>
+        </div>
+      </div>
+
+      <div class="card expanded">
+        <div class="card-header">
+          <span class="card-desc"><strong>Snapshot</strong> — AJAX partial page refresh</span>
+          <span class="status-badge status-200">✓ 200</span>
+        </div>
+        <div class="card-body" style="display:block">
+          <pre>{
+  <span class="hljs-string">"html"</span>: <span class="hljs-string">"&lt;div&gt;...rendered HTML...&lt;/div&gt;"</span>
+}</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Status Codes ── -->
+    <section id="status-codes" class="section">
+      <h2 class="section-title">🔢 HTTP Status Codes</h2>
+      <p class="section-desc">Standard HTTP status codes used across all endpoints.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Code</th><th>Meaning</th><th>Usage</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="status-badge status-200">200</span></td><td>Success</td><td>Standard successful response</td></tr>
+            <tr><td><span class="status-badge status-200">201</span></td><td>Created</td><td>Resource created successfully</td></tr>
+            <tr><td><span class="status-badge status-4xx">403</span></td><td>Forbidden</td><td>Insufficient permissions</td></tr>
+            <tr><td><span class="status-badge status-4xx">404</span></td><td>Not Found</td><td>Resource doesn't exist</td></tr>
+            <tr><td><span class="status-badge status-4xx">409</span></td><td>Conflict</td><td>Existing active order</td></tr>
+            <tr><td><span class="status-badge status-4xx">422</span></td><td>Validation Error</td><td>Invalid input or business rule violation</td></tr>
+            <tr><td><span class="status-badge status-5xx">503</span></td><td>Service Unavailable</td><td>Database connection failure</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── Guest Endpoints ── -->
+    <section id="guest" class="section">
+      <h2 class="section-title">🔓 Guest / Public</h2>
+      <p class="section-desc">Endpoints accessible without authentication.</p>
+
+      <div class="card expanded">
+        <div class="card-header">
+          <div class="card-endpoint">
+            <span class="method get">GET</span>
+            <span class="endpoint-path">/</span>
+          </div>
+          <span class="tag tag-guest">guest</span>
+        </div>
+        <div class="card-body" style="display:block">
+          <p class="card-desc">Home landing page. Returns Blade view <code>home.blade.php</code>.</p>
+        </div>
+      </div>
+
+      <div class="card expanded">
+        <div class="card-header">
+          <div class="card-endpoint">
+            <span class="method get">GET</span>
+            <span class="endpoint-path">/login</span>
+          </div>
+          <span class="tag tag-guest">guest</span>
+        </div>
+        <div class="card-body" style="display:block">
+          <p class="card-desc">Login form view. Redirects authenticated users to home.</p>
+        </div>
+      </div>
+
+      <div class="card expanded">
+        <div class="card-header">
+          <div class="card-endpoint">
+            <span class="method post">POST</span>
+            <span class="endpoint-path">/login</span>
+          </div>
+          <span class="tag tag-guest">guest</span>
+        </div>
+        <div class="card-body" style="display:block">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Parameter</th><th>Type</th><th></th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td><code>email</code></td><td>string</td><td><span class="tag tag-required">required</span></td><td>User email</td></tr>
+                <tr><td><code>password</code></td><td>string</td><td><span class="tag tag-required">required</span></td><td>User password</td></tr>
+                <tr><td><code>remember</code></td><td>boolean</td><td><span class="tag tag-optional">optional</span></td><td>Remember session</td></tr>
+                <tr><td><code>redirect</code></td><td>string</td><td><span class="tag tag-optional">optional</span></td><td>Post-login redirect</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="card-desc" style="margin-top:8px"><strong>Response:</strong> Redirect (302) or back with errors.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Guest Order ── -->
+    <section id="guest-order" class="section">
+      <h2 class="section-title">📝 Guest Order</h2>
+      <p class="section-desc">Submit service orders without authentication.</p>
+
+      <div class="card expanded">
+        <div class="card-header">
+          <div class="card-endpoint">
+            <span class="method post">POST</span>
+            <span class="endpoint-path">/modules/ac-service/guest-order</span>
+          </div>
+          <span class="tag tag-guest">guest</span>
+        </div>
+        <div class="card-body" style="display:block">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Parameter</th><th>Type</th><th></th><th>Rules</th></tr></thead>
+              <tbody>
+                <tr><td><code>masjid_id</code></td><td>integer</td><td><span class="tag tag-required">required</span></td><td>Exists in <code>ac_service.masjids</code></td></tr>
+                <tr><td><code>meeting_person</code></td><td>string</td><td><span class="tag tag-required">required</span></td><td><code>dkm</code> or <code>marbot</code></td></tr>
+                <tr><td><code>phone</code></td><td>string</td><td><span class="tag tag-required">required</span></td><td>Max 20 chars</td></tr>
+                <tr><td><code>service_date</code></td><td>date</td><td><span class="tag tag-required">required</span></td><td>After or equal to today</td></tr>
+                <tr><td><code>notes</code></td><td>string</td><td><span class="tag tag-optional">optional</span></td><td>Max 1000 chars</td></tr>
+                <tr><td><code>details</code></td><td>array</td><td><span class="tag tag-required">required</span></td><td>Min 1 item</td></tr>
+                <tr><td><code>details.*.pk_type</code></td><td>string</td><td><span class="tag tag-required">required</span></td><td><code>1PK</code>, <code>2PK</code>, or <code>5PK</code></td></tr>
+                <tr><td><code>details.*.brand</code></td><td>string</td><td><span class="tag tag-required">required</span></td><td>Max 100 chars</td></tr>
+                <tr><td><code>details.*.quantity</code></td><td>integer</td><td><span class="tag tag-required">required</span></td><td>1–100</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="card-desc" style="margin-top:8px"><strong>Response:</strong> Redirect back with <code>success</code> flash or <code>errors</code>.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Dashboard ── -->
+    <section id="dashboard" class="section">
+      <h2 class="section-title">📊 Dashboard</h2>
+      <p class="section-desc">Authenticated dashboard with masjid/order overview.</p>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-endpoint">
+            <span class="method get">GET</span>
+            <span class="endpoint-path">/dashboard</span>
+          </div>
+          <button class="expand-btn" onclick="this.closest('.card').classList.toggle('expanded')">▼ Details</button>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Returns Blade view <code>dashboard.blade.php</code> with masjid snapshot and metrics.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-endpoint">
+            <span class="method get">GET</span>
+            <span class="endpoint-path">/dashboard/snapshot</span>
+          </div>
+          <button class="expand-btn" onclick="this.closest('.card').classList.toggle('expanded')">▼ Details</button>
+        </div>
+        <div class="card-body">
+          <pre>{
+  <span class="hljs-string">"html"</span>: <span class="hljs-string">"&lt;div&gt;...&lt;/div&gt;"</span>
+}</pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-endpoint">
+            <span class="method get">GET</span>
+            <span class="endpoint-path">/dashboard/status-counts</span>
+          </div>
+          <button class="expand-btn" onclick="this.closest('.card').classList.toggle('expanded')">▼ Details</button>
+        </div>
+        <div class="card-body">
+          <pre>{
+  <span class="hljs-string">"success"</span>: <span class="hljs-keyword">true</span>,
+  <span class="hljs-string">"total_masjid"</span>: <span class="hljs-number">50</span>,
+  <span class="hljs-string">"total_units"</span>: <span class="hljs-number">120</span>,
+  <span class="hljs-string">"active_orders"</span>: <span class="hljs-number">8</span>,
+  <span class="hljs-string">"overdue_locations"</span>: <span class="hljs-number">3</span>,
+  <span class="hljs-string">"needs_attention_locations"</span>: <span class="hljs-number">7</span>
+}</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Masjid ── -->
+    <section id="masjid" class="section">
+      <h2 class="section-title">🕌 Masjid Management</h2>
+      <p class="section-desc">CRUD for masjid/musholla locations.</p>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-endpoint">
+            <span class="method post">POST</span>
+            <span class="endpoint-path">/api/masjids</span>
+          </div>
+          <button class="expand-btn" onclick="this.closest('.card').classList.toggle('expanded')">▼ Details</button>
+        </div>
+        <div class="card-body">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Parameter</th><th>Type</th><th></th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td><code>name</code></td><td>string</td><td><span class="tag tag-required">required</span></td><td>Masjid name</td></tr>
+                <tr><td><code>address</code></td><td>string</td><td><span class="tag tag-required">required</span></td><td>Full address</td></tr>
+                <tr><td><code>type</code></td><td>string</td><td><span class="tag tag-required">required</span></td><td><code>masjid</code> or <code>musholla</code></td></tr>
+                <tr><td><code>phone_numbers</code></td><td>array</td><td><span class="tag tag-required">required</span></td><td>Contact numbers</td></tr>
+                <tr><td><code>dkm_name</code></td><td>string</td><td><span class="tag tag-optional">optional</span></td><td>DKM contact</td></tr>
+                <tr><td><code>marbot_name</code></td><td>string</td><td><span class="tag tag-optional">optional</span></td><td>Marbot contact</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><span class="hljs-comment">// 201 Created</span>
+{
+  <span class="hljs-string">"success"</span>: <span class="hljs-keyword">true</span>,
+  <span class="hljs-string">"masjid"</span>: { <span class="hljs-string">"id"</span>: <span class="hljs-number">1</span>, <span class="hljs-string">"name"</span>: <span class="hljs-string">"Masjid Al-Falah"</span>, <span class="hljs-string">"..."</span>: <span class="hljs-string">"..."</span> }
+}</pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-endpoint">
+            <span class="method get">GET</span>
+            <span class="endpoint-path">/api/masjids/{masjid}/detail</span>
+          </div>
+          <button class="expand-btn" onclick="this.closest('.card').classList.toggle('expanded')">▼ Details</button>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Returns masjid with eager-loaded <code>acUnits</code>, <code>serviceOrders</code>, and <code>serviceOrders.serviceDetails</code>.</p>
+          <pre>{
+  <span class="hljs-string">"success"</span>: <span class="hljs-keyword">true</span>,
+  <span class="hljs-string">"masjid"</span>: { <span class="hljs-string">"..."</span>: <span class="hljs-string">"..."</span> }
+}</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Service Orders ── -->
+    <section id="service-orders" class="section">
+      <h2 class="section-title">📋 Service Orders</h2>
+      <p class="section-desc">Complete service order lifecycle management.</p>
+
+      <!-- Workflow Flow -->
+      <h3 style="color:var(--text-heading);font-size:16px;margin-bottom:12px;">📊 Order Lifecycle</h3>
+      <div class="flow">
+        <span class="flow-step"><span class="dot dot-pending"></span> spk_invoice_created</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step"><span class="dot dot-active"></span> waiting_payment</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step"><span class="dot dot-active"></span> payment_verified</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step"><span class="dot dot-active"></span> in_progress</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step"><span class="dot dot-success"></span> completed</span>
+      </div>
+
+      <h3 style="color:var(--text-heading);font-size:16px;margin:20px 0 12px;">🔄 Extended Flow</h3>
+      <div class="flow">
+        <span class="flow-step"><span class="dot dot-active"></span> waiting_review</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step"><span class="dot dot-success"></span> completed</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step"><span class="dot dot-done"></span> closed</span>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-endpoint">
+            <span class="method post">POST</span>
+            <span class="endpoint-path">/api/service-orders</span>
+          </div>
+          <button class="expand-btn" onclick="this.closest('.card').classList.toggle('expanded')">▼ Details</button>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Same validation rules as guest order. Creates order + service details + workflow step.</p>
+          <pre><span class="hljs-comment">// Success</span>
+{
+  <span class="hljs-string">"success"</span>: <span class="hljs-keyword">true</span>,
+  <span class="hljs-string">"order"</span>: {
+    <span class="hljs-string">"id"</span>: <span class="hljs-number">1</span>,
+    <span class="hljs-string">"order_number"</span>: <span class="hljs-string">"SO-2024-0001"</span>,
+    <span class="hljs-string">"status"</span>: <span class="hljs-string">"spk_invoice_created"</span>,
+    <span class="hljs-string">"..."</span>: <span class="hljs-string">"..."</span>
+  }
+}
+
+<span class="hljs-comment">// Conflict (existing active order) — 409</span>
+{
+  <span class="hljs-string">"success"</span>: <span class="hljs-keyword">false</span>,
+  <span class="hljs-string">"has_existing"</span>: <span class="hljs-keyword">true</span>,
+  <span class="hljs-string">"existing_order"</span>: { <span class="hljs-string">"id"</span>: <span class="hljs-number">1</span>, <span class="hljs-string">"order_number"</span>: <span class="hljs-string">"SO-2024-0001"</span>, <span class="hljs-string">"status"</span>: <span class="hljs-string">"..."</span> },
+  <span class="hljs-string">"message"</span>: <span class="hljs-string">"Masjid ini sudah memiliki service order aktif..."</span>
+}</pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-endpoint">
+            <span class="method get">GET</span>
+            <span class="endpoint-path">/api/service-orders/{serviceOrder}</span>
+          </div>
+          <button class="expand-btn" onclick="this.closest('.card').classList.toggle('expanded')">▼ Details</button>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Full order detail with masjid info, service details, invoice, and workflow history timeline.</p>
+          <pre>{
+  <span class="hljs-string">"success"</span>: <span class="hljs-keyword">true</span>,
+  <span class="hljs-string">"order"</span>: {
+    <span class="hljs-string">"id"</span>: <span class="hljs-number">1</span>,
+    <span class="hljs-string">"order_number"</span>: <span class="hljs-string">"SO-2024-0001"</span>,
+    <span class="hljs-string">"status"</span>: <span class="hljs-string">"spk_invoice_created"</span>,
+    <span class="hljs-string">"service_date"</span>: <span class="hljs-string">"2024-01-15"</span>,
+    <span class="hljs-string">"phone"</span>: <span class="hljs-string">"08123456789"</span>,
+    <span class="hljs-string">"notes"</span>: <span class="hljs-string">"..."</span>,
+    <span class="hljs-string">"masjid"</span>: { <span class="hljs-string">"id"</span>: <span class="hljs-number">1</span>, <span class="hljs-string">"name"</span>: <span class="hljs-string">"Masjid Al-Falah"</span> },
+    <span class="hljs-string">"service_details"</span>: [
+      { <span class="hljs-string">"pk_type"</span>: <span class="hljs-string">"1PK"</span>, <span class="hljs-string">"brand"</span>: <span class="hljs-string">"Daikin"</span>, <span class="hljs-string">"quantity"</span>: <span class="hljs-number">2</span> }
+    ],
+    <span class="hljs-string">"invoice"</span>: { <span class="hljs-string">"id"</span>: <span class="hljs-number">1</span>, <span class="hljs-string">"invoice_number"</span>: <span class="hljs-string">"INV-2024-0001"</span> }
+  },
+  <span class="hljs-string">"history"</span>: [
+    { <span class="hljs-string">"id"</span>: <span class="hljs-number">1</span>, <span class="hljs-string">"label"</span>: <span class="hljs-string">"Order Dibuat"</span>, <span class="hljs-string">"icon"</span>: <span class="hljs-string">"fa-file"</span>,
+      <span class="hljs-string">"color"</span>: <span class="hljs-string">"blue"</span>, <span class="hljs-string">"actor"</span>: <span class="hljs-string">"Admin"</span>, <span class="hljs-string">"role"</span>: <span class="hljs-string">"admin"</span>,
+      <span class="hljs-string">"notes"</span>: <span class="hljs-string">"..."</span>, <span class="hljs-string">"time"</span>: <span class="hljs-string">"15 Jan 2024, 10:00"</span> }
+  ]
+}</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Workflow ── -->
+    <section id="workflow" class="section">
+      <h2 class="section-title">🛠 Workflow &amp; Technician</h2>
+      <p class="section-desc">Technician assignment, progress tracking, and field reports.</p>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-endpoint">
+            <span class="method post">POST</span>
+            <span class="endpoint-path">/api/workflow/assign</span>
+          </div>
+          <button class="expand-btn" onclick="this.closest('.card').classList.toggle('expanded')">▼ Details</button>
+        </div>
+        <div class="card-body">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Parameter</th><th>Type</th><th></th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td><code>technician_id</code></td><td>integer</td><td><span class="tag tag-required">required</span></td><td>Technician user ID</td></tr>
+                <tr><td><code>notes</code></td><td>string</td><td><span class="tag tag-optional">optional</span></td><td>Assignment notes (max:500)</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre>{
+  <span class="hljs-string">"success"</span>: <span class="hljs-keyword">true</span>,
+  <span class="hljs-string">"message"</span>: <span class="hljs-string">"Order berhasil ditugaskan ke Teknisi A."</span>
+}</pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-endpoint">
+            <span class="method post">POST</span>
+            <span class="endpoint-path">/api/workflow/update-progress</span>
+          </div>
+          <button class="expand-btn" onclick="this.closest('.card').classList.toggle('expanded')">▼ Details</button>
+        </div>
+        <div class="card-body">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Parameter</th><th>Type</th><th></th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td><code>status</code></td><td>string</td><td><span class="tag tag-required">required</span></td><td><code>in_progress</code> or <code>done</code></td></tr>
+                <tr><td><code>notes</code></td><td>string</td><td><span class="tag tag-optional">optional</span></td><td>Progress notes</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Real-time Sync ── -->
+    <section id="sync" class="section">
+      <h2 class="section-title">🔄 Real-time Sync</h2>
+      <p class="section-desc">Server-Sent Events (SSE) stream for real-time cross-tab/browser updates.</p>
+
+      <div class="card expanded">
+        <div class="card-header">
+          <div class="card-endpoint">
+            <span class="method get">GET</span>
+            <span class="endpoint-path">/sync/stream</span>
+          </div>
+          <span class="tag tag-auth">auth</span>
+        </div>
+        <div class="card-body" style="display:block">
+          <p class="card-desc">Accepts <code>Last-Event-ID</code> header or <code>last_event_id</code> query parameter.</p>
+          <pre><span class="hljs-keyword">Event format:</span>
+id: {event_id}
+event: sync
+data: {"id":1,"type":"created","resource":"service_order","resource_id":1,...}
+
+retry: 2000
+: heartbeat
+</pre>
+          <p class="card-desc"><strong>Events:</strong> <code>service_order.created</code>, <code>service_order.approved</code>, <code>service_order.deleted</code>, <code>workflow.assigned</code>, <code>anggota.created</code>, etc.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Footer ── -->
+    <footer style="margin-top:64px;padding-top:24px;border-top:1px solid var(--border);text-align:center;color:var(--text-muted);font-size:13px;">
+      <p>AC Beneran System — API Documentation v1.0</p>
+      <p>Generated from codebase. 109+ endpoints across 33 controllers.</p>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  // Active nav link
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', function(e) {
+      document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>

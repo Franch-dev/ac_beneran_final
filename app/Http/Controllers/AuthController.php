@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Support\DebugBfd979Log;
 use App\Support\InternalRedirectPath;
 use App\Support\PlatformNavigation;
 use Illuminate\Http\Request;
@@ -18,13 +17,6 @@ class AuthController extends Controller
             return redirect()->to($target ?? PlatformNavigation::homeUrl());
         }
 
-        // #region agent log
-        DebugBfd979Log::write('H3', 'login_get_served', [
-            'host' => $request->getHost(),
-            'session_id_suffix' => $request->hasSession() ? substr((string) $request->session()->getId(), -8) : null,
-        ]);
-        // #endregion
-
         return view('auth.login', [
 'redirectTo' => InternalRedirectPath::normalize($request->query('redirect')),
             'platformHomeUrl' => PlatformNavigation::homeUrl(),
@@ -33,22 +25,16 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        // #region agent log
-        DebugBfd979Log::write('H4', 'login_post_csrf_ok', [
-            'host' => $request->getHost(),
-        ]);
-        // #endregion
-
         $validated = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-            'redirect' => 'nullable|string',
+            'email' => 'required|string|email|max:255',
+            'password' => 'required|string|max:255',
+            'redirect' => 'nullable|string|max:2048',
         ]);
 
         // Only keys that exist on users — never pass redirect into attempt() (Laravel adds every
         // non-password credential as a WHERE column; users has no redirect column).
         $credentials = [
-            'email' => $validated['email'],
+            'email' => strtolower(trim($validated['email'])),
             'password' => $validated['password'],
         ];
 

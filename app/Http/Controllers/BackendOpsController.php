@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\Database\DatabaseHealthService;
 use App\Services\Skills\SkillCatalogSyncService;
 use App\Services\Skills\SkillLoaderService;
+use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,7 +16,7 @@ class BackendOpsController extends Controller
         $connections = $healthService->checkConnections();
         $ok = collect($connections)->every(fn (array $info) => $info['ok'] === true);
 
-        return response()->json([
+        return ApiResponse::raw([
             'ok' => $ok,
             'connections' => $connections,
             'checked_at' => now()->toISOString(),
@@ -24,9 +25,7 @@ class BackendOpsController extends Controller
 
     public function listSkills(SkillLoaderService $loader): JsonResponse
     {
-        return response()->json([
-            'skills' => $loader->listSkillManifests(),
-        ]);
+        return ApiResponse::success(['skills' => $loader->listSkillManifests()]);
     }
 
     public function relevantSkills(Request $request, SkillLoaderService $loader): JsonResponse
@@ -36,14 +35,12 @@ class BackendOpsController extends Controller
             'limit' => ['nullable', 'integer', 'min:1', 'max:20'],
         ]);
 
-        return response()->json([
-            'matches' => $loader->findRelevantSkills($validated['query'], (int) ($validated['limit'] ?? 8)),
-        ]);
+        return ApiResponse::success(['matches' => $loader->findRelevantSkills($validated['query'], (int) ($validated['limit'] ?? 8))]);
     }
 
     public function syncSkills(SkillCatalogSyncService $syncService): JsonResponse
     {
-        return response()->json([
+        return ApiResponse::success([
             'result' => $syncService->syncToDatabase(),
             'synced_at' => now()->toISOString(),
         ]);

@@ -10,6 +10,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (DB::connection('ac_service')->getDriverName() !== 'mysql') {
+            return;
+        }
+
         // First expand the enum to include both old and new values
         DB::connection('ac_service')->statement("ALTER TABLE workflow_steps MODIFY COLUMN step ENUM(
             'created',
@@ -73,6 +77,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (DB::connection('ac_service')->getDriverName() !== 'mysql') {
+            return;
+        }
+
         // Revert to original enum
         DB::connection('ac_service')->statement("ALTER TABLE workflow_steps MODIFY COLUMN step ENUM(
             'created',
