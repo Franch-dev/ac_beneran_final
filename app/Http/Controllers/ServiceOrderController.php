@@ -14,6 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
 
 class ServiceOrderController extends Controller
@@ -62,6 +63,21 @@ class ServiceOrderController extends Controller
 
     public function guestStore(Request $request)
     {
+        // Honeypot check (bot detection)
+        if ($request->filled('website')) {
+            return back()->with('success', 'Permintaan service order Anda berhasil terkirim. Kami akan menindaklanjutinya segera.');
+        }
+
+        // Rate limiting: 5 per minute per IP
+        $key = 'guest-order:' . $request->ip();
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            $seconds = RateLimiter::availableIn($key);
+            return back()->withErrors([
+                'phone' => "Terlalu banyak permintaan. Silakan tunggu {$seconds} detik.",
+            ])->withInput();
+        }
+        RateLimiter::hit($key, 60);
+
         $validated = $request->validate([
             'reporter_name' => 'required|string|max:100',
             'masjid_name' => 'required|string|max:200',

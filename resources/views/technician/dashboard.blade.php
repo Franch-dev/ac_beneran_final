@@ -93,7 +93,7 @@
                                     default => '',
                                 };
                             @endphp
-                            <span class="status-badge {{ $statusClass }}" {!! $statusColor !!}>
+                            <span class="status-badge {{ $statusClass }}"{{ $statusColor }}>
                                 {{ $statusLabel }}
                             </span>
                         </td>

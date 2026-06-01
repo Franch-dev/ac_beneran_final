@@ -301,7 +301,7 @@
                     </td>
                     <td class="table-cell-actions">
                         <div class="action-btns action-btns--dense">
-                            <button class="btn btn-sm btn-info" type="button" onclick="showOrderDetail({{ $order->id }}, '{{ $order->order_number }}', '{{ $order->masjid->name }}', '{{ $order->service_date->format('d M Y') }}')">
+                            <button class="btn btn-sm btn-info" type="button" onclick="showOrderDetail({{ $order->id }}, @js($order->order_number), @js($order->masjid->name), @js($order->service_date->format('d M Y')))">
                                 <i class="fas fa-eye"></i> Detail
                             </button>
 
