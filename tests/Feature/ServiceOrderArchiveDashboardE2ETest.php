@@ -102,7 +102,14 @@ class ServiceOrderArchiveDashboardE2ETest extends TestCase
             ->assertOk();
 
         $order->refresh();
-        $this->assertSame('spk_invoice_approved', $order->status);
+        $this->assertSame('waiting_payment', $order->status);
+
+        $this->actingAs($this->manager)
+            ->postJson(route('service-order.confirm-payment', $order))
+            ->assertOk();
+
+        $order->refresh();
+        $this->assertSame('payment_verified', $order->status);
 
         $this->actingAs($this->manager)
             ->postJson(route('workflow.assign', $order), [
@@ -125,7 +132,7 @@ class ServiceOrderArchiveDashboardE2ETest extends TestCase
         $this->actingAs($this->technician)
             ->postJson(route('service-order.field-report', $order), [
                 'field_report_notes' => 'Semua unit selesai diservis.',
-                'field_report_additional_fee' => 0,
+                'field_report_additional_fee' => 50000,
             ])
             ->assertOk();
 
@@ -133,7 +140,7 @@ class ServiceOrderArchiveDashboardE2ETest extends TestCase
         $this->assertSame('waiting_review', $order->status);
 
         $this->actingAs($this->manager)
-            ->postJson(route('service-order.finalize-order', $order))
+            ->postJson(route('service-order.approve-additional-fee', $order))
             ->assertOk();
 
         $order->refresh();
