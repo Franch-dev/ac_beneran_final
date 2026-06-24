@@ -5,41 +5,59 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ServiceOrder extends Model
 {
     use HasFactory;
 
-    public const ACTIVE_STATUSES = [
+    public const ALL_STATUSES = [
         'pending_review',
-        'spk_invoice_created',
         'approved',
+        'spk_invoice_created',
         'spk_invoice_approved',
-        'waiting_payment',
-        'payment_verified',
         'technician_assigned',
         'in_progress',
-        'work_completed',
-        'pending_fee_approval',
-        'fee_approved',
         'waiting_review',
+        'invoice_editing',
+        'fee_review',
+        'waiting_payment',
+        'payment_verified',
+        'completed',
+        'closed',
+        'cancelled',
+    ];
+
+    public const ACTIVE_STATUSES = [
+        'pending_review',
+        'approved',
+        'spk_invoice_created',
+        'spk_invoice_approved',
+        'technician_assigned',
+        'in_progress',
+        'waiting_review',
+        'invoice_editing',
+        'fee_review',
+        'waiting_payment',
+        'payment_verified',
         'completed',
     ];
 
     public const STATUS_LABELS = [
         'pending_review' => 'Menunggu Persetujuan Manager',
-        'spk_invoice_created' => 'SPK & Invoice Dibuat',
         'approved' => 'Disetujui Manager',
+        'spk_invoice_created' => 'SPK & Invoice Dibuat',
         'spk_invoice_approved' => 'SPK & Invoice Disetujui',
-        'waiting_payment' => 'Menunggu Pembayaran',
-        'payment_verified' => 'Pembayaran Terverifikasi',
         'technician_assigned' => 'Teknisi Ditugaskan',
         'in_progress' => 'Sedang Dikerjakan',
-        'work_completed' => 'Pekerjaan Selesai',
-        'pending_fee_approval' => 'Menunggu Persetujuan Biaya',
-        'fee_approved' => 'Biaya Disetujui',
         'waiting_review' => 'Menunggu Review Akhir',
+        'invoice_editing' => 'Invoice Sedang Diedit',
+        'fee_review' => 'Menunggu Review Biaya',
+        'waiting_payment' => 'Menunggu Pembayaran',
+        'payment_verified' => 'Pembayaran Terverifikasi',
         'completed' => 'Selesai',
+        'closed' => 'Ditutup',
         'cancelled' => 'Dibatalkan',
     ];
 
@@ -82,12 +100,17 @@ class ServiceOrder extends Model
         return $this->hasMany(ServiceDetail::class);
     }
 
-    public function invoice()
+    public function invoice(): HasOne
     {
         return $this->hasOne(Invoice::class);
     }
 
-    public function workflowSteps()
+    public function receipt(): HasOne
+    {
+        return $this->hasOne(Receipt::class);
+    }
+
+    public function workflowSteps(): HasMany
     {
         return $this->hasMany(\App\Models\WorkflowStep::class)->orderBy('created_at');
     }
@@ -102,9 +125,14 @@ class ServiceOrder extends Model
         return $this->hasOne(\App\Models\TechnicianAssignment::class);
     }
 
-    public function histories()
+    public function histories(): HasMany
     {
         return $this->hasMany(\App\Models\ServiceOrderHistory::class, 'service_order_id');
+    }
+
+    public function photoProofs(): HasMany
+    {
+        return $this->hasMany(PhotoProof::class);
     }
 
     public function scopeActive(Builder $query): Builder
@@ -148,7 +176,7 @@ class ServiceOrder extends Model
     public function isExpired(): bool
     {
         return $this->service_date < now()->toDateString()
-            && in_array($this->status, ['pending_review', 'approved', 'spk_invoice_created'], true);
+            && in_array($this->status, ['pending_review', 'approved'], true);
     }
 
     public function hasFieldReport(): bool
@@ -220,7 +248,7 @@ class ServiceOrder extends Model
 
     public function needsInvoiceEdit(): bool
     {
-        return $this->hasFieldReport() && !$this->manager_approved_additional_fee;
+        return in_array($this->status, ['invoice_editing', 'fee_review'], true);
     }
 
     public function needsPayment(): bool
@@ -228,8 +256,83 @@ class ServiceOrder extends Model
         return $this->status === 'waiting_payment';
     }
 
+    public function isInInternalPaymentWindow(): bool
+    {
+        return in_array($this->status, ['waiting_payment', 'payment_verified'], true)
+            && (bool) $this->invoice;
+    }
+
+    public function hasPaymentProofPhoto(): bool
+    {
+        if (array_key_exists('photo_proofs_count', $this->attributes)) {
+            return (int) $this->attributes['photo_proofs_count'] > 0;
+        }
+
+        return $this->photoProofs()->exists();
+    }
+
+    public function hasPaymentProofPhotoForTechnician(int $technicianId): bool
+    {
+        $assignment = $this->technicianAssignment;
+
+        if (! $assignment || (int) $assignment->technician_id !== $technicianId) {
+            return false;
+        }
+
+        return $this->photoProofs()
+            ->where('technician_assignment_id', $assignment->id)
+            ->where('created_by', $technicianId)
+            ->exists();
+    }
+
+    public function canAccessInternalPayment(?User $user): bool
+    {
+        if (! $user || ! $this->isInInternalPaymentWindow()) {
+            return false;
+        }
+
+        if ($user->isAdmin() || $user->isManager() || $user->isFrontdesk()) {
+            return true;
+        }
+
+        return $user->isTechnician()
+            && $this->technicianAssignment
+            && (int) $this->technicianAssignment->technician_id === (int) $user->id
+            && $this->hasPaymentProofPhotoForTechnician((int) $user->id);
+    }
+
+    public function canManageInternalPayment(?User $user): bool
+    {
+        return (bool) $user && ($user->isAdmin() || $user->isManager());
+    }
+
+    public function canRecordCashInternalPayment(?User $user): bool
+    {
+        if (! $user || ! $this->isInInternalPaymentWindow()) {
+            return false;
+        }
+
+        if ($this->canManageInternalPayment($user)) {
+            return true;
+        }
+
+        return $user->isTechnician()
+            && $this->technicianAssignment
+            && (int) $this->technicianAssignment->technician_id === (int) $user->id
+            && $this->hasPaymentProofPhotoForTechnician((int) $user->id);
+    }
+
+    public function canViewSpkInvoice(): bool
+    {
+        return in_array($this->status, [
+            'spk_invoice_approved', 'technician_assigned', 'in_progress',
+            'waiting_review', 'invoice_editing', 'fee_review',
+            'waiting_payment', 'payment_verified', 'completed', 'closed',
+        ], true);
+    }
+
     public function canPrintDocuments(): bool
     {
-        return $this->status === 'completed' && $this->isReadyForDualConfirmation();
+        return $this->canViewSpkInvoice();
     }
 }

@@ -74,11 +74,10 @@ Route::middleware('auth')->group(function () {
         Route::delete('/service-order/{serviceOrder}/manager', [ServiceOrderController::class, 'destroy'])->name('service-order.destroy-manager');
         Route::post('/service-order/{serviceOrder}/confirm-payment', [ServiceOrderController::class, 'confirmPayment'])->name('service-order.confirm-payment');
         Route::post('/service-order/{serviceOrder}/finalize-order', [ServiceOrderController::class, 'finalizeOrder'])->name('service-order.finalize-order');
-        
-        // New: Approve Additional Fee
         Route::post('/service-order/{serviceOrder}/approve-additional-fee', [ServiceOrderController::class, 'approveAdditionalFee'])->name('service-order.approve-additional-fee');
-        
-        // New: Manager Confirm Order Selesai
+        Route::post('/service-order/{serviceOrder}/route-additional-fee-to-invoice-edit', [ServiceOrderController::class, 'routeAdditionalFeeToInvoiceEdit'])->name('service-order.route-additional-fee-to-invoice-edit');
+        Route::post('/service-order/{serviceOrder}/approve-edited-invoice', [ServiceOrderController::class, 'approveEditedInvoice'])->name('service-order.approve-edited-invoice');
+        Route::post('/service-order/{serviceOrder}/reject-edited-invoice', [ServiceOrderController::class, 'rejectEditedInvoice'])->name('service-order.reject-edited-invoice');
         Route::post('/service-order/{serviceOrder}/manager-confirm-complete', [ServiceOrderController::class, 'managerConfirmComplete'])->name('service-order.manager-confirm-complete');
     });
 
@@ -90,6 +89,8 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['role:manager,admin', 'throttle:writes'])->group(function () {
         Route::post('/workflow/{serviceOrder}/approve-spk-invoice', [WorkflowController::class, 'approveSpkInvoice'])
             ->name('workflow.approve-spk-invoice.base');
+        Route::post('/workflow/{serviceOrder}/reject-spk-invoice', [WorkflowController::class, 'rejectSpkInvoice'])
+            ->name('workflow.reject-spk-invoice');
     });
 
     Route::middleware('role:frontdesk,manager,admin')->group(function () {
@@ -153,19 +154,22 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 | Manager + Admin routes
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'role:manager,admin'])->group(function () {
+Route::middleware(['auth', 'role:frontdesk,manager,admin'])->group(function () {
 
     // ── Reports ───────────────────────────────────────────────
     Route::get('/reports',        [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/export', [ReportController::class, 'exportJson'])->name('reports.export');
 
     // ── Workflow: assign + close ──────────────────────────────
-    Route::post('/workflow/{serviceOrder}/assign', [WorkflowController::class, 'assign'])
-         ->middleware('throttle:writes')
-         ->name('workflow.assign');
     Route::post('/workflow/{serviceOrder}/close',  [WorkflowController::class, 'close'])
          ->middleware('throttle:writes')
          ->name('workflow.close');
+});
+
+Route::middleware(['auth', 'role:frontdesk,manager,admin'])->group(function () {
+    Route::post('/workflow/{serviceOrder}/assign', [WorkflowController::class, 'assign'])
+         ->middleware('throttle:writes')
+         ->name('workflow.assign');
 });
 
 /*

@@ -70,7 +70,7 @@ php artisan migrate
 
 # 5. Build frontend assets
 npm run build
-```
+``` 
 
 ### Development
 The platform includes a pre-configured development stack that handles the server, queue, and vite simultaneously:

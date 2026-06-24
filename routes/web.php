@@ -53,14 +53,7 @@ Route::middleware(['auth', 'role:technician'])->prefix('technician')->group(func
     Route::post('/orders/{serviceOrder}/complete', [TechnicianController::class, 'completeJob'])->name('technician.orders.complete');
 });
 
-// Manager Approvals (Auth required)
-use App\Http\Controllers\ManagerApprovalController;
 
-Route::middleware(['auth', 'role:manager,admin', 'throttle:writes'])->prefix('manager')->group(function (): void {
-    Route::get('/approvals', [ManagerApprovalController::class, 'index'])->name('manager.approvals');
-    Route::post('/approvals/{order}/approve', [ManagerApprovalController::class, 'approve'])->name('manager.approvals.approve');
-    Route::post('/approvals/{order}/reject', [ManagerApprovalController::class, 'reject'])->name('manager.approvals.reject');
-});
 
 // Frontdesk Invoice Editor (Auth required)
 use App\Http\Controllers\InvoiceController;
@@ -74,7 +67,13 @@ Route::middleware(['auth', 'role:frontdesk,admin', 'throttle:writes'])->prefix('
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReceiptController;
 
-Route::middleware(['auth', 'role:manager,admin', 'throttle:writes'])->prefix('payments')->group(function (): void {
+Route::middleware(['auth', 'role:frontdesk,manager,admin,technician', 'throttle:writes'])->prefix('payments/internal')->group(function (): void {
+    Route::post('/{order}/access-link', [PaymentController::class, 'accessLink'])->name('payments.internal.access-link');
+    Route::get('/{order}/entry', [PaymentController::class, 'entry'])->middleware('signed')->name('payments.internal.entry');
+    Route::get('/{order}', [PaymentController::class, 'show'])->name('payments.internal.show');
+});
+
+Route::middleware(['auth', 'role:manager,admin,technician', 'throttle:writes'])->prefix('payments')->group(function (): void {
     Route::get('/', [PaymentController::class, 'index'])->name('manager.payments');
     Route::post('/{order}/verify-cash', [PaymentController::class, 'verifyCash'])->name('payments.verify-cash');
     Route::post('/{order}/confirm-cash', [PaymentController::class, 'confirmCash'])->name('payments.confirm-cash');

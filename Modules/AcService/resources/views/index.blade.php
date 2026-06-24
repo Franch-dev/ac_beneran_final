@@ -22,70 +22,48 @@
         </div>
 
         <div class="catalog-grid">
-            <a href="{{ $dashboardUrl }}" class="catalog-card">
-                <div class="catalog-card-thumb" style="background: linear-gradient(135deg, #e8f0fe 0%, #c5d9ff 100%);">
-                    <div class="catalog-thumb-icon" style="color: #1a73e8;">
-                        <i class="fas fa-th-large"></i>
-                    </div>
-                </div>
-                <div class="catalog-card-body">
-                    <div class="catalog-card-meta">
-                        <span class="catalog-domain">/dashboard</span>
-                        <span class="catalog-tag">Operational</span>
-                    </div>
-                    <h3 class="catalog-card-title">Dashboard</h3>
-                    <p class="catalog-card-desc">Kelola master data masjid, unit AC, dan operasional utama modul AC Service.</p>
-                </div>
-                <div class="catalog-card-footer">
-                    <span class="catalog-visit">Buka <i class="fas fa-arrow-right"></i></span>
-                </div>
-            </a>
+            <x-catalog-card
+                :href="$dashboardUrl"
+                :thumbStyle="'background: linear-gradient(135deg, #e8f0fe 0%, #c5d9ff 100%);'"
+                :iconStyle="'color: #1a73e8;'"
+                iconClass="fas fa-th-large"
+                domain="/dashboard"
+                tag="Operational"
+                title="Dashboard"
+                desc="Kelola master data masjid, unit AC, dan operasional utama modul AC Service."
+                :footerText="'Buka <i class=\"fas fa-arrow-right\"></i>'"
+            />
 
-            <a href="{{ $monitoringUrl }}" class="catalog-card">
-                <div class="catalog-card-thumb" style="background: linear-gradient(135deg, #e6f4ea 0%, #a8d5b5 100%);">
-                    <div class="catalog-thumb-icon" style="color: #1e8e3e;">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                </div>
-                <div class="catalog-card-body">
-                    <div class="catalog-card-meta">
-                        <span class="catalog-domain">/monitoring</span>
-                        <span class="catalog-tag">Workflow</span>
-                    </div>
-                    <h3 class="catalog-card-title">Monitoring</h3>
-                    <p class="catalog-card-desc">Pantau service order, approval manager, dan progres pelayanan AC secara real-time.</p>
-                </div>
-                <div class="catalog-card-footer">
-                    <span class="catalog-visit">Buka <i class="fas fa-arrow-right"></i></span>
-                </div>
-            </a>
+            <x-catalog-card
+                :href="$monitoringUrl"
+                :thumbStyle="'background: linear-gradient(135deg, #e6f4ea 0%, #a8d5b5 100%);'"
+                :iconStyle="'color: #1e8e3e;'"
+                iconClass="fas fa-chart-line"
+                domain="/monitoring"
+                tag="Workflow"
+                title="Monitoring"
+                desc="Pantau service order, approval manager, dan progres pelayanan AC secara real-time."
+                :footerText="'Buka <i class=\"fas fa-arrow-right\"></i>'"
+            />
 
-            <button
-                type="button"
-                class="catalog-card catalog-card-button"
-                data-guest-order-action="{{ route('modules.ac-service.guest-order.store') }}"
-                data-guest-order-label="AC Service"
-                onclick='window.openGuestOrderPopup?.(this.dataset.guestOrderAction, this.dataset.guestOrderLabel)'
-            >
-                <div class="catalog-card-thumb" style="background: linear-gradient(135deg, #fff4e5 0%, #ffe2b8 100%);">
-                    <div class="catalog-thumb-icon" style="color: #d97706;">
-                        <i class="fas fa-file-invoice"></i>
-                    </div>
-                </div>
-                <div class="catalog-card-body">
-                    <div class="catalog-card-meta">
-                        <span class="catalog-domain">/guest-order</span>
-                        <span class="catalog-tag">Publik</span>
-                    </div>
-                    <h3 class="catalog-card-title">Ajukan Service Order</h3>
-                    <p class="catalog-card-desc">Kirim permintaan servis AC tanpa login dengan form tamu yang langsung tersambung ke tim operasi.</p>
-                </div>
-                <div class="catalog-card-footer">
-                    <span class="catalog-visit">Isi Formulir <i class="fas fa-arrow-right"></i></span>
-                </div>
-            </button>
+            <x-catalog-card
+                asButton="true"
+                :href="null"
+                :thumbStyle="'background: linear-gradient(135deg, #fff4e5 0%, #ffe2b8 100%);'"
+                :iconStyle="'color: #d97706;'"
+                iconClass="fas fa-file-invoice"
+                domain="/guest-order"
+                tag="Publik"
+                title="Ajukan Service Order"
+                desc="Kirim permintaan servis AC tanpa login dengan form tamu yang langsung tersambung ke tim operasi."
+                footerText="Isi Formulir <i class=\"fas fa-arrow-right\"></i>"
+                :buttonAttrs="[
+                    'data-guest-order-action' => route('modules.ac-service.guest-order.store'),
+                    'data-guest-order-label' => 'AC Service',
+                    'onclick' => 'window.openGuestOrderPopup?.(this.dataset.guestOrderAction, this.dataset.guestOrderLabel)'
+                ]"
+            />
         </div>
-    </div>
 </section>
 
 @include('partials.guest-order-popup', [

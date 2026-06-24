@@ -57,6 +57,9 @@ const GLOBAL_RUNTIME_NAMES = [
     'openGuestOrderPopup',
     'toggleDarkMode',
     'showToast',
+    'confirmAction',
+    'openConfirmModal',
+    'closeConfirmModal',
     'apiFetch',
     'refreshCurrentPageSnapshot',
     'scheduleCurrentPageSnapshot',
@@ -482,6 +485,23 @@ const SidebarManager = {
     mobileMenuBtn: null,
     overlay: null,
 
+    syncCollapseButton(isCollapsed = getDocument()?.body?.classList.contains('sidebar-collapsed') ?? false) {
+        const doc = getDocument();
+        const icon = doc?.getElementById('collapseIcon');
+        const label = isCollapsed ? 'Buka sidebar' : 'Ciutkan sidebar';
+
+        if (icon) {
+            icon.className = isCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
+        }
+
+        if (this.collapseBtn) {
+            this.collapseBtn.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+            this.collapseBtn.setAttribute('aria-label', label);
+            this.collapseBtn.setAttribute('title', label);
+            this.collapseBtn.setAttribute('data-tooltip', label);
+        }
+    },
+
     init() {
         const doc = getDocument();
         this.sidebar = doc?.getElementById('sidebar') ?? null;
@@ -497,11 +517,9 @@ const SidebarManager = {
 
         if (getStorage()?.getItem('sidebarCollapsed') === 'true') {
             doc?.body?.classList.add('sidebar-collapsed');
-            const icon = doc?.getElementById('collapseIcon');
-            if (icon) {
-                icon.className = 'fas fa-chevron-right';
-            }
         }
+
+        this.syncCollapseButton();
 
         if (this.collapseBtn) {
             this.collapseBtn.addEventListener('click', () => this.toggleCollapse());
@@ -535,10 +553,7 @@ const SidebarManager = {
         const isCollapsed = doc?.body?.classList.toggle('sidebar-collapsed') ?? false;
         getStorage()?.setItem('sidebarCollapsed', String(isCollapsed));
 
-        const icon = doc?.getElementById('collapseIcon');
-        if (icon) {
-            icon.className = isCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
-        }
+        this.syncCollapseButton(isCollapsed);
     },
 
     openMobile() {
@@ -662,6 +677,80 @@ function initStaggerReveal() {
             item.style.setProperty('--stagger-index', String(index));
             observer.observe(item);
         });
+    });
+}
+
+function formatCounterValue(value, decimals) {
+    return decimals ? value.toFixed(1) : String(Math.round(value));
+}
+
+function animateCounter(counter) {
+    if (!counter || counter.dataset.counterInitialized === 'true') {
+        return;
+    }
+
+    counter.dataset.counterInitialized = 'true';
+
+    const rawTarget = counter.getAttribute('data-target') || '0';
+    const target = parseFloat(rawTarget) || 0;
+    const decimals = rawTarget.includes('.') ? 1 : 0;
+    const win = getWindow();
+
+    if (!win?.requestAnimationFrame) {
+        counter.textContent = formatCounterValue(target, decimals);
+        return;
+    }
+
+    const duration = 900;
+    const startTime = win.performance?.now?.() ?? Date.now();
+    const easeOutCubic = (progress) => 1 - Math.pow(1 - progress, 3);
+
+    function update(time) {
+        const elapsed = Math.min(((time ?? Date.now()) - startTime) / duration, 1);
+        const value = target * easeOutCubic(elapsed);
+        counter.textContent = formatCounterValue(value, decimals);
+
+        if (elapsed < 1) {
+            win.requestAnimationFrame(update);
+        }
+    }
+
+    win.requestAnimationFrame(update);
+}
+
+function initCounters(root = getDocument()) {
+    const doc = getDocument();
+    const win = getWindow();
+    const counters = root?.querySelectorAll?.('.counter') ?? [];
+
+    if (!counters.length) {
+        return;
+    }
+
+    if (!win?.IntersectionObserver) {
+        counters.forEach((counter) => animateCounter(counter));
+        return;
+    }
+
+    const observer = new win.IntersectionObserver((entries, currentObserver) => {
+        entries.forEach((entry) => {
+            if (!entry.isIntersecting) {
+                return;
+            }
+
+            animateCounter(entry.target);
+            currentObserver.unobserve(entry.target);
+        });
+    }, { threshold: 0.2 });
+
+    counters.forEach((counter) => {
+        if (counter.dataset.counterInitialized === 'true') {
+            return;
+        }
+
+        if (doc?.documentElement.contains(counter)) {
+            observer.observe(counter);
+        }
     });
 }
 
@@ -819,6 +908,7 @@ const PageSyncManager = {
 
             initRevealMotion();
             initStaggerReveal();
+            initCounters(currentRoot);
             await refreshStatusBadges();
 
             if (typeof win[config.afterRender] === 'function') {
@@ -934,6 +1024,7 @@ function bootSharedUiRuntime() {
     bindGlobalClickHandlers();
     initRevealMotion();
     initStaggerReveal();
+    initCounters();
     refreshStatusBadges();
 }
 
@@ -956,6 +1047,9 @@ export function registerUiRuntime() {
         openGuestOrderPopup,
         toggleDarkMode,
         showToast,
+        confirmAction: win.confirmAction,
+        openConfirmModal: win.openConfirmModal,
+        closeConfirmModal: win.closeConfirmModal,
         apiFetch,
         refreshStatusBadges,
         refreshCurrentPageSnapshot: () => PageSyncManager.refreshCurrentPageSnapshot(true),

@@ -10,6 +10,8 @@ use App\Models\ServiceOrder;
 use App\Models\User;
 use App\Models\WorkflowStep;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ServiceOrderWorkflowStatusSyncTest extends TestCase
@@ -65,7 +67,7 @@ class ServiceOrderWorkflowStatusSyncTest extends TestCase
         $this->assertSame('approved', $response->getData(true)['status']);
     }
 
-    public function test_approve_spk_invoice_moves_order_to_waiting_payment_and_records_steps(): void
+    public function test_approve_spk_invoice_moves_order_to_spk_invoice_approved_and_records_step(): void
     {
         $manager = User::factory()->create(['role' => 'manager']);
         $frontdesk = User::factory()->create(['role' => 'frontdesk']);
@@ -102,28 +104,25 @@ class ServiceOrderWorkflowStatusSyncTest extends TestCase
             ->assertOk();
 
         $serviceOrder->refresh();
-        $this->assertSame('waiting_payment', $serviceOrder->status);
+        $this->assertSame('spk_invoice_approved', $serviceOrder->status);
 
         $this->assertDatabaseHas('workflow_steps', [
             'service_order_id' => $serviceOrder->id,
             'step' => 'spk_invoice_approved',
         ], 'ac_service');
-
-        $this->assertDatabaseHas('workflow_steps', [
-            'service_order_id' => $serviceOrder->id,
-            'step' => 'waiting_payment',
-        ], 'ac_service');
     }
 
     public function test_workflow_step_latest_matches_waiting_review_after_technician_done(): void
     {
+        Storage::fake('local');
+
         $manager = User::factory()->create(['role' => 'manager']);
         $technician = User::factory()->create(['role' => 'technician']);
         $masjid = Masjid::factory()->create(['type' => 'Masjid']);
 
         $serviceOrder = ServiceOrder::factory()->create([
             'masjid_id' => $masjid->id,
-            'status' => 'payment_verified',
+            'status' => 'spk_invoice_approved',
         ]);
 
         $this->actingAs($manager)
@@ -143,9 +142,10 @@ class ServiceOrderWorkflowStatusSyncTest extends TestCase
             ->assertOk();
 
         $this->actingAs($technician)
-            ->postJson(route('workflow.progress', $serviceOrder), [
-                'status' => 'done',
-                'notes' => 'Pekerjaan selesai',
+            ->postJson(route('technician.orders.complete', $serviceOrder), [
+                'photos' => [UploadedFile::fake()->image('proof.jpg')],
+                'completion_notes' => 'Pekerjaan selesai',
+                'has_fees' => false,
             ])
             ->assertOk();
 

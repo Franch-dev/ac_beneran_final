@@ -143,68 +143,67 @@
     let currentOrderId = null;
     let currentInvoiceTotal = 0;
 
-    function verifyCash(orderId, invoiceNumber) {
-        if (typeof window.openConfirmModal === 'function') {
-            window.openConfirmModal({
-                type: 'success',
-                heading: 'Verifikasi Pembayaran Tunai?',
-                message: `Konfirmasi pembayaran tunai untuk invoice <strong>${invoiceNumber}</strong>.`,
-                confirmText: 'Ya, Verifikasi',
-                onConfirm: () => {
-                    fetch(`/payments/${orderId}/verify-cash`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                            'Accept': 'application/json',
-                        },
-                    })
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.success) {
-                            if (typeof window.showToast === 'function') {
-                                window.showToast(data.message, 'success');
-                            } else {
-                                alert(data.message);
-                            }
-                            location.reload();
-                        } else {
-                            if (typeof window.showToast === 'function') {
-                                window.showToast(data.message || 'Gagal verifikasi', 'error');
-                            } else {
-                                alert(data.message || 'Gagal verifikasi');
-                            }
-                        }
-                    })
-                    .catch(() => {
-                        if (typeof window.showToast === 'function') {
-                            window.showToast('Terjadi kesalahan.', 'error');
-                        } else {
-                            alert('Terjadi kesalahan.');
-                        }
-                    });
-                }
-            });
-        } else {
-            if (!confirm(`Verifikasi pembayaran tunai untuk invoice ${invoiceNumber}?`)) return;
-            fetch(`/payments/${orderId}/verify-cash`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Accept': 'application/json',
-                },
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    alert(data.message);
-                    location.reload();
-                } else {
-                    alert(data.message || 'Gagal verifikasi');
-                }
-            })
-            .catch(() => alert('Terjadi kesalahan.'));
+    function showPaymentMessage(message, type = 'success') {
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, type);
+            return;
+        }
+
+        console[type === 'error' ? 'error' : 'info'](message);
+    }
+
+    async function confirmPaymentAction(options) {
+        if (typeof window.confirmAction !== 'function') {
+            return { confirmed: true, values: {} };
+        }
+
+        const result = await window.confirmAction(options);
+        return result?.confirmed || result === true
+            ? { confirmed: true, values: result.values || {} }
+            : { confirmed: false, values: {} };
+    }
+
+    function paymentHeaders(isJson = true) {
+        const headers = {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json',
+        };
+
+        if (isJson) {
+            headers['Content-Type'] = 'application/json';
+        }
+
+        return headers;
+    }
+
+    async function postPayment(url, options = {}) {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: paymentHeaders(options.json !== false),
+            body: options.body,
+        });
+
+        return response.json();
+    }
+
+    async function verifyCash(orderId, invoiceNumber) {
+        const confirmation = await confirmPaymentAction({
+            type: 'success',
+            heading: 'Verifikasi pembayaran tunai?',
+            message: 'Pembayaran tunai akan diverifikasi untuk invoice ini.',
+            confirmText: 'Ya, Verifikasi',
+            details: [{ label: 'Invoice', value: invoiceNumber }],
+        });
+
+        if (!confirmation.confirmed) return;
+
+        try {
+            const data = await postPayment(`/payments/${orderId}/verify-cash`);
+            if (!data.success) throw new Error(data.message || 'Gagal verifikasi');
+            showPaymentMessage(data.message, 'success');
+            location.reload();
+        } catch (error) {
+            showPaymentMessage(error.message || 'Terjadi kesalahan.', 'error');
         }
     }
 
@@ -227,125 +226,93 @@
         document.getElementById('transferForm').reset();
     }
 
-    document.getElementById('transferForm').addEventListener('submit', function(e) {
+    document.getElementById('transferForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         if (!currentOrderId) return;
 
         const formData = new FormData(this);
         const amount = Number(formData.get('transfer_amount'));
         if (amount < currentInvoiceTotal) {
-            alert('Jumlah transfer kurang dari total invoice.');
+            showPaymentMessage('Jumlah transfer kurang dari total invoice.', 'warning');
             return;
         }
 
-        fetch(`/payments/${currentOrderId}/verify-transfer`, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json',
-            },
-            body: formData,
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-                closeTransferModal();
-                location.reload();
-            } else {
-                alert(data.message || 'Gagal verifikasi');
-            }
-        })
-        .catch(() => alert('Terjadi kesalahan.'));
+        const confirmation = await confirmPaymentAction({
+            type: 'success',
+            heading: 'Verifikasi transfer?',
+            message: 'Transfer akan diverifikasi dengan nominal dan bukti yang diisi.',
+            confirmText: 'Ya, Verifikasi',
+            details: [
+                { label: 'Nominal', value: `Rp ${amount.toLocaleString('id-ID')}` },
+                { label: 'Minimal Invoice', value: `Rp ${currentInvoiceTotal.toLocaleString('id-ID')}` },
+            ],
+        });
+
+        if (!confirmation.confirmed) return;
+
+        try {
+            const data = await postPayment(`/payments/${currentOrderId}/verify-transfer`, {
+                json: false,
+                body: formData,
+            });
+
+            if (!data.success) throw new Error(data.message || 'Gagal verifikasi');
+            showPaymentMessage(data.message, 'success');
+            closeTransferModal();
+            location.reload();
+        } catch (error) {
+            showPaymentMessage(error.message || 'Terjadi kesalahan.', 'error');
+        }
     });
 
-    function verifyQris(orderId) {
-        const reference = prompt('Masukkan referensi pembayaran QRIS dari penyedia pembayaran:');
-        if (!reference || !reference.trim()) return;
+    async function verifyQris(orderId) {
+        const confirmation = await confirmPaymentAction({
+            type: 'success',
+            heading: 'Verifikasi QRIS?',
+            message: 'Masukkan referensi pembayaran dari penyedia QRIS.',
+            confirmText: 'Ya, Verifikasi',
+            fields: [
+                {
+                    name: 'reference',
+                    label: 'Referensi QRIS',
+                    placeholder: 'Contoh: QRIS-123456',
+                    required: true,
+                },
+            ],
+        });
 
-        fetch(`/payments/${orderId}/verify-qris`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify({ qris_reference: reference.trim() }),
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-                location.reload();
-            } else {
-                alert(data.message || 'Gagal verifikasi');
-            }
-        })
-        .catch(() => alert('Terjadi kesalahan.'));
+        if (!confirmation.confirmed) return;
+
+        try {
+            const data = await postPayment(`/payments/${orderId}/verify-qris`, {
+                body: JSON.stringify({ qris_reference: confirmation.values.reference.trim() }),
+            });
+
+            if (!data.success) throw new Error(data.message || 'Gagal verifikasi');
+            showPaymentMessage(data.message, 'success');
+            location.reload();
+        } catch (error) {
+            showPaymentMessage(error.message || 'Terjadi kesalahan.', 'error');
+        }
     }
 
-    function confirmCash(orderId) {
-        if (typeof window.openConfirmModal === 'function') {
-            window.openConfirmModal({
-                type: 'success',
-                heading: 'Konfirmasi Pembayaran Tunai?',
-                message: 'Uang tunai sudah diterima? Setelah dikonfirmasi, pembayaran tercatat dan order bisa diselesaikan dari monitoring.',
-                confirmText: 'Ya, Konfirmasi',
-                onConfirm: () => {
-                    fetch(`/payments/${orderId}/confirm-cash`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                            'Accept': 'application/json',
-                        },
-                    })
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.success) {
-                            if (typeof window.showToast === 'function') {
-                                window.showToast(data.message, 'success');
-                            } else {
-                                alert(data.message);
-                            }
-                            location.reload();
-                        } else {
-                            if (typeof window.showToast === 'function') {
-                                window.showToast(data.message || 'Gagal konfirmasi', 'error');
-                            } else {
-                                alert(data.message || 'Gagal konfirmasi');
-                            }
-                        }
-                    })
-                    .catch(() => {
-                        if (typeof window.showToast === 'function') {
-                            window.showToast('Terjadi kesalahan.', 'error');
-                        } else {
-                            alert('Terjadi kesalahan.');
-                        }
-                    });
-                }
-            });
-        } else {
-            if (!confirm('Konfirmasi uang tunai sudah diterima? Setelah dikonfirmasi, pembayaran tercatat dan order bisa diselesaikan dari monitoring.')) return;
-            fetch(`/payments/${orderId}/confirm-cash`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Accept': 'application/json',
-                },
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    alert(data.message);
-                    location.reload();
-                } else {
-                    alert(data.message || 'Gagal konfirmasi');
-                }
-            })
-            .catch(() => alert('Terjadi kesalahan.'));
+    async function confirmCash(orderId) {
+        const confirmation = await confirmPaymentAction({
+            type: 'success',
+            heading: 'Konfirmasi uang tunai diterima?',
+            message: 'Pembayaran tunai akan tercatat dan order bisa diselesaikan dari monitoring.',
+            confirmText: 'Ya, Konfirmasi',
+        });
+
+        if (!confirmation.confirmed) return;
+
+        try {
+            const data = await postPayment(`/payments/${orderId}/confirm-cash`);
+            if (!data.success) throw new Error(data.message || 'Gagal konfirmasi');
+            showPaymentMessage(data.message, 'success');
+            location.reload();
+        } catch (error) {
+            showPaymentMessage(error.message || 'Terjadi kesalahan.', 'error');
         }
     }
 </script>

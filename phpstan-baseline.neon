@@ -1,0 +1,121 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Relation ''masjid'' is not found in App\\Models\\ServiceOrder model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Console/Kernel.php
+
+		-
+			message: '#^Relation ''anggota'' is not found in App\\Models\\AnggotaAcUnit model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/AcAnggotaPageController.php
+
+		-
+			message: '#^Relation ''serviceOrder'' is not found in App\\Models\\WorkflowStep model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/AdminLogController.php
+
+		-
+			message: '#^Relation ''acUnits'' is not found in App\\Models\\Anggota model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/AnggotaController.php
+
+		-
+			message: '#^Relation ''serviceOrders'' is not found in App\\Models\\Anggota model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/AnggotaController.php
+
+		-
+			message: '#^Relation ''acUnits'' is not found in App\\Models\\Masjid model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/HomeController.php
+
+		-
+			message: '#^Relation ''acUnits'' is not found in App\\Models\\Masjid model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/MasjidController.php
+
+		-
+			message: '#^Relation ''serviceOrders'' is not found in App\\Models\\Masjid model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/MasjidController.php
+
+		-
+			message: '#^Relation ''acUnits'' is not found in App\\Models\\Masjid model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/MonitoringController.php
+
+		-
+			message: '#^Relation ''masjid'' is not found in App\\Models\\ServiceOrder model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/MonitoringController.php
+
+		-
+			message: '#^Relation ''acUnits'' is not found in App\\Models\\Masjid model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/ReportController.php
+
+		-
+			message: '#^Relation ''masjid'' is not found in App\\Models\\ServiceOrder model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/ReportController.php
+
+		-
+			message: '#^Relation ''serviceOrder'' is not found in App\\Models\\Invoice model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/ReportController.php
+
+		-
+			message: '#^Relation ''serviceOrder'' is not found in App\\Models\\ServiceDetail model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/ReportController.php
+
+		-
+			message: '#^Relation ''acUnits'' is not found in App\\Models\\Masjid model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/ServiceOrderController.php
+
+		-
+			message: '#^Relation ''serviceOrder'' is not found in App\\Models\\TechnicianAssignment model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/TechnicianController.php
+
+		-
+			message: '#^Relation ''masjid'' is not found in App\\Models\\ServiceOrder model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/ViewerController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Anggota\:\:\$acUnits\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/Anggota.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Masjid\:\:\$acUnits\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Models/Masjid.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\User\:\:\$role\.$#'
+			identifier: property.notFound
+			count: 7
+			path: app/Models/User.php

@@ -8,6 +8,8 @@ use App\Models\ServiceOrder;
 use App\Models\ServiceOrderHistory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ServiceOrderArchiveDashboardE2ETest extends TestCase
@@ -44,6 +46,8 @@ class ServiceOrderArchiveDashboardE2ETest extends TestCase
     /** @test */
     public function it_runs_the_full_order_to_archive_flow_and_updates_dashboard_state(): void
     {
+        Storage::fake('local');
+
         $masjid = Masjid::create([
             'custom_id' => Masjid::generateCustomId('masjid'),
             'type' => 'masjid',
@@ -102,14 +106,7 @@ class ServiceOrderArchiveDashboardE2ETest extends TestCase
             ->assertOk();
 
         $order->refresh();
-        $this->assertSame('waiting_payment', $order->status);
-
-        $this->actingAs($this->manager)
-            ->postJson(route('service-order.confirm-payment', $order))
-            ->assertOk();
-
-        $order->refresh();
-        $this->assertSame('payment_verified', $order->status);
+        $this->assertSame('spk_invoice_approved', $order->status);
 
         $this->actingAs($this->manager)
             ->postJson(route('workflow.assign', $order), [
@@ -130,9 +127,12 @@ class ServiceOrderArchiveDashboardE2ETest extends TestCase
         $this->assertSame('in_progress', $order->status);
 
         $this->actingAs($this->technician)
-            ->postJson(route('service-order.field-report', $order), [
-                'field_report_notes' => 'Semua unit selesai diservis.',
-                'field_report_additional_fee' => 50000,
+            ->postJson(route('technician.orders.complete', $order), [
+                'photos' => [UploadedFile::fake()->image('proof.jpg')],
+                'completion_notes' => 'Semua unit selesai diservis.',
+                'has_fees' => true,
+                'fee_description' => 'Biaya tambahan',
+                'fee_amount' => 50000,
             ])
             ->assertOk();
 
@@ -163,6 +163,17 @@ class ServiceOrderArchiveDashboardE2ETest extends TestCase
         $this->assertSame('completed', $order->status);
         $this->assertSame($serviceDate, $unit->last_service_date?->toDateString());
         $this->assertSame('aman', $masjid->fresh()->urgency_status);
+
+        $this->actingAs($this->frontdesk)
+            ->postJson(route('service-order.frontdesk-confirm-complete', $order))
+            ->assertOk();
+
+        $this->actingAs($this->manager)
+            ->postJson(route('service-order.manager-confirm-complete', $order))
+            ->assertOk();
+
+        $order->refresh();
+        $this->assertSame('closed', $order->status);
 
         $this->actingAs($this->manager)
             ->postJson('/modules/ac-masjid-musholla/service-order/'.$order->id.'/archive')

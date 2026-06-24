@@ -9,6 +9,9 @@
 .env.backup
 .env.*.local
 .env.*.example
+.git
+.githooks
+
 
 # Node / Vite
 node_modules/
@@ -60,9 +63,6 @@ yarn-error.log*
 /storage/framework/views/*
 
 # Project temps
-Website-Update/
-skills/
-useless/
 .omc/
 .claude/
 .kiro/
@@ -70,30 +70,22 @@ useless/
 .openclaude/
 .paul/
 .cursor/
+.minimax/
+.qwen/
 .codex/
 .learnings
-project-docs/
-project-docs-v1/
-project_explanation/
 TODO.md
-temp_service_order_test.php
-Service_order_fix_report.md
-Error_report.md
 FILE_DOCUMENTATION.md
 .agents
 .phpunit.result.cache
 scratch/
-/debug_workflow
-/debug_workflow/blackboard
 /database/testing
-AI-agents-task-rule-etc/
-ac_beneran_explanation/
-FILE_DOCUMENTATION.html
-my-codebase.md
-repomix-output.xml
-my-codebase.xml
+.AI-agents-task-rule-etc/
 GEMINI.md
 project-documentation/
+outputs/
+
+
 
 # Dependencies venv
 venv/

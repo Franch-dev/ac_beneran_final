@@ -4,11 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\ServiceOrder;
 use App\Support\ApiResponse;
-use App\Support\RealtimeSync;
+use App\Support\ServiceOrderWorkflow;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class CloseOrderController extends Controller
@@ -23,27 +21,15 @@ class CloseOrderController extends Controller
 
         $serviceOrderIds = $request->input('service_order_ids');
 
-        // Delete completed orders (remove them from monitoring table)
-        $deleted = DB::connection('ac_service')->transaction(function () use ($serviceOrderIds) {
-            $orders = ServiceOrder::whereIn('id', $serviceOrderIds)
-                ->where('status', 'completed')
-                ->get();
+        $orders = ServiceOrder::whereIn('id', $serviceOrderIds)
+            ->whereIn('status', ['completed', 'closed'])
+            ->get();
 
-            foreach ($orders as $order) {
-                $order->invoice?->delete();
-                $order->serviceDetails()->delete();
-                $order->workflowSteps()->delete();
-                $order->technicianAssignment()?->delete();
-                $order->delete();
-            }
+        foreach ($orders as $order) {
+            app(ServiceOrderWorkflow::class)->archiveClosed($order);
+        }
 
-            return $orders->count();
-        });
-
-        Cache::forget('monitoring:status_counts');
-        Cache::forget('monitoring:status_totals');
-
-        return ApiResponse::success(message: $deleted . ' order selesai berhasil dihapus dari tabel.');
+        return ApiResponse::success(message: $orders->count() . ' order selesai berhasil diarsipkan.');
     }
 
 }

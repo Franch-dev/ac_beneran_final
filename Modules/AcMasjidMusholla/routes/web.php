@@ -62,6 +62,9 @@ Route::middleware('auth')->prefix('modules/ac-masjid-musholla')->group(function 
     Route::post('/workflow/{serviceOrder}/approve-spk-invoice', [\App\Http\Controllers\WorkflowController::class, 'approveSpkInvoice'])
         ->middleware(['role:manager,admin', 'throttle:writes'])
         ->name('workflow.approve-spk-invoice');
+    Route::post('/workflow/{serviceOrder}/reject-spk-invoice', [\App\Http\Controllers\WorkflowController::class, 'rejectSpkInvoice'])
+        ->middleware(['role:manager,admin', 'throttle:writes'])
+        ->name('workflow.reject-spk-invoice');
 
     Route::prefix('masjid')->name('masjid.')->middleware(['role:frontdesk,admin', 'throttle:writes'])->group(function () {
         Route::post('/', [ \App\Http\Controllers\MasjidController::class, 'store' ])->name('store');
@@ -79,6 +82,13 @@ Route::middleware('auth')->prefix('modules/ac-masjid-musholla')->group(function 
     Route::prefix('service-order')->name('service-order.')->group(function () {
         Route::post('/', [ \App\Http\Controllers\ServiceOrderController::class, 'store' ])->middleware(['role:frontdesk,admin', 'throttle:writes'])->name('store');
         Route::post('{serviceOrder}/approve', [ \App\Http\Controllers\ServiceOrderController::class, 'approve' ])->middleware(['role:manager,admin', 'throttle:writes'])->name('approve');
+        Route::post('{serviceOrder}/create-spk-invoice', [ \App\Http\Controllers\WorkflowController::class, 'createSpkInvoice' ])->middleware(['role:frontdesk,admin', 'throttle:writes'])->name('create-spk-invoice');
+        Route::post('{serviceOrder}/confirm-payment', [ \App\Http\Controllers\ServiceOrderController::class, 'confirmPayment' ])->middleware(['role:manager,admin', 'throttle:writes'])->name('confirm-payment');
+        Route::post('{serviceOrder}/finalize-order', [ \App\Http\Controllers\ServiceOrderController::class, 'finalizeOrder' ])->middleware(['role:manager,admin', 'throttle:writes'])->name('finalize-order');
+        Route::post('{serviceOrder}/approve-additional-fee', [ \App\Http\Controllers\ServiceOrderController::class, 'approveAdditionalFee' ])->middleware(['role:manager,admin', 'throttle:writes'])->name('approve-additional-fee');
+        Route::post('{serviceOrder}/route-additional-fee-to-invoice-edit', [ \App\Http\Controllers\ServiceOrderController::class, 'routeAdditionalFeeToInvoiceEdit' ])->middleware(['role:manager,admin', 'throttle:writes'])->name('route-additional-fee-to-invoice-edit');
+        Route::post('{serviceOrder}/approve-edited-invoice', [ \App\Http\Controllers\ServiceOrderController::class, 'approveEditedInvoice' ])->middleware(['role:manager,admin', 'throttle:writes'])->name('approve-edited-invoice');
+        Route::post('{serviceOrder}/reject-edited-invoice', [ \App\Http\Controllers\ServiceOrderController::class, 'rejectEditedInvoice' ])->middleware(['role:manager,admin', 'throttle:writes'])->name('reject-edited-invoice');
         Route::delete('{serviceOrder}', [ \App\Http\Controllers\ServiceOrderController::class, 'destroy' ])->middleware(['role:manager,admin', 'throttle:writes'])->name('destroy');
     });
 });

@@ -208,6 +208,24 @@
     const photoError = document.getElementById('photoError');
     let selectedFiles = [];
 
+    function showJobMessage(message, type = 'success') {
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, type);
+            return;
+        }
+
+        console[type === 'error' ? 'error' : 'info'](message);
+    }
+
+    async function confirmJobAction(options) {
+        if (typeof window.confirmAction !== 'function') {
+            return true;
+        }
+
+        const result = await window.confirmAction(options);
+        return result?.confirmed || result === true;
+    }
+
     // Click to upload
     dropZone.addEventListener('click', () => photoInput.click());
 
@@ -238,15 +256,15 @@
 
         for (const file of files) {
             if (!validTypes.includes(file.type)) {
-                alert(`File ${file.name} bukan gambar yang valid. Gunakan JPG, PNG, atau WEBP.`);
+                showJobMessage(`File ${file.name} bukan gambar yang valid. Gunakan JPG, PNG, atau WEBP.`, 'warning');
                 continue;
             }
             if (file.size > maxSize) {
-                alert(`File ${file.name} terlalu besar. Maksimal 5MB.`);
+                showJobMessage(`File ${file.name} terlalu besar. Maksimal 5MB.`, 'warning');
                 continue;
             }
             if (selectedFiles.length >= 10) {
-                alert('Maksimal 10 foto.');
+                showJobMessage('Maksimal 10 foto.', 'warning');
                 break;
             }
 
@@ -321,24 +339,25 @@
         hidePopup('feeReminderModal');
     }
 
-    function showConfirmModal() {
+    async function showConfirmModal() {
         const hasFeesChecked = hasFees.checked;
-        const title = document.getElementById('confirmTitle');
-        const message = document.getElementById('confirmMessage');
+        const feeAmount = Number(document.getElementById('fee_amount')?.value || 0);
+        const confirmed = await confirmJobAction({
+            type: 'success',
+            heading: 'Konfirmasi penyelesaian?',
+            message: hasFeesChecked
+                ? 'Pekerjaan akan diselesaikan dengan biaya tambahan. Invoice akan diedit frontdesk lalu disetujui manager.'
+                : 'Pekerjaan akan diselesaikan tanpa biaya tambahan dan order lanjut ke tahap pembayaran.',
+            confirmText: 'Ya, Selesaikan',
+            details: [
+                { label: 'Foto', value: `${selectedFiles.length} file` },
+                { label: 'Biaya Tambahan', value: hasFeesChecked ? `Rp ${feeAmount.toLocaleString('id-ID')}` : 'Tidak ada' },
+            ],
+        });
 
-        if (hasFeesChecked) {
-            title.textContent = 'Konfirmasi Penyelesaian';
-            message.textContent = 'Anda akan menyelesaikan pekerjaan dengan biaya tambahan. Invoice akan diedit oleh frontdesk dan disetujui manager.';
-        } else {
-            title.textContent = 'Konfirmasi Penyelesaian';
-            message.textContent = 'Anda akan menyelesaikan pekerjaan tanpa biaya tambahan. Order akan langsung masuk ke tahap pembayaran.';
+        if (confirmed) {
+            submitForm();
         }
-
-        showPopup('confirmModal');
-    }
-
-    function closeConfirmModal() {
-        hidePopup('confirmModal');
     }
 
     // Form submission
@@ -358,8 +377,6 @@
     }
 
     function submitForm() {
-        closeConfirmModal();
-
         const submitBtn = document.getElementById('submitBtn');
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-sync fa-spin"></i> Mengirim...';
@@ -398,16 +415,16 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert(data.message);
+                showJobMessage(data.message, 'success');
                 window.location.href = '{{ route("technician.dashboard") }}';
             } else {
-                alert(data.message || 'Terjadi kesalahan.');
+                showJobMessage(data.message || 'Terjadi kesalahan.', 'error');
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="fas fa-check"></i> Selesaikan Pekerjaan';
             }
         })
         .catch(error => {
-            alert('Terjadi kesalahan. Silakan coba lagi.');
+            showJobMessage('Terjadi kesalahan. Silakan coba lagi.', 'error');
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="fas fa-check"></i> Selesaikan Pekerjaan';
             console.error('Error:', error);

@@ -187,7 +187,11 @@
             <h3><i class="fas fa-edit"></i> Edit & Approve</h3>
         </div>
         <div class="card-body">
-            <form action="{{ route('frontdesk.guest-orders.approve', $order->id) }}" method="POST">
+            <form action="{{ route('frontdesk.guest-orders.approve', $order->id) }}" method="POST"
+                data-confirm="Guest order akan dibuat menjadi service order."
+                data-confirm-heading="Approve guest order?"
+                data-confirm-type="success"
+                data-confirm-text="Ya, Approve">
                 @csrf
                 <div class="form-row">
                     <div class="form-group">
@@ -233,7 +237,11 @@
                 <h4 style="margin-bottom: 16px; color: var(--danger); display: flex; align-items: center; gap: 8px;">
                     <i class="fas fa-ban"></i> Tolak Order
                 </h4>
-                <form action="{{ route('frontdesk.guest-orders.reject', $order->id) }}" method="POST">
+                <form action="{{ route('frontdesk.guest-orders.reject', $order->id) }}" method="POST"
+                    data-confirm="Guest order akan ditolak. Pastikan alasan penolakan sudah diisi."
+                    data-confirm-heading="Tolak guest order?"
+                    data-confirm-type="danger"
+                    data-confirm-text="Ya, Tolak">
                     @csrf
                     <div class="form-group">
                         <label class="form-label">Alasan Penolakan *</label>

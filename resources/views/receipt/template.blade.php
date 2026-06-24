@@ -5,8 +5,8 @@
 @section('content')
 <div class="page-container" style="max-width: 800px; margin: 0 auto; padding: 2rem 1rem;">
     <div class="mb-4 flex justify-between items-center no-print">
-        <a href="{{ route('manager.receipts') }}" class="text-blue-600 hover:text-blue-800 text-sm">← Kembali ke Daftar</a>
-        <button onclick="window.print()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+<a href="{{ route('manager.receipts') }}" class="text-[var(--primary)] hover:opacity-90 text-sm" style="color: var(--primary);">← Kembali ke Daftar</a>
+        <button onclick="window.print()" class="px-4 py-2 text-white rounded-lg" style="background: var(--primary); hover:filter: brightness(1.1);">
             <i class="fas fa-print"></i> Cetak
         </button>
     </div>
@@ -15,9 +15,9 @@
         <!-- Letterhead -->
         <div style="text-align: center; border-bottom: 3px double #333; padding-bottom: 20px; margin-bottom: 30px;">
             <h1 style="margin: 0; font-size: 28px; font-weight: bold; color: #1a1a1a;">AC BENERAN</h1>
-            <p style="margin: 4px 0; font-size: 12px; color: #666;">Jl. Contoh No. 123, Kota Bandung, Jawa Barat 40123</p>
-            <p style="margin: 4px 0; font-size: 12px; color: #666;">Telp: (022) 1234-5678 | WA: 0812-3456-7890</p>
-            <p style="margin: 4px 0; font-size: 12px; color: #666;">Email: admin@acbeneran.com</p>
+            <p style="margin: 4px 0; font-size: 12px; color: #000000;">Jl. Contoh No. 123, Kota Bandung, Jawa Barat 40123</p>
+            <p style="margin: 4px 0; font-size: 12px; color: #000000;">Telp: (022) 1234-5678 | WA: 0812-3456-7890</p>
+            <p style="margin: 4px 0; font-size: 12px; color: #000000;">Email: admin@acbeneran.com</p>
         </div>
 
         <!-- Title -->
@@ -26,20 +26,20 @@
         <!-- Receipt Info -->
         <table style="width: 100%; margin-bottom: 20px; font-size: 14px;">
             <tr>
-                <td style="width: 50%; padding: 4px 0;">No. Tanda Terima</td>
-                <td style="padding: 4px 0;">: <strong>{{ $receipt->receipt_number }}</strong></td>
+                <td style="width: 50%; padding: 4px 0; color: #000000;">No. Tanda Terima</td>
+                <td style="padding: 4px 0; color: #000000;">: <strong>{{ $receipt->receipt_number }}</strong></td>
             </tr>
             <tr>
-                <td style="padding: 4px 0;">No. Order</td>
-                <td style="padding: 4px 0;">: {{ $receipt->serviceOrder->order_number }}</td>
+                <td style="padding: 4px 0; color: #000000;">No. Order</td>
+                <td style="padding: 4px 0; color: #000000;">: {{ $receipt->serviceOrder->order_number }}</td>
             </tr>
             <tr>
-                <td style="padding: 4px 0;">No. Invoice</td>
-                <td style="padding: 4px 0;">: {{ $receipt->invoice->invoice_number }}</td>
+                <td style="padding: 4px 0; color: #000000;">No. Invoice</td>
+                <td style="padding: 4px 0; color: #000000;">: {{ $receipt->invoice->invoice_number }}</td>
             </tr>
             <tr>
-                <td style="padding: 4px 0;">Tanggal Terima</td>
-                <td style="padding: 4px 0;">: {{ \Carbon\Carbon::parse($receipt->payment_date)->translatedFormat('d F Y') }}</td>
+                <td style="padding: 4px 0; color: #000000;">Tanggal Terima</td>
+                <td style="padding: 4px 0; color: #000000;">: {{ \Carbon\Carbon::parse($receipt->payment_date)->translatedFormat('d F Y') }}</td>
             </tr>
         </table>
 
@@ -47,16 +47,16 @@
         <div style="background: #f9fafb; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
             <table style="width: 100%; font-size: 14px;">
                 <tr>
-                    <td style="width: 35%; padding: 4px 0;">Nama Masjid/Musholla</td>
-                    <td style="padding: 4px 0;">: <strong>{{ $receipt->serviceOrder->masjid->name }}</strong></td>
+                    <td style="width: 35%; padding: 4px 0; color: #000000;">Nama Masjid/Musholla</td>
+                    <td style="padding: 4px 0; color: #000000;">: <strong>{{ $receipt->serviceOrder->masjid->name }}</strong></td>
                 </tr>
                 <tr>
-                    <td style="padding: 4px 0;">Alamat</td>
-                    <td style="padding: 4px 0;">: {{ $receipt->serviceOrder->masjid->address ?? '-' }}</td>
+                    <td style="padding: 4px 0; color: #000000;">Alamat</td>
+                    <td style="padding: 4px 0; color: #000000;">: {{ $receipt->serviceOrder->masjid->address ?? '-' }}</td>
                 </tr>
                 <tr>
-                    <td style="padding: 4px 0;">Kontak</td>
-                    <td style="padding: 4px 0;">: {{ $receipt->serviceOrder->phone ?? $receipt->serviceOrder->meeting_person }}</td>
+                    <td style="padding: 4px 0; color: #000000;">Kontak</td>
+                    <td style="padding: 4px 0; color: #000000;">: {{ $receipt->serviceOrder->phone ?? $receipt->serviceOrder->meeting_person }}</td>
                 </tr>
             </table>
         </div>
@@ -65,21 +65,21 @@
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;">
             <thead>
                 <tr style="background: #f3f4f6;">
-                    <th style="border: 1px solid #d1d5db; padding: 8px 12px; text-align: left;">No</th>
-                    <th style="border: 1px solid #d1d5db; padding: 8px 12px; text-align: left;">Deskripsi</th>
-                    <th style="border: 1px solid #d1d5db; padding: 8px 12px; text-align: center;">Qty</th>
-                    <th style="border: 1px solid #d1d5db; padding: 8px 12px; text-align: right;">Harga</th>
-                    <th style="border: 1px solid #d1d5db; padding: 8px 12px; text-align: right;">Subtotal</th>
+                    <th style="border: 1px solid #000000; padding: 8px 12px; text-align: left; color: #000000;">No</th>
+                    <th style="border: 1px solid #000000; padding: 8px 12px; text-align: left; color: #000000;">Deskripsi</th>
+                    <th style="border: 1px solid #000000; padding: 8px 12px; text-align: center; color: #000000;">Qty</th>
+                    <th style="border: 1px solid #000000; padding: 8px 12px; text-align: right; color: #000000;">Harga</th>
+                    <th style="border: 1px solid #000000; padding: 8px 12px; text-align: right; color: #000000;">Subtotal</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($receipt->serviceOrder->serviceDetails as $i => $detail)
                 <tr>
-                    <td style="border: 1px solid #d1d5db; padding: 8px 12px;">{{ $i + 1 }}</td>
-                    <td style="border: 1px solid #d1d5db; padding: 8px 12px;">{{ $detail->description }}</td>
-                    <td style="border: 1px solid #d1d5db; padding: 8px 12px; text-align: center;">{{ $detail->quantity }}</td>
-                    <td style="border: 1px solid #d1d5db; padding: 8px 12px; text-align: right;">Rp {{ number_format($detail->price, 0, ',', '.') }}</td>
-                    <td style="border: 1px solid #d1d5db; padding: 8px 12px; text-align: right;">Rp {{ number_format($detail->quantity * $detail->price, 0, ',', '.') }}</td>
+                    <td style="border: 1px solid #000000; padding: 8px 12px; color: #000000;">{{ $i + 1 }}</td>
+                    <td style="border: 1px solid #000000; padding: 8px 12px; color: #000000;">{{ trim($detail->pk_type . ' ' . $detail->brand) }}</td>
+                    <td style="border: 1px solid #000000; padding: 8px 12px; text-align: center; color: #000000;">{{ $detail->quantity }}</td>
+                    <td style="border: 1px solid #000000; padding: 8px 12px; text-align: right; color: #000000;">Rp {{ number_format($detail->price_per_unit, 0, ',', '.') }}</td>
+                    <td style="border: 1px solid #000000; padding: 8px 12px; text-align: right; color: #000000;">Rp {{ number_format($detail->quantity * $detail->price_per_unit, 0, ',', '.') }}</td>
                 </tr>
                 @endforeach
             </tbody>
@@ -89,11 +89,11 @@
         <div style="text-align: right; margin-bottom: 30px;">
             <table style="display: inline-table; font-size: 14px;">
                 <tr>
-                    <td style="padding: 4px 12px; text-align: right;">Total Invoice</td>
-                    <td style="padding: 4px 12px; text-align: right; font-weight: bold;">Rp {{ number_format($receipt->invoice->total_price, 0, ',', '.') }}</td>
+                    <td style="padding: 4px 12px; text-align: right; color: #000000;">Total Invoice :</td>
+                    <td style="padding: 4px 12px; text-align: right; font-weight: bold; color: #000000;">Rp {{ number_format($receipt->invoice->total_price, 0, ',', '.') }}</td>
                 </tr>
                 <tr style="border-top: 2px solid #333;">
-                    <td style="padding: 8px 12px; text-align: right; font-weight: bold;">Jumlah Dibayar</td>
+                    <td style="padding: 8px 12px; text-align: right; font-weight: bold; color: #000000;">Jumlah Dibayar :</td>
                     <td style="padding: 8px 12px; text-align: right; font-weight: bold; font-size: 16px; color: #16a34a;">Rp {{ number_format($receipt->payment_amount, 0, ',', '.') }}</td>
                 </tr>
             </table>
@@ -101,30 +101,30 @@
 
         <!-- Payment Info -->
         <div style="background: #f0fdf4; padding: 15px; border-radius: 6px; border: 1px solid #bbf7d0; margin-bottom: 30px;">
-            <table style="width: 100%; font-size: 14px;">
+            <table style="width: 100%; font-size: 14px; ">
                 <tr>
-                    <td style="width: 35%; padding: 4px 0;">Metode Pembayaran</td>
-                    <td style="padding: 4px 0;">: <strong>{{ $receipt->payment_method_label }}</strong></td>
+                    <td style="width: 35%; padding: 4px 0; color: #000000;">Metode Pembayaran</td>
+                    <td style="padding: 4px 0; color: #000000;">: <strong>{{ $receipt->payment_method_label }}</strong></td>
                 </tr>
                 @if($receipt->transfer_bank)
                 <tr>
-                    <td style="padding: 4px 0;">Bank</td>
-                    <td style="padding: 4px 0;">: {{ $receipt->transfer_bank }}</td>
+                    <td style="padding: 4px 0; color: #000000;">Bank</td>
+                    <td style="padding: 4px 0; color: #000000;">: {{ $receipt->transfer_bank }}</td>
                 </tr>
                 <tr>
-                    <td style="padding: 4px 0;">No. Referensi</td>
-                    <td style="padding: 4px 0;">: {{ $receipt->transfer_reference ?? '-' }}</td>
+                    <td style="padding: 4px 0; color: #000000;">No. Referensi</td>
+                    <td style="padding: 4px 0; color: #000000;">: {{ $receipt->transfer_reference ?? '-' }}</td>
                 </tr>
                 @endif
                 @if($receipt->qris_reference)
                 <tr>
-                    <td style="padding: 4px 0;">Ref. QRIS</td>
-                    <td style="padding: 4px 0;">: {{ $receipt->qris_reference }}</td>
+                    <td style="padding: 4px 0; color: #000000;">Ref. QRIS</td>
+                    <td style="padding: 4px 0; color: #000000;">: {{ $receipt->qris_reference }}</td>
                 </tr>
                 @endif
                 <tr>
-                    <td style="padding: 4px 0;">Tanggal Pembayaran</td>
-                    <td style="padding: 4px 0;">: {{ \Carbon\Carbon::parse($receipt->payment_date)->translatedFormat('d F Y') }}</td>
+                    <td style="padding: 4px 0; color: #000000;">Tanggal Pembayaran</td>
+                    <td style="padding: 4px 0; color: #000000;">: {{ \Carbon\Carbon::parse($receipt->payment_date)->translatedFormat('d F Y') }}</td>
                 </tr>
             </table>
         </div>
@@ -132,17 +132,17 @@
         <!-- Signature Section -->
         <table style="width: 100%; font-size: 14px; margin-top: 40px;">
             <tr>
-                <td style="width: 50%; text-align: center; vertical-align: bottom;">
-                    <p style="margin: 0 0 60px 0;">Yang Menerima,</p>
+                <td style="width: 50%; text-align: center; vertical-align: top;">
+                    <p style="margin: 0 0 60px 0; color: #000000;">Yang Menerima,</p>
                     <div style="border-top: 1px solid #333; display: inline-block; width: 180px; padding-top: 4px;">
-                        <p style="margin: 0; font-size: 12px;">( {{ $receipt->serviceOrder->meeting_person }} )</p>
+                        <p style="margin: 0; font-size: 12px; color: #000000;">( {{ $receipt->serviceOrder->meeting_person }} )</p>
                     </div>
                 </td>
                 <td style="width: 50%; text-align: center; vertical-align: bottom;">
-                    <p style="margin: 0 0 60px 0;">Yang Menyerahkan,</p>
+                    <p style="margin: 0 0 60px 0; color: #000000;">Yang Menyerahkan,</p>
                     <div style="border-top: 1px solid #333; display: inline-block; width: 180px; padding-top: 4px;">
-                        <p style="margin: 0; font-weight: bold;">{{ $receipt->printed_name }}</p>
-                        <p style="margin: 0; font-size: 12px;">( {{ ucfirst($receipt->verified_by_name) }} )</p>
+                        <p style="margin: 0; font-weight: bold; color: #000000;">{{ $receipt->printed_name }}</p>
+                        <p style="margin: 0; font-size: 12px; color: #000000;">( {{ ucfirst($receipt->verified_by_name) }} )</p>
                     </div>
                 </td>
             </tr>

@@ -26,6 +26,15 @@ async function refreshDashboardSurface() {
     window.location.reload();
 }
 
+async function confirmDashboardAction(options = {}) {
+    if (typeof window.confirmAction === 'function') {
+        const result = await window.confirmAction(options);
+        return result?.confirmed || result === true;
+    }
+
+    return true;
+}
+
 function bindDashboardSearchFilter() {
     const searchInput = document.querySelector('.search-input');
     if (!searchInput || searchInput.dataset.liveFilterBound === 'true') {
@@ -117,6 +126,17 @@ function clearACOnboarding() {
 }
 
 window.skipACSetup = async function () {
+    const confirmed = await confirmDashboardAction({
+        type: 'warning',
+        heading: 'Lewati setup AC?',
+        message: 'Masjid akan tersimpan tanpa unit AC. Data AC bisa dilengkapi nanti dari Kelola AC.',
+        confirmText: 'Ya, Lewati',
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
     closePopup('addACPopup');
     clearACOnboarding();
     showToast('Setup AC disimpan sebagai pending. Anda bisa melengkapinya nanti dari Kelola AC.', 'info');
@@ -125,10 +145,6 @@ window.skipACSetup = async function () {
 
 document.getElementById('addMasjidForm')?.addEventListener('submit', async function (event) {
     event.preventDefault();
-
-    const button = this.querySelector('[type="submit"]');
-    button.disabled = true;
-    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
 
     try {
         const formData = new FormData(this);
@@ -142,6 +158,26 @@ document.getElementById('addMasjidForm')?.addEventListener('submit', async funct
             phone_numbers: phones,
         };
 
+        const confirmed = await confirmDashboardAction({
+            type: 'success',
+            heading: 'Daftarkan masjid?',
+            message: 'Data masjid akan disimpan dan Anda akan diarahkan untuk menambahkan unit AC.',
+            confirmText: 'Ya, Daftarkan',
+            details: [
+                { label: 'Nama', value: data.name || '-' },
+                { label: 'Tipe', value: data.type || '-' },
+                { label: 'Nomor HP', value: phones.length ? `${phones.length} nomor` : '-' },
+            ],
+        });
+
+        if (!confirmed) {
+            return;
+        }
+
+        const button = this.querySelector('[type="submit"]');
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
         const response = await apiFetch(ROUTES.masjidStore, 'POST', data);
         await refreshDashboardSurface();
         resetMasjidForm();
@@ -152,8 +188,11 @@ document.getElementById('addMasjidForm')?.addEventListener('submit', async funct
     } catch (error) {
         showToast(error.message, 'error');
     } finally {
-        button.disabled = false;
-        button.innerHTML = '<i class="fas fa-check"></i> Daftarkan';
+        const button = this.querySelector('[type="submit"]');
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-check"></i> Daftarkan';
+        }
     }
 });
 
@@ -224,6 +263,22 @@ async function saveACUnits() {
 
     if (!valid) {
         showToast('Lengkapi data AC dengan benar', 'error');
+        return;
+    }
+
+    const confirmed = await confirmDashboardAction({
+        type: 'success',
+        heading: 'Simpan data AC?',
+        message: 'Unit AC akan ditambahkan ke masjid yang baru didaftarkan.',
+        confirmText: 'Ya, Simpan',
+        details: [
+            { label: 'Masjid', value: onboardingState.masjid?.name || masjidId || '-' },
+            { label: 'Jumlah Baris', value: `${units.length} data` },
+            { label: 'Total Unit', value: `${units.reduce((sum, unit) => sum + Number(unit.quantity || 0), 0)} unit` },
+        ],
+    });
+
+    if (!confirmed) {
         return;
     }
 
@@ -332,6 +387,22 @@ document.getElementById('editMasjidForm')?.addEventListener('submit', async func
 
     if (!phones.length) {
         showToast('Minimal 1 nomor HP', 'error');
+        return;
+    }
+
+    const confirmed = await confirmDashboardAction({
+        type: 'success',
+        heading: 'Simpan perubahan masjid?',
+        message: 'Data profil masjid akan diperbarui.',
+        confirmText: 'Ya, Simpan',
+        details: [
+            { label: 'Nama', value: document.getElementById('editMasjidName').value || '-' },
+            { label: 'DKM', value: document.getElementById('editMasjidDkm').value || '-' },
+            { label: 'Nomor HP', value: `${phones.length} nomor` },
+        ],
+    });
+
+    if (!confirmed) {
         return;
     }
 
@@ -461,6 +532,21 @@ function addNewAC() {
 
 async function saveOneAC(unitId, button) {
     const row = button.closest('.ac-unit-row');
+    const confirmed = await confirmDashboardAction({
+        type: 'success',
+        heading: 'Simpan perubahan AC?',
+        message: 'Data unit AC ini akan diperbarui.',
+        confirmText: 'Ya, Simpan',
+        details: [
+            { label: 'Merk', value: row.querySelector('.eu-brand')?.value || '-' },
+            { label: 'Jumlah', value: row.querySelector('.eu-qty')?.value || '-' },
+            { label: 'Terakhir Servis', value: row.querySelector('.eu-date')?.value || '-' },
+        ],
+    });
+
+    if (!confirmed) {
+        return;
+    }
 
     try {
         button.disabled = true;
@@ -479,13 +565,25 @@ async function saveOneAC(unitId, button) {
 }
 
 async function deleteAC(unitId, button) {
-    if (!window.confirm('Hapus unit AC ini?')) {
+    const row = button.closest('.ac-unit-row');
+    const confirmed = await confirmDashboardAction({
+        type: 'danger',
+        heading: 'Hapus unit AC?',
+        message: 'Unit AC ini akan dihapus dari data masjid.',
+        confirmText: 'Ya, Hapus',
+        details: [
+            { label: 'Merk', value: row?.querySelector('.eu-brand')?.value || '-' },
+            { label: 'Jumlah', value: row?.querySelector('.eu-qty')?.value || '-' },
+        ],
+    });
+
+    if (!confirmed) {
         return;
     }
 
     try {
         await apiFetch(ROUTES.acDestroy(unitId), 'DELETE');
-        button.closest('.ac-unit-row').remove();
+        row?.remove();
         showToast('Unit AC dihapus');
         await refreshDashboardSurface();
     } catch (error) {
@@ -512,6 +610,21 @@ async function saveNewACs() {
         });
     });
 
+    const confirmed = await confirmDashboardAction({
+        type: 'success',
+        heading: 'Simpan unit AC baru?',
+        message: 'Unit AC baru akan ditambahkan ke masjid ini.',
+        confirmText: 'Ya, Simpan',
+        details: [
+            { label: 'Jumlah Baris', value: `${units.length} data` },
+            { label: 'Total Unit', value: `${units.reduce((sum, unit) => sum + Number(unit.quantity || 0), 0)} unit` },
+        ],
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
     try {
         await apiFetch(ROUTES.acBulk, 'POST', { masjid_id: masjidId, units });
         showToast('Unit baru berhasil ditambahkan!');
@@ -523,20 +636,45 @@ async function saveNewACs() {
 
 let deleteId = null;
 
-function confirmDelete(id, name) {
+async function confirmDelete(id, name) {
     deleteId = id;
-    document.getElementById('deleteName').textContent = name;
-    document.getElementById('deleteConfirmBtn').onclick = async () => {
-        try {
-            await apiFetch(ROUTES.masjidDestroy(deleteId), 'DELETE');
-            closePopup('deletePopup');
-            showToast('Masjid berhasil dihapus');
-            await refreshDashboardSurface();
-        } catch (error) {
-            showToast(error.message, 'error');
-        }
-    };
-    openPopup('deletePopup');
+    const confirmed = await confirmDashboardAction({
+        type: 'danger',
+        heading: 'Hapus masjid?',
+        message: 'Data masjid dan unit AC terkait akan dihapus.',
+        confirmText: 'Ya, Hapus',
+        details: [
+            { label: 'Masjid', value: name || '-' },
+        ],
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        await apiFetch(ROUTES.masjidDestroy(deleteId), 'DELETE');
+        closePopup('deletePopup');
+        showToast('Masjid berhasil dihapus');
+        await refreshDashboardSurface();
+    } catch (error) {
+        showToast(error.message, 'error');
+    }
 }
 
 bindDashboardSearchFilter();
+
+Object.assign(window, {
+    addPhoneField,
+    resetMasjidForm,
+    addACUnit,
+    saveACUnits,
+    showDetail,
+    openEditMasjid,
+    openEditAC,
+    addNewAC,
+    saveOneAC,
+    deleteAC,
+    saveNewACs,
+    confirmDelete,
+});

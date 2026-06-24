@@ -81,6 +81,7 @@ class WorkspaceNavigation
             'ac-masjid-musholla' => [
                 'key' => 'ac-masjid-musholla',
                 'label' => 'AC Masjid & Musholla',
+                'short_label' => 'AC Masjid',
                 'hub_label' => 'Hub AC Masjid',
                 'icon' => 'fas fa-mosque',
                 'home_route' => 'modules.ac-masjid-musholla.index',
@@ -91,6 +92,7 @@ class WorkspaceNavigation
             'ac-anggota' => [
                 'key' => 'ac-anggota',
                 'label' => 'AC Anggota',
+                'short_label' => 'AC Anggota',
                 'hub_label' => 'Hub AC Anggota',
                 'icon' => 'fas fa-users',
                 'home_route' => 'ac-anggota.index',
@@ -124,7 +126,7 @@ class WorkspaceNavigation
                 }
             ),
             self::routeLink(
-                'Dashboard',
+                $workspace['short_label'] . ' Dashboard',
                 'fas fa-th-large',
                 $workspace['dashboard_route'],
                 $routeName,
@@ -134,7 +136,7 @@ class WorkspaceNavigation
                 }
             ),
             self::routeLink(
-                'Monitoring',
+                $workspace['short_label'] . ' Monitoring',
                 'fas fa-chart-line',
                 $workspace['monitoring_route'],
                 $routeName,

@@ -12,27 +12,24 @@ return new class extends Migration
             $table->id();
             $table->foreignId('service_order_id')->constrained('service_orders')->cascadeOnDelete();
             $table->enum('step', [
-                'created',
                 'guest_created',
                 'frontdesk_created',
+                'approved',
                 'spk_invoice_created',
                 'spk_invoice_approved',
-                'approved',
                 'assigned',
                 'in_progress',
                 'technician_reported',
+                'invoice_editing',
+                'fee_review',
+                'invoice_edited',
                 'waiting_payment',
                 'payment_verified',
+                'printed',
                 'waiting_review',
                 'completed',
-                'invoice_generated',
-                'edited_invoice_created',
-                'edited_invoice_approved',
-                'invoice_edited',
-                'payment_received',
-                'printed',
                 'closed',
-                'cancelled'
+                'cancelled',
             ]);
             $table->unsignedBigInteger('actor_id')->nullable(); // user id from main DB
             $table->string('actor_name')->nullable();           // denormalized for display

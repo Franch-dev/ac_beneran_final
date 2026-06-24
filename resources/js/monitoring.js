@@ -11,6 +11,15 @@ const escapeMonitoringHtml = (value) => {
 
 const escapeMonitoringJsString = (value) => JSON.stringify(String(value ?? '')).slice(1, -1);
 
+async function confirmMonitoringAction(options = {}) {
+    if (typeof window.confirmAction === 'function') {
+        const result = await window.confirmAction(options);
+        return result?.confirmed || result === true;
+    }
+
+    return true;
+}
+
 // === ORDER DETAIL MODAL ===
 window.showOrderDetail = async function(orderId, orderNumber, masjidName, serviceDate) {
     const serviceOrderId = Number(orderId);
@@ -375,6 +384,17 @@ window.deleteServiceOrder = function(id, e, orderNumber, masjidName, serviceDate
 
 // Wrapper: Archive order from UI (per plan)
 window.archiveOrder = async function(orderId) {
+    const confirmed = await confirmMonitoringAction({
+        type: 'warning',
+        heading: 'Archive order?',
+        message: 'Order akan dipindahkan ke riwayat selesai.',
+        confirmText: 'Ya, Archive',
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
     try {
         const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.serviceOrderArchive)
             ? ROUTES_MON.serviceOrderArchive(orderId)
@@ -456,7 +476,10 @@ async function apiFetch(url, method = 'GET', body = null) {
 
     if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        throw new Error(error.message || `HTTP ${response.status}`);
+        const requestError = new Error(error.message || `HTTP ${response.status}`);
+        requestError.status = response.status;
+        requestError.data = error;
+        throw requestError;
     }
 
     return response.json();
@@ -467,7 +490,7 @@ function refreshMonitoringSurface() {
     if (typeof window.refreshMonitoringData === 'function') {
         window.refreshMonitoringData();
     } else if (typeof PageSyncManager !== 'undefined' && typeof PageSyncManager.refreshCurrentPageSnapshot === 'function') {
-        // Use PageSyncManager from public/js/app.js if available for partial refresh
+        // Use the shared Vite runtime if available for partial refresh.
         PageSyncManager.refreshCurrentPageSnapshot(true).catch(() => {
             window.location.reload();
         });
@@ -577,6 +600,24 @@ window.submitAssignTech = async function() {
         showToast('Pilih teknisi terlebih dahulu.', 'warning');
         return;
     }
+
+    const technicianLabel = techSelectEl.selectedOptions?.[0]?.textContent?.trim() || 'Teknisi terpilih';
+    const confirmed = await confirmMonitoringAction({
+        type: 'success',
+        heading: 'Tugaskan teknisi?',
+        message: 'Teknisi akan menerima pekerjaan untuk order ini.',
+        confirmText: 'Ya, Tugaskan',
+        details: [
+            { label: 'Order', value: document.getElementById('assignTechOrderNumber')?.textContent || orderId },
+            { label: 'Teknisi', value: technicianLabel },
+            { label: 'Catatan', value: notes.trim() || '-' },
+        ],
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
     try {
         showToast('Menugaskan teknisi...', 'info');
         const assignUrl = (window.ROUTES_MON && window.ROUTES_MON.workflowBase)
@@ -879,13 +920,25 @@ window.submitServiceOrder = async function() {
     const selectedItem = document.querySelector('.masjid-select-item.selected');
 
     const meetingPerson = meetingPersonEl ? meetingPersonEl.value : 'dkm';
-    const phone = phoneEl ? phoneEl.value : '';
+    const phone = phoneEl ? phoneEl.value.trim() : '';
     const serviceDate = serviceDateEl ? serviceDateEl.value : '';
-    const notes = notesEl ? notesEl.value : '';
+    const notes = notesEl ? notesEl.value.trim() : '';
     const masjidId = selectedItem ? selectedItem.dataset.id : null;
 
     if (!masjidId) {
         showToast('Silakan pilih masjid', 'warning');
+        return;
+    }
+
+    if (!phone) {
+        showToast('Nomor HP wajib diisi.', 'warning');
+        phoneEl?.focus();
+        return;
+    }
+
+    if (!serviceDate) {
+        showToast('Tanggal service wajib dipilih.', 'warning');
+        serviceDateEl?.focus();
         return;
     }
 
@@ -897,25 +950,66 @@ window.submitServiceOrder = async function() {
         complaint: group.complaint || '-',
     }));
 
+    const totalUnits = acDetails.reduce((sum, detail) => sum + Number(detail.quantity || 0), 0);
+    const serviceTypes = [...new Set(acDetails.map(detail => detail.service_type))].join(', ');
+    const confirmed = await confirmMonitoringAction({
+        type: 'success',
+        heading: 'Kirim service order?',
+        message: 'Periksa ringkasan order sebelum dikirim ke workflow.',
+        confirmText: 'Ya, Kirim Order',
+        details: [
+            { label: 'Masjid', value: masjidNameEl.textContent.trim() },
+            { label: 'No. HP', value: phone },
+            { label: 'Tanggal Service', value: serviceDate },
+            { label: 'Total Unit', value: `${totalUnits} unit` },
+            { label: 'Jenis Servis', value: serviceTypes || '-' },
+        ],
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
+    const submitButton = document.querySelector('#serviceOrderPopup button[onclick*="submitServiceOrder"]');
+    const orderPayload = {
+        masjid_id: masjidId,
+        meeting_person: meetingPerson,
+        phone,
+        service_date: serviceDate,
+        notes: notes || null,
+        details: acDetails,
+    };
+
     try {
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.dataset.originalHtml = submitButton.innerHTML;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
+        }
+
         showToast('Membuat service order...', 'info');
         const storeUrl = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.soStore)
             ? ROUTES_MON.soStore
             : '/service-order';
-        await apiFetch(storeUrl, 'POST', {
-            masjid_id: masjidId,
-            meeting_person: meetingPerson,
-            phone,
-            service_date: serviceDate,
-            notes: notes || null,
-            details: acDetails,
-        });
+        await apiFetch(storeUrl, 'POST', orderPayload);
         showToast('Service order berhasil dibuat!', 'success');
         closePopup('serviceOrderPopup');
         resetServiceOrderForm();
         refreshMonitoringSurface?.();
     } catch (err) {
+        if (err?.status === 409 && (err?.data?.has_existing || err?.data?.existing_order)) {
+            setPendingReplace(err.data.existing_order, orderPayload);
+            openPopup('replaceConfirmPopup');
+            return;
+        }
+
         showToast('Gagal membuat service order: ' + (err.message || 'Error'), 'error');
+    } finally {
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = submitButton.dataset.originalHtml || '<i class="fas fa-paper-plane"></i> Kirim Order';
+            delete submitButton.dataset.originalHtml;
+        }
     }
 };
 
@@ -1083,7 +1177,7 @@ window.setPendingReplace = function(orderData, newOrderPayload) {
     const dateEl = document.getElementById('rcServiceDate');
 
     if (numEl) numEl.textContent = orderData.order_number || '-';
-    if (statusEl) statusEl.textContent = (orderData.status || '').replaceAll('_', ' ');
+    if (statusEl) statusEl.textContent = orderData.status_label || (orderData.status || '').replaceAll('_', ' ');
     if (dateEl) dateEl.textContent = orderData.service_date || '-';
 };
 
@@ -1094,76 +1188,60 @@ window.confirmReplaceOrder = async function() {
         return;
     }
 
-    const { existingOrder, newOrderPayload } = pendingReplaceData;
-    const oldOrderId = existingOrder.id;
+    const { newOrderPayload } = pendingReplaceData;
 
-    if (!oldOrderId || !newOrderPayload) {
+    if (!newOrderPayload) {
         showToast('Data replace tidak lengkap.', 'error');
         closePopup('replaceConfirmPopup');
         return;
     }
 
+    const replaceButton = document.getElementById('replaceConfirmButton');
+
     try {
-        showToast('Menghapus order lama...', 'info');
+        if (replaceButton) {
+            replaceButton.disabled = true;
+            replaceButton.dataset.originalHtml = replaceButton.innerHTML;
+            replaceButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengganti order...';
+        }
 
-        // Delete the existing order first
-        const deleteUrl = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.soDelete)
-            ? ROUTES_MON.soDelete(oldOrderId)
-            : `/service-order/${oldOrderId}`;
-        await apiFetch(deleteUrl, 'DELETE');
-
-        showToast('Order lama dihapus. Membuat order baru...', 'info');
-
-        // Then create the new order
+        showToast('Mengganti order lama...', 'info');
         const storeUrl = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.soStore)
             ? ROUTES_MON.soStore
             : '/service-order';
-        await apiFetch(storeUrl, 'POST', newOrderPayload);
+        await apiFetch(storeUrl, 'POST', {
+            ...newOrderPayload,
+            force_replace: true,
+        });
 
         showToast('Order baru berhasil dibuat!', 'success');
         closePopup('replaceConfirmPopup');
+        closePopup('serviceOrderPopup');
         pendingReplaceData = null;
         resetServiceOrderForm();
         refreshMonitoringSurface?.();
     } catch (err) {
         showToast('Gagal mengganti order: ' + (err.message || 'Error'), 'error');
+    } finally {
+        if (replaceButton) {
+            replaceButton.disabled = false;
+            replaceButton.innerHTML = replaceButton.dataset.originalHtml || '<i class="fas fa-sync-alt"></i> &nbsp;Ganti Order Lama dengan Order Baru';
+            delete replaceButton.dataset.originalHtml;
+        }
     }
 };
 
 window.cancelReplaceOrder = function() {
     pendingReplaceData = null;
     closePopup('replaceConfirmPopup');
-    showToast('Replace Order dibatalkan.', 'info');
+    closePopup('serviceOrderPopup');
+    resetServiceOrderForm();
+    showToast('Order baru dibatalkan. Order lama tetap aktif.', 'info');
 };
-
-// ============================================
-// CUSTOM CONFIRM MODAL
-// ============================================
-window.closeConfirmModal = function() {
-    // Close the dynamic overlay modal (from resources/js/app.js)
-    const overlay = document.getElementById('confirm-modal-overlay');
-    if (overlay) overlay.classList.remove('active');
-
-    // Also close the Blade static confirm popup if open
-    const bladeModal = document.getElementById('confirmModal');
-    if (bladeModal) bladeModal.classList.remove('active');
-
-    // Try to notify any popup-state sync handler if it exists
-    if (typeof syncPopupState === 'function') syncPopupState();
-};
-
-// Track the current pending confirm action from Blade static confirmModal
-let pendingBladeConfirmAction = null;
 
 window.executeConfirmAction = function() {
-    if (typeof pendingBladeConfirmAction === 'function') {
-        pendingBladeConfirmAction();
-        pendingBladeConfirmAction = null;
-    } else {
-        // Fallback: close the modal
-        showToast('Tidak ada aksi tertunda.', 'info');
-        closeConfirmModal();
-    }
+    showToast('Tidak ada aksi tertunda.', 'info');
+    window.closeConfirmModal?.();
 };
 
 // ============================================
@@ -1413,6 +1491,22 @@ function initFieldReportForm() {
             }
         });
 
+        const confirmed = await confirmMonitoringAction({
+            type: 'success',
+            heading: 'Kirim laporan pekerjaan?',
+            message: 'Laporan akan dikirim dan status pekerjaan akan diperbarui.',
+            confirmText: 'Ya, Kirim',
+            details: [
+                { label: 'Order', value: document.getElementById('fieldReportOrderNumber')?.textContent || orderId },
+                { label: 'Biaya Tambahan', value: additionalFee ? `Rp ${additionalFee.toLocaleString('id-ID')}` : 'Tidak ada' },
+                { label: 'Alat/Bahan', value: toolsMaterials.length ? `${toolsMaterials.length} item` : 'Tidak ada' },
+            ],
+        });
+
+        if (!confirmed) {
+            return;
+        }
+
         try {
             showToast('Mengirim laporan pekerjaan...', 'info');
 
@@ -1477,6 +1571,22 @@ window.confirmAdditionalFee = async function() {
         return;
     }
 
+    const confirmed = await confirmMonitoringAction({
+        type: 'success',
+        heading: 'Setujui biaya tambahan?',
+        message: 'Order akan lanjut ke tahap pembayaran dengan biaya tambahan ini.',
+        confirmText: 'Ya, Setujui',
+        details: [
+            { label: 'Order', value: document.getElementById('additionalFeeOrderNumber')?.textContent || orderId },
+            { label: 'Masjid', value: document.getElementById('additionalFeeMasjidName')?.textContent || '-' },
+            { label: 'Biaya', value: document.getElementById('additionalFeeAmount')?.textContent || '-' },
+        ],
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
     try {
         showToast('Menyetujui biaya tambahan...', 'info');
 
@@ -1495,24 +1605,24 @@ window.confirmAdditionalFee = async function() {
 // ============================================
 let pendingDualConfirm = { orderId: null, role: null };
 
-window.openDualConfirmation = function(orderId, role, message, orderNumber, masjidName) {
+window.openDualConfirmation = async function(orderId, role, message, orderNumber, masjidName) {
     pendingDualConfirm = { orderId, role };
 
-    const ctxEl = document.getElementById('dualConfirmContext');
-    const msgEl = document.getElementById('dualConfirmMessage');
-    const fallbackEl = document.getElementById('dualConfirmMessageFallback');
+    const confirmed = await confirmMonitoringAction({
+        type: 'success',
+        heading: 'Konfirmasi order selesai?',
+        message: message || 'Konfirmasi bahwa service order telah selesai dan siap untuk tahap berikutnya.',
+        confirmText: 'Ya, Konfirmasi',
+        details: [
+            { label: 'Order', value: orderNumber || orderId },
+            { label: 'Masjid', value: masjidName || '-' },
+            { label: 'Role', value: role || '-' },
+        ],
+    });
 
-    if (orderNumber || masjidName) {
-        ctxEl.style.display = 'flex';
-        msgEl.innerHTML = `Order <strong>${orderNumber || '-'}</strong> untuk <strong>${masjidName || '-'}</strong> akan ditandai sebagai selesai.`;
-        fallbackEl.style.display = 'none';
-    } else {
-        ctxEl.style.display = 'none';
-        fallbackEl.style.display = 'block';
-        fallbackEl.textContent = message || 'Konfirmasi bahwa service order telah selesai dan siap untuk tahap berikutnya?';
+    if (confirmed) {
+        window.submitDualConfirmation();
     }
-
-    openPopup('dualConfirmPopup');
 };
 
 window.submitDualConfirmation = async function() {

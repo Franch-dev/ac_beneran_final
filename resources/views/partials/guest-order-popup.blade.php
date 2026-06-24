@@ -25,7 +25,11 @@
             </div>
         @endif
 
-        <form id="guestOrderForm" action="{{ old('guest_order_action', $formActionRoute ?? route('modules.ac-service.guest-order.store')) }}" method="POST">
+        <form id="guestOrderForm" action="{{ old('guest_order_action', $formActionRoute ?? route('modules.ac-service.guest-order.store')) }}" method="POST"
+            data-confirm="Service order guest akan dikirim untuk ditinjau frontdesk."
+            data-confirm-heading="Kirim guest order?"
+            data-confirm-type="success"
+            data-confirm-text="Ya, Kirim">
             @csrf
             <input type="hidden" name="guest_order_action" id="guest_order_action" value="{{ old('guest_order_action', $formActionRoute ?? route('modules.ac-service.guest-order.store')) }}">
 

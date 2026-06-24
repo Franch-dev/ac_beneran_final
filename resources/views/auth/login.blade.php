@@ -12,15 +12,8 @@
         }
     </script>
     <title>Login - Forkis Platform</title>
-    @php $viteManifestExists = file_exists(public_path('build/manifest.json')); @endphp
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/liquid-glass.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/liquid-glass-components.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/liquid-glass-integration.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    @if ($viteManifestExists)
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @endif
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="login-body">
     <div class="login-container">
@@ -30,8 +23,8 @@
                     <i class="fas fa-snowflake"></i>
                 </div>
                 <h1>Forkis Platform</h1>
-<p>Masuk ke hub layanan dan operasional</p>
-                <a href="{{ $platformHomeUrl }}" class="btn btn-outline btn-sm" style="margin-top:0.5rem">
+                <p>Masuk ke hub layanan dan operasional</p>
+                <a href="{{ route('home') }}" class="btn btn-outline btn-sm" style="margin-top:0.5rem">
                     <i class="fas fa-home"></i> Kembali ke Home
                 </a>
             </div>
@@ -78,9 +71,6 @@
             </form>
         </div>
     </div>
-    @unless ($viteManifestExists)
-        <script src="{{ asset('js/core-application-runtime.js') }}"></script>
-    @endunless
     <script src="{{ asset('js/liquid-glass.js') }}" defer></script>
     <script>
     function togglePassword() {

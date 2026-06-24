@@ -108,7 +108,7 @@
         <div class="section-header">
             <div class="features-eyebrow">Platform Catalog</div>
             <h2>Jelajahi Website<br><span class="gradient-text">Internal Forkis</span></h2>
-            <p>Pilih modul yang Anda butuhkan dari satu katalog website internal yang disiapkan untuk tumbuh bersama platform.</p>
+            <p class="text">Pilih modul yang Anda butuhkan dari satu katalog website internal yang disiapkan untuk tumbuh bersama platform.</p>
         </div>
 
 <div class="catalog-grid {{ $compactCatalogClass }}" data-aos="fade-up" data-aos-delay="100">

@@ -22,7 +22,7 @@ class ServiceOrderFactory extends Factory
             'phone' => '081234567890',
             'service_date' => now()->addDay()->toDateString(),
             'notes' => $this->faker->sentence(),
-            'status' => 'spk_invoice_created',
+            'status' => 'pending_review',
         ];
     }
 }

@@ -7,6 +7,7 @@ use App\Models\AcUnit;
 use App\Models\Masjid;
 use App\Models\ServiceOrder;
 use App\Support\ApiResponse;
+use App\Support\MonitoringStatusSummary;
 use App\Support\SqlDateExpressions;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -35,6 +36,7 @@ class AcMasjidMushollaMonitoringController extends Controller
     {
         try {
             $query = ServiceOrder::query()
+                ->whereNull('archived_at')
                 ->select([
                     'id',
                     'masjid_id',
@@ -52,10 +54,12 @@ class AcMasjidMushollaMonitoringController extends Controller
                     'masjid:id,custom_id,name',
                     'masjid.acUnits:id,masjid_id,quantity,last_service_date',
                     'serviceDetails:id,service_order_id,pk_type,brand,quantity',
-                    'invoice:id,service_order_id,invoice_number',
+                    'invoice:id,service_order_id,invoice_number,total_price,payment_method,payment_verified_at,cash_confirmed_at',
+                    'receipt:id,service_order_id,invoice_id,receipt_number,payment_method,payment_amount,payment_date',
                     'latestWorkflowStep',
                     'technicianAssignment:id,service_order_id,technician_id,technician_name,status,started_at,completed_at,technician_notes',
-                ]);
+                ])
+                ->withCount('photoProofs');
 
             if ($request->filled('search')) {
                 $search = $request->input('search');
@@ -73,11 +77,7 @@ class AcMasjidMushollaMonitoringController extends Controller
 
             $orders = $query->latest()->paginate(30)->withQueryString();
             $statusTotals = Cache::remember('monitoring:status_totals:mm', now()->addSeconds(20), function () {
-                return ServiceOrder::query()
-                    ->select('status')
-                    ->selectRaw('count(*) as total')
-                    ->groupBy('status')
-                    ->pluck('total', 'status');
+                return MonitoringStatusSummary::activeTotals();
             });
 
             $totalLokasi = Masjid::count();

@@ -4,10 +4,13 @@ namespace Tests\Feature;
 
 use App\Models\Invoice;
 use App\Models\Masjid;
+use App\Models\PhotoProof;
 use App\Models\ServiceDetail;
 use App\Models\ServiceOrder;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class MonitoringWorkflowUiTest extends TestCase
@@ -16,6 +19,7 @@ class MonitoringWorkflowUiTest extends TestCase
 
     protected User $frontdesk;
     protected User $manager;
+    protected User $technician;
 
     protected function migrateFreshUsing()
     {
@@ -35,6 +39,7 @@ class MonitoringWorkflowUiTest extends TestCase
 
         $this->frontdesk = User::factory()->create(['role' => 'frontdesk']);
         $this->manager = User::factory()->create(['role' => 'manager']);
+        $this->technician = User::factory()->create(['role' => 'technician']);
     }
 
     /** @test */
@@ -42,6 +47,7 @@ class MonitoringWorkflowUiTest extends TestCase
     {
         $approvedOrder = $this->makeOrder('approved');
         $spkCreatedOrder = $this->makeOrder('spk_invoice_created', withInvoice: true);
+        $spkApprovedOrder = $this->makeOrder('spk_invoice_approved', withInvoice: true);
         $paymentVerifiedOrder = $this->makeOrder('payment_verified', withInvoice: true);
         $waitingPaymentOrder = $this->makeOrder('waiting_payment', withInvoice: true);
 
@@ -51,14 +57,14 @@ class MonitoringWorkflowUiTest extends TestCase
         $frontdeskResponse->assertDontSee('onclick="createSpkInvoice('.$spkCreatedOrder->id, false);
         $frontdeskResponse->assertDontSee('onclick="approveOrder('.$approvedOrder->id, false);
         $frontdeskResponse->assertDontSee('onclick="approveSpkInvoice('.$spkCreatedOrder->id, false);
-        $frontdeskResponse->assertDontSee('openAssignTech('.$paymentVerifiedOrder->id, false);
+        $frontdeskResponse->assertSee('openAssignTech('.$spkApprovedOrder->id, false);
         $frontdeskResponse->assertDontSee('onclick="confirmPayment('.$waitingPaymentOrder->id, false);
 
         $managerResponse = $this->actingAs($this->manager)->get(route('monitoring'));
         $managerResponse->assertOk();
         $managerResponse->assertDontSee('onclick="createSpkInvoice('.$approvedOrder->id, false);
         $managerResponse->assertSee('onclick="approveSpkInvoice('.$spkCreatedOrder->id, false);
-        $managerResponse->assertSee('openAssignTech('.$paymentVerifiedOrder->id, false);
+        $managerResponse->assertSee('openAssignTech('.$spkApprovedOrder->id, false);
         $managerResponse->assertSee('onclick="confirmPayment('.$waitingPaymentOrder->id, false);
     }
 
@@ -68,6 +74,7 @@ class MonitoringWorkflowUiTest extends TestCase
         $pendingReviewOrder = $this->makeOrder('pending_review');
         $approvedOrder = $this->makeOrder('approved');
         $spkCreatedOrder = $this->makeOrder('spk_invoice_created', withInvoice: true);
+        $spkApprovedOrder = $this->makeOrder('spk_invoice_approved', withInvoice: true);
         $paymentVerifiedOrder = $this->makeOrder('payment_verified', withInvoice: true);
         $paymentVerifiedOrder->technicianAssignment()->create([
             'technician_id' => $this->manager->id,
@@ -86,7 +93,7 @@ class MonitoringWorkflowUiTest extends TestCase
         $managerResponse->assertSee('onclick="approveOrder('.$pendingReviewOrder->id.')"', false);
         $managerResponse->assertDontSee('onclick="createSpkInvoice('.$approvedOrder->id.')"', false);
         $managerResponse->assertSee('onclick="approveSpkInvoice('.$spkCreatedOrder->id.')"', false);
-        $managerResponse->assertSee('openAssignTech('.$paymentVerifiedOrder->id, false);
+        $managerResponse->assertSee('openAssignTech('.$spkApprovedOrder->id, false);
         $managerResponse->assertSee('onclick="finalizeOrder('.$waitingReviewOrder->id, false);
         $managerResponse->assertSee('onclick="finalizeOrder('.$paymentVerifiedOrder->id, false);
 
@@ -95,6 +102,108 @@ class MonitoringWorkflowUiTest extends TestCase
         $frontdeskResponse->assertSee('onclick="createSpkInvoice('.$approvedOrder->id.')"', false);
         $frontdeskResponse->assertDontSee('onclick="approveOrder('.$pendingReviewOrder->id.')"', false);
         $frontdeskResponse->assertDontSee('onclick="approveSpkInvoice('.$spkCreatedOrder->id.')"', false);
+    }
+
+    /** @test */
+    public function payment_chip_only_appears_for_roles_and_orders_that_pass_internal_access_rules(): void
+    {
+        $waitingPaymentOrder = $this->makeOrder('waiting_payment', withInvoice: true);
+        $techReadyOrder = $this->makeOrder('waiting_payment', withInvoice: true);
+        $techReadyOrder->technicianAssignment()->create([
+            'technician_id' => $this->technician->id,
+            'technician_name' => $this->technician->name,
+            'assigned_by' => $this->manager->id,
+            'assigned_by_name' => $this->manager->name,
+            'status' => 'done',
+            'assigned_at' => now()->subHour(),
+            'completed_at' => now()->subMinutes(10),
+        ]);
+        PhotoProof::create([
+            'service_order_id' => $techReadyOrder->id,
+            'technician_assignment_id' => $techReadyOrder->technicianAssignment->id,
+            'file_path' => 'proofs/test.webp',
+            'file_name' => 'test.webp',
+            'file_size' => 1000,
+            'mime_type' => 'image/webp',
+            'taken_at' => now(),
+            'created_by' => $this->technician->id,
+        ]);
+
+        $techBlockedOrder = $this->makeOrder('waiting_payment', withInvoice: true);
+        $techBlockedOrder->technicianAssignment()->create([
+            'technician_id' => $this->technician->id,
+            'technician_name' => $this->technician->name,
+            'assigned_by' => $this->manager->id,
+            'assigned_by_name' => $this->manager->name,
+            'status' => 'done',
+            'assigned_at' => now()->subHour(),
+            'completed_at' => now()->subMinutes(10),
+        ]);
+
+        $frontdeskResponse = $this->actingAs($this->frontdesk)->get(route('monitoring'));
+        $frontdeskResponse->assertOk();
+        $frontdeskResponse->assertSee('data-payment-order-id="'.$waitingPaymentOrder->id.'"', false);
+
+        $techResponse = $this->actingAs($this->technician)->get(route('monitoring'));
+        $techResponse->assertOk();
+        $techResponse->assertSee('data-payment-order-id="'.$techReadyOrder->id.'"', false);
+        $techResponse->assertDontSee('data-payment-order-id="'.$techBlockedOrder->id.'"', false);
+        $techResponse->assertDontSee('data-payment-order-id="'.$waitingPaymentOrder->id.'"', false);
+    }
+
+    /** @test */
+    public function monitoring_status_counts_include_canonical_statuses_and_sidebar_aliases(): void
+    {
+        Cache::flush();
+        foreach ([
+            'photo_proofs',
+            'workflow_steps',
+            'technician_assignments',
+            'receipts',
+            'invoices',
+            'service_details',
+            'service_orders',
+        ] as $table) {
+            DB::connection('ac_service')->table($table)->delete();
+        }
+
+        $this->makeOrder('pending_review');
+        $this->makeOrder('approved');
+        $this->makeOrder('spk_invoice_created');
+        $this->makeOrder('spk_invoice_approved');
+        $this->makeOrder('invoice_editing');
+        $this->makeOrder('fee_review');
+        $this->makeOrder('waiting_review');
+        $this->makeOrder('waiting_payment');
+
+        $closed = $this->makeOrder('closed');
+        $closed->update(['archived_at' => now()]);
+
+        $response = $this->actingAs($this->manager)->getJson(route('monitoring.status-counts'));
+
+        $response->assertOk()
+            ->assertJsonPath('pending_review', 1)
+            ->assertJsonPath('approved', 1)
+            ->assertJsonPath('spk_invoice_created', 1)
+            ->assertJsonPath('spk_invoice_approved', 1)
+            ->assertJsonPath('invoice_editing', 1)
+            ->assertJsonPath('fee_review', 1)
+            ->assertJsonPath('waiting_review', 1)
+            ->assertJsonPath('waiting_payment', 1)
+            ->assertJsonPath('pending', 4)
+            ->assertJsonPath('waiting_invoice', 3)
+            ->assertJsonPath('invoice_queue', 3)
+            ->assertJsonPath('review_queue', 1)
+            ->assertJsonMissingPath('closed');
+    }
+
+    /** @test */
+    public function logout_button_target_route_logs_the_user_out(): void
+    {
+        $response = $this->actingAs($this->manager)->post(route('logout'));
+
+        $response->assertRedirect(route('home'));
+        $this->assertGuest();
     }
 
     /** @test */

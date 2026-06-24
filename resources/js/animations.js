@@ -34,6 +34,12 @@ function initAOS() {
 const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
 
 function animateCounter(counter) {
+  if (counter.dataset.counterInitialized === 'true') {
+    return;
+  }
+
+  counter.dataset.counterInitialized = 'true';
+
   const rawTarget = counter.getAttribute('data-target') || '0';
   const target = parseFloat(rawTarget) || 0;
   const decimals = rawTarget.includes('.') ? 1 : 0;
@@ -67,6 +73,10 @@ function initCounters() {
   );
 
   document.querySelectorAll('.counter').forEach((counter) => {
+    if (counter.dataset.counterInitialized === 'true') {
+      return;
+    }
+
     counterObserver.observe(counter);
   });
 }

@@ -3,7 +3,14 @@
 <aside class="sidebar glass" id="sidebar" aria-label="Navigasi sidebar">
     <!-- Sidebar Header -->
     <div class="sidebar-header">
-        <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Collapse sidebar" aria-label="Toggle sidebar">
+        <button class="sidebar-collapse-btn"
+                id="sidebarCollapseBtn"
+                type="button"
+                title="Ciutkan sidebar"
+                aria-label="Ciutkan sidebar"
+                aria-expanded="true"
+                aria-controls="sidebar"
+                data-tooltip="Ciutkan sidebar">
             <i class="fas fa-chevron-left" id="collapseIcon"></i>
         </button>
     </div>
@@ -26,17 +33,17 @@
             $monitoringRoute = $currentModule === 'ac-masjid-musholla' ? 'modules.ac-masjid-musholla.monitoring'
                         : ($currentModule === 'ac-anggota' ? 'modules.ac-anggota.monitoring'
                         : 'monitoring');
-            $moduleLabel = $currentModule === 'ac-masjid-musholla' ? 'AC Masjid'
-                        : ($currentModule === 'ac-anggota' ? 'AC Anggota' : 'Dashboard');
-            $moduleLabelMon = $currentModule === 'ac-masjid-musholla' ? 'AC Masjid'
-                        : ($currentModule === 'ac-anggota' ? 'AC Anggota' : 'Monitoring');
+            $moduleLabel = $currentModule === 'ac-masjid-musholla' ? 'AC Masjid Dashboard'
+                        : ($currentModule === 'ac-anggota' ? 'AC Anggota Dashboard' : 'Dashboard');
+            $moduleLabelMon = $currentModule === 'ac-masjid-musholla' ? 'AC Masjid Monitoring'
+                        : ($currentModule === 'ac-anggota' ? 'AC Anggota Monitoring' : 'Monitoring');
         @endphp
         @if(in_array($currentModule, ['ac-masjid-musholla', 'ac-anggota']))
-            <a href="{{ route($dashboardRoute) }}" class="sidebar-link {{ request()->routeIs('*dashboard*') ? 'active' : '' }}" role="menuitem">
+            <a href="{{ route($dashboardRoute) }}" class="sidebar-link {{ request()->routeIs('*dashboard*') ? 'active' : '' }}" role="menuitem" data-tooltip="{{ $moduleLabel }}">
                 <span class="sidebar-icon"><i class="fas fa-th-large"></i></span>
                 <span class="sidebar-label">{{ $moduleLabel }}</span>
             </a>
-            <a href="{{ route($monitoringRoute) }}" class="sidebar-link monitoring-link {{ request()->routeIs('*monitoring*') ? 'active' : '' }}" role="menuitem">
+            <a href="{{ route($monitoringRoute) }}" class="sidebar-link monitoring-link {{ request()->routeIs('*monitoring*') ? 'active' : '' }}" role="menuitem" data-tooltip="{{ $moduleLabelMon }}">
                 <span class="sidebar-icon"><i class="fas fa-chart-line"></i></span>
                 <span class="sidebar-label">{{ $moduleLabelMon }}</span>
                 <span class="sidebar-notification-stack" aria-label="Ringkasan antrean monitoring">

@@ -18,22 +18,20 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->enum('status', [
                 'pending_review',
-                'pending',
-                'spk_invoice_created',
                 'approved',
+                'spk_invoice_created',
                 'spk_invoice_approved',
                 'technician_assigned',
                 'in_progress',
-                'work_completed',
-                'pending_fee_approval',
-                'fee_approved',
-                'waiting_invoice',
+                'waiting_review',
+                'invoice_editing',
+                'fee_review',
                 'waiting_payment',
                 'payment_verified',
-                'waiting_review',
                 'completed',
+                'closed',
                 'cancelled',
-            ])->default('spk_invoice_created');
+            ])->default('pending_review');
             $table->timestamps();
         });
     }

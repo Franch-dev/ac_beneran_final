@@ -28,6 +28,9 @@
             && $order->status === 'spk_invoice_created'
             && (bool) $order->invoice;
     };
+    $canOpenInternalPayment = static function ($order) use ($currentUser): bool {
+        return $order->canAccessInternalPayment($currentUser);
+    };
 @endphp
 <div id="monitoringSyncRoot">
 <div class="page-container page-operations page-operations--monitoring">
@@ -323,8 +326,14 @@
                             </button>
                             @endif
 
+                            @if($canOpenInternalPayment($order))
+                            <button class="btn btn-sm btn-outline" type="button" data-payment-order-id="{{ $order->id }}" onclick="openInternalPaymentPage({{ $order->id }})">
+                                <i class="fas fa-qrcode"></i> Bayar
+                            </button>
+                            @endif
+
                             {{-- Assign technician after SPK & Invoice approval --}}
-                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'payment_verified')
+                            @if((auth()->user()->isFrontdesk() || auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'spk_invoice_approved')
                             <button class="btn btn-sm btn-outline btn-accent" type="button"
                                 onclick="openAssignTech({{ $order->id }}, @js($order->order_number), @js($order->masjid->name), @js($order->status))">
                                 <i class="fas fa-user-hard-hat"></i> Tugaskan
@@ -349,6 +358,30 @@
                             @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_review')
                             <button class="btn btn-sm btn-success" type="button" onclick="finalizeOrder({{ $order->id }}, null, null, null, @js($order->status))">
                                 <i class="fas fa-flag-checkered"></i> Finalisasi Pekerjaan
+                            </button>
+                            @endif
+
+                            @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_review' && $order->field_report_additional_fee > 0 && ! $order->manager_approved_additional_fee)
+                            <button class="btn btn-sm btn-warning" type="button" onclick="approveAdditionalFee({{ $order->id }})">
+                                <i class="fas fa-coins"></i> Approve Biaya Extra
+                            </button>
+                            <button class="btn btn-sm btn-outline" type="button" onclick="routeAdditionalFeeToInvoiceEdit({{ $order->id }})">
+                                <i class="fas fa-edit"></i> Edit Invoice
+                            </button>
+                            @endif
+
+                            @if($order->status === 'invoice_editing' && (auth()->user()->isFrontdesk() || auth()->user()->isAdmin()) && $order->invoice)
+                            <a href="{{ route('frontdesk.invoices.edit', $order->invoice) }}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit"></i> Edit Invoice
+                            </a>
+                            @endif
+
+                            @if($order->status === 'fee_review' && (auth()->user()->isManager() || auth()->user()->isAdmin()))
+                            <button class="btn btn-sm btn-success" type="button" onclick="approveEditedInvoice({{ $order->id }})">
+                                <i class="fas fa-check"></i> Approve Invoice Edit
+                            </button>
+                            <button class="btn btn-sm btn-danger" type="button" onclick="rejectEditedInvoice({{ $order->id }})">
+                                <i class="fas fa-times"></i> Tolak Invoice Edit
                             </button>
                             @endif
 
@@ -470,7 +503,13 @@
                 </button>
                 @endif
 
-                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'payment_verified')
+                @if($canOpenInternalPayment($order))
+                <button class="btn btn-sm btn-outline" type="button" data-payment-order-id="{{ $order->id }}" onclick="openInternalPaymentPage({{ $order->id }})">
+                    <i class="fas fa-qrcode"></i> Bayar
+                </button>
+                @endif
+
+                @if((auth()->user()->isFrontdesk() || auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'spk_invoice_approved')
                 <button class="btn btn-sm btn-outline btn-accent" type="button"
                     onclick="openAssignTech({{ $order->id }}, @js($order->order_number), @js($order->masjid->name), @js($order->status))">
                     <i class="fas fa-user-hard-hat"></i> Tugaskan
@@ -492,6 +531,30 @@
                 @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_review')
                 <button class="btn btn-sm btn-success" type="button" onclick="finalizeOrder({{ $order->id }}, null, null, null, @js($order->status))">
                     <i class="fas fa-flag-checkered"></i> Finalisasi Pekerjaan
+                </button>
+                @endif
+
+                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_review' && $order->field_report_additional_fee > 0 && ! $order->manager_approved_additional_fee)
+                <button class="btn btn-sm btn-warning" type="button" onclick="approveAdditionalFee({{ $order->id }})">
+                    <i class="fas fa-coins"></i> Approve Biaya Extra
+                </button>
+                <button class="btn btn-sm btn-outline" type="button" onclick="routeAdditionalFeeToInvoiceEdit({{ $order->id }})">
+                    <i class="fas fa-edit"></i> Edit Invoice
+                </button>
+                @endif
+
+                @if($order->status === 'invoice_editing' && (auth()->user()->isFrontdesk() || auth()->user()->isAdmin()) && $order->invoice)
+                <a href="{{ route('frontdesk.invoices.edit', $order->invoice) }}" class="btn btn-sm btn-warning">
+                    <i class="fas fa-edit"></i> Edit Invoice
+                </a>
+                @endif
+
+                @if($order->status === 'fee_review' && (auth()->user()->isManager() || auth()->user()->isAdmin()))
+                <button class="btn btn-sm btn-success" type="button" onclick="approveEditedInvoice({{ $order->id }})">
+                    <i class="fas fa-check"></i> Approve Invoice Edit
+                </button>
+                <button class="btn btn-sm btn-danger" type="button" onclick="rejectEditedInvoice({{ $order->id }})">
+                    <i class="fas fa-times"></i> Tolak Invoice Edit
                 </button>
                 @endif
 
@@ -738,7 +801,7 @@
 <div class="popup" id="replaceConfirmPopup" style="max-width:480px;z-index:500">
     <div class="popup-header">
         <h3><i class="fas fa-exclamation-triangle" style="color:var(--warning)"></i> &nbsp;Order Aktif Sudah Ada!</h3>
-        <button class="popup-close" onclick="closePopup('replaceConfirmPopup')">&times;</button>
+        <button class="popup-close" onclick="cancelReplaceOrder()">&times;</button>
     </div>
     <div class="popup-body">
 
@@ -762,22 +825,23 @@
         </div>
 
         <p style="font-size:0.875rem;color:var(--text-muted);margin-bottom:1.35rem;line-height:1.6">
-            Masjid ini sudah punya service order aktif. Apakah ingin
-            <strong style="color:var(--danger)">menghapus order lama</strong>
-            dan menggantinya dengan order baru yang baru saja kamu buat?
+            Masjid ini sudah punya service order aktif. Pilih apakah order baru ini dibatalkan,
+            atau <strong style="color:var(--danger)">mengganti order lama</strong>
+            dengan data yang baru saja kamu input.
         </p>
 
         {{-- Tombol --}}
         <div style="display:flex;flex-direction:column;gap:0.6rem">
             <button class="btn btn-danger"
+                    id="replaceConfirmButton"
                     style="width:100%;justify-content:center;padding:0.75rem;font-size:0.95rem;font-weight:700"
                     onclick="confirmReplaceOrder()">
-                <i class="fas fa-sync-alt"></i> &nbsp;Ya, Hapus Order Lama &amp; Buat Baru
+                <i class="fas fa-sync-alt"></i> &nbsp;Ganti Order Lama dengan Order Baru
             </button>
             <button class="btn btn-secondary"
                     style="width:100%;justify-content:center;padding:0.65rem;font-size:0.875rem"
                     onclick="cancelReplaceOrder()">
-                <i class="fas fa-arrow-left"></i> &nbsp;Tidak, Kembali &amp; Biarkan Order Lama
+                <i class="fas fa-ban"></i> &nbsp;Batalkan Order Baru
             </button>
         </div>
 
@@ -852,6 +916,10 @@ window.ROUTES_MON = {
     workflowCreateSpkInvoice: (id) => `/service-order/${id}/create-spk-invoice`,
     workflowConfirmPayment: (id) => `/service-order/${id}/confirm-payment`,
     workflowFinalizeOrder: (id) => `/service-order/${id}/finalize-order`,
+    workflowApproveAdditionalFee: (id) => `/modules/ac-masjid-musholla/service-order/${id}/approve-additional-fee`,
+    workflowRouteFeeToInvoiceEdit: (id) => `/modules/ac-masjid-musholla/service-order/${id}/route-additional-fee-to-invoice-edit`,
+    workflowApproveEditedInvoice: (id) => `/modules/ac-masjid-musholla/service-order/${id}/approve-edited-invoice`,
+    workflowRejectEditedInvoice: (id) => `/modules/ac-masjid-musholla/service-order/${id}/reject-edited-invoice`,
     workflowApproveSpkInvoice: (id) => `/modules/ac-masjid-musholla/workflow/${id}/approve-spk-invoice`,
     serviceOrderArchive: (id) => `/modules/ac-masjid-musholla/service-order/${id}/archive`,
     workflowBase: "{{ url('/workflow') }}",
@@ -864,12 +932,36 @@ window.HARGA_CONFIG = {
     MASJID: { '1PK': 150000, '2PK': 200000, '5PK': 350000 },
     MUSHOLLA: { '1PK': 120000, '2PK': 170000, '5PK': 300000 },
 };
+window.openInternalPaymentPage = async function (orderId) {
+    const response = await fetch(`/payments/internal/${orderId}/access-link`, {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+        },
+        credentials: 'same-origin',
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok || !payload.url) {
+        const message = payload.message || 'Akses pembayaran internal ditolak.';
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, 'error');
+        } else {
+            console.error(message);
+        }
+        return;
+    }
+
+    window.location.href = payload.url;
+};
 </script>
 @vite(['resources/js/monitoring.js'])
 <script>
 (function () {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-    const fallbackFetch = async (url, method = 'POST') => {
+    const fallbackFetch = async (url, method = 'POST', body = null) => {
         const response = await fetch(url, {
             method,
             headers: {
@@ -878,6 +970,7 @@ window.HARGA_CONFIG = {
                 'X-CSRF-TOKEN': csrfToken,
             },
             credentials: 'same-origin',
+            body: body ? JSON.stringify(body) : null,
         });
         if (!response.ok) {
             const isJson = response.headers.get('content-type')?.includes('application/json');
@@ -888,9 +981,35 @@ window.HARGA_CONFIG = {
         return response.json().catch(() => null);
     };
 
+    const fallbackMessage = (message, type = 'error') => {
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, type);
+            return;
+        }
+
+        console[type === 'error' ? 'error' : 'info'](message);
+    };
+
+    const fallbackConfirm = async (options) => {
+        if (typeof window.confirmAction !== 'function') {
+            return { confirmed: true, values: {} };
+        }
+
+        const result = await window.confirmAction(options);
+        return result?.confirmed || result === true
+            ? { confirmed: true, values: result.values || {} }
+            : { confirmed: false, values: {} };
+    };
+
     if (typeof window.createSpkInvoice === 'undefined') {
         window.createSpkInvoice = async function(id) {
-            if (!confirm('Buat SPK & Invoice?')) return;
+            const confirmation = await fallbackConfirm({
+                type: 'success',
+                heading: 'Buat SPK & Invoice?',
+                message: 'Order akan diproses, SPK dan invoice dibuat sekaligus.',
+                confirmText: 'Ya, Buat',
+            });
+            if (!confirmation.confirmed) return;
             try {
                 const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.workflowCreateSpkInvoice)
                     ? ROUTES_MON.workflowCreateSpkInvoice(id)
@@ -898,14 +1017,20 @@ window.HARGA_CONFIG = {
                 await fallbackFetch(url, 'POST');
                 location.reload();
             } catch (error) {
-                alert('Gagal membuat SPK & Invoice: ' + error.message);
+                fallbackMessage('Gagal membuat SPK & Invoice: ' + error.message);
             }
         };
     }
 
     if (typeof window.approveOrder === 'undefined') {
         window.approveOrder = async function(id) {
-            if (!confirm('Setujui order ini?')) return;
+            const confirmation = await fallbackConfirm({
+                type: 'success',
+                heading: 'Setujui order?',
+                message: 'Order akan masuk ke tahap SPK dan invoice.',
+                confirmText: 'Ya, Setujui',
+            });
+            if (!confirmation.confirmed) return;
             try {
                 const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.soApprove)
                     ? ROUTES_MON.soApprove(id)
@@ -913,14 +1038,20 @@ window.HARGA_CONFIG = {
                 await fallbackFetch(url, 'POST');
                 location.reload();
             } catch (error) {
-                alert('Gagal menyetujui order: ' + error.message);
+                fallbackMessage('Gagal menyetujui order: ' + error.message);
             }
         };
     }
 
     if (typeof window.approveSpkInvoice === 'undefined') {
         window.approveSpkInvoice = async function(id) {
-            if (!confirm('Setujui SPK & Invoice ini?')) return;
+            const confirmation = await fallbackConfirm({
+                type: 'success',
+                heading: 'Setujui SPK & Invoice?',
+                message: 'Order akan lanjut ke tahap pembayaran.',
+                confirmText: 'Ya, Setujui',
+            });
+            if (!confirmation.confirmed) return;
             try {
                 const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.workflowApproveSpkInvoice)
                     ? ROUTES_MON.workflowApproveSpkInvoice(id)
@@ -928,14 +1059,20 @@ window.HARGA_CONFIG = {
                 await fallbackFetch(url, 'POST');
                 location.reload();
             } catch (error) {
-                alert('Gagal menyetujui SPK & Invoice: ' + error.message);
+                fallbackMessage('Gagal menyetujui SPK & Invoice: ' + error.message);
             }
         };
     }
 
     if (typeof window.confirmPayment === 'undefined') {
         window.confirmPayment = async function(id) {
-            if (!confirm('Konfirmasi pembayaran telah diterima?')) return;
+            const confirmation = await fallbackConfirm({
+                type: 'success',
+                heading: 'Konfirmasi pembayaran?',
+                message: 'Pastikan pembayaran sudah diterima.',
+                confirmText: 'Ya, Konfirmasi',
+            });
+            if (!confirmation.confirmed) return;
             try {
                 const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.workflowConfirmPayment)
                     ? ROUTES_MON.workflowConfirmPayment(id)
@@ -943,7 +1080,87 @@ window.HARGA_CONFIG = {
                 await fallbackFetch(url, 'POST');
                 location.reload();
             } catch (error) {
-                alert('Gagal mengonfirmasi pembayaran: ' + error.message);
+                fallbackMessage('Gagal mengonfirmasi pembayaran: ' + error.message);
+            }
+        };
+    }
+
+    if (typeof window.approveAdditionalFee === 'undefined') {
+        window.approveAdditionalFee = async function(id) {
+            const confirmation = await fallbackConfirm({
+                type: 'success',
+                heading: 'Setujui biaya tambahan?',
+                message: 'Biaya tambahan akan disetujui dan order lanjut ke pembayaran.',
+                confirmText: 'Ya, Setujui',
+            });
+            if (!confirmation.confirmed) return;
+            try {
+                await fallbackFetch(ROUTES_MON.workflowApproveAdditionalFee(id), 'POST');
+                location.reload();
+            } catch (error) {
+                fallbackMessage('Gagal menyetujui biaya tambahan: ' + error.message);
+            }
+        };
+    }
+
+    if (typeof window.routeAdditionalFeeToInvoiceEdit === 'undefined') {
+        window.routeAdditionalFeeToInvoiceEdit = async function(id) {
+            const confirmation = await fallbackConfirm({
+                type: 'warning',
+                heading: 'Kirim invoice ke frontdesk?',
+                message: 'Invoice akan diedit frontdesk sebelum approval manager.',
+                confirmText: 'Ya, Kirim',
+            });
+            if (!confirmation.confirmed) return;
+            try {
+                await fallbackFetch(ROUTES_MON.workflowRouteFeeToInvoiceEdit(id), 'POST');
+                location.reload();
+            } catch (error) {
+                fallbackMessage('Gagal mengirim invoice untuk diedit: ' + error.message);
+            }
+        };
+    }
+
+    if (typeof window.approveEditedInvoice === 'undefined') {
+        window.approveEditedInvoice = async function(id) {
+            const confirmation = await fallbackConfirm({
+                type: 'success',
+                heading: 'Setujui invoice edit?',
+                message: 'Invoice hasil edit akan dipakai untuk pembayaran.',
+                confirmText: 'Ya, Setujui',
+            });
+            if (!confirmation.confirmed) return;
+            try {
+                await fallbackFetch(ROUTES_MON.workflowApproveEditedInvoice(id), 'POST');
+                location.reload();
+            } catch (error) {
+                fallbackMessage('Gagal menyetujui invoice edit: ' + error.message);
+            }
+        };
+    }
+
+    if (typeof window.rejectEditedInvoice === 'undefined') {
+        window.rejectEditedInvoice = async function(id) {
+            const confirmation = await fallbackConfirm({
+                type: 'danger',
+                heading: 'Tolak invoice edit?',
+                message: 'Masukkan alasan penolakan untuk frontdesk.',
+                confirmText: 'Ya, Tolak',
+                fields: [{
+                    name: 'reason',
+                    label: 'Alasan penolakan',
+                    type: 'textarea',
+                    required: true,
+                    rows: 3,
+                }],
+            });
+            if (!confirmation.confirmed) return;
+            const reason = confirmation.values.reason || '';
+            try {
+                await fallbackFetch(ROUTES_MON.workflowRejectEditedInvoice(id), 'POST', { reason: reason.trim() });
+                location.reload();
+            } catch (error) {
+                fallbackMessage('Gagal menolak invoice edit: ' + error.message);
             }
         };
     }
@@ -951,7 +1168,13 @@ window.HARGA_CONFIG = {
     if (typeof window.finalizeOrder === 'undefined') {
         window.finalizeOrder = async function(id, orderNumber, masjidName, serviceDate, currentStatus) {
             const isClosingPaidOrder = currentStatus === 'payment_verified';
-            if (!confirm(isClosingPaidOrder ? 'Selesaikan order ini?' : 'Finalisasi pekerjaan dan lanjutkan ke pembayaran?')) return;
+            const confirmation = await fallbackConfirm({
+                type: 'success',
+                heading: isClosingPaidOrder ? 'Selesaikan order?' : 'Finalisasi pekerjaan?',
+                message: isClosingPaidOrder ? 'Order akan ditandai selesai.' : 'Order akan lanjut ke pembayaran.',
+                confirmText: isClosingPaidOrder ? 'Ya, Selesaikan' : 'Ya, Finalisasi',
+            });
+            if (!confirmation.confirmed) return;
             try {
                 const url = (typeof ROUTES_MON !== 'undefined' && ROUTES_MON.workflowFinalizeOrder)
                     ? ROUTES_MON.workflowFinalizeOrder(id)
@@ -959,31 +1182,43 @@ window.HARGA_CONFIG = {
                 await fallbackFetch(url, 'POST');
                 location.reload();
             } catch (error) {
-                alert('Gagal menyelesaikan order: ' + error.message);
+                fallbackMessage('Gagal menyelesaikan order: ' + error.message);
             }
         };
     }
 
     if (typeof window.archiveOrder === 'undefined') {
         window.archiveOrder = async function(orderId) {
-            if (!confirm('Archive order sebagai selesai?')) return;
+            const confirmation = await fallbackConfirm({
+                type: 'warning',
+                heading: 'Archive order?',
+                message: 'Order akan dipindahkan ke riwayat selesai.',
+                confirmText: 'Ya, Archive',
+            });
+            if (!confirmation.confirmed) return;
             try {
                 await fallbackFetch(`/modules/ac-masjid-musholla/service-order/${orderId}/archive`, 'POST');
                 location.reload();
             } catch (error) {
-                alert('Gagal meng-archive order: ' + error.message);
+                fallbackMessage('Gagal meng-archive order: ' + error.message);
             }
         };
     }
 
     if (typeof window.deleteServiceOrder === 'undefined') {
         window.deleteServiceOrder = async function(orderId) {
-            if (!confirm('Hapus order secara permanen?')) return;
+            const confirmation = await fallbackConfirm({
+                type: 'danger',
+                heading: 'Hapus order?',
+                message: 'Order akan dihapus secara permanen dan tidak dapat dikembalikan.',
+                confirmText: 'Ya, Hapus',
+            });
+            if (!confirmation.confirmed) return;
             try {
                 await fallbackFetch(`/modules/ac-masjid-musholla/service-order/${orderId}`, 'DELETE');
                 location.reload();
             } catch (error) {
-                alert('Gagal menghapus order: ' + error.message);
+                fallbackMessage('Gagal menghapus order: ' + error.message);
             }
         };
     }

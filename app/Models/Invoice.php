@@ -18,12 +18,16 @@ class Invoice extends Model
         'payment_verified_by_name',
         'payment_notes',
         'payment_metadata',
+        'cash_confirmed_at',
+        'cash_confirmed_by',
+        'cash_confirmed_by_name',
     ];
 
     protected $casts = [
         'total_price' => 'decimal:2',
         'payment_verified_at' => 'datetime',
         'payment_metadata' => 'array',
+        'cash_confirmed_at' => 'datetime',
     ];
 
     public function serviceOrder()

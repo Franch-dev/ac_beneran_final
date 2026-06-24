@@ -5,11 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\PhotoProof;
 use App\Models\ServiceOrder;
 use App\Models\TechnicianAssignment;
-use App\Models\WorkflowStep;
 use App\Support\ApiResponse;
+use App\Support\ServiceOrderWorkflow;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
@@ -34,6 +33,13 @@ class TechnicianController extends Controller
             abort(403, 'Anda tidak ditugaskan ke order ini.');
         }
 
+        if (! in_array($serviceOrder->status, [
+            'technician_assigned', 'in_progress', 'waiting_review', 'invoice_editing',
+            'fee_review', 'waiting_payment', 'payment_verified', 'completed', 'closed',
+        ], true)) {
+            abort(403, 'Dokumen belum tersedia.');
+        }
+
         $serviceOrder->load('masjid', 'serviceDetails', 'workflowSteps', 'invoice');
 
         return view('technician.spk_view', compact('serviceOrder', 'assignment'));
@@ -45,6 +51,13 @@ class TechnicianController extends Controller
 
         if (! $assignment || $assignment->technician_id !== auth()->id()) {
             abort(403, 'Anda tidak ditugaskan ke order ini.');
+        }
+
+        if (! in_array($serviceOrder->status, [
+            'technician_assigned', 'in_progress', 'waiting_review', 'invoice_editing',
+            'fee_review', 'waiting_payment', 'payment_verified', 'completed', 'closed',
+        ], true)) {
+            abort(403, 'Dokumen belum tersedia.');
         }
 
         $serviceOrder->load('masjid.acUnits', 'serviceDetails', 'invoice');
@@ -133,18 +146,6 @@ class TechnicianController extends Controller
                     ]);
                 }
 
-                // Update assignment
-                $assignment->update([
-                    'completion_notes' => $validated['completion_notes'] ?? null,
-                    'completed_at' => now(),
-                    'status' => 'done',
-                    'fee_reported' => $hasFees,
-                    'fee_amount' => $hasFees ? $validated['fee_amount'] : null,
-                    'fee_description' => $hasFees ? $validated['fee_description'] : null,
-                    'fee_tools_materials' => $hasFees ? ($validated['fee_tools_materials'] ?? null) : null,
-                    'fee_reported_at' => $hasFees ? now() : null,
-                ]);
-
                 $toolsMaterialsPayload = null;
                 if ($hasFees && ! empty($validated['fee_tools_materials'])) {
                     $toolsMaterialsPayload = [[
@@ -155,27 +156,13 @@ class TechnicianController extends Controller
                     ]];
                 }
 
-                $serviceOrder->update([
-                    'status' => 'waiting_review',
-                    'field_report_notes' => $validated['completion_notes'] ?? null,
-                    'field_report_additional_fee' => $hasFees ? $validated['fee_amount'] : 0,
-                    'field_report_tools_materials' => $toolsMaterialsPayload ? json_encode($toolsMaterialsPayload) : null,
-                    'field_report_submitted_at' => now(),
+                app(ServiceOrderWorkflow::class)->submitTechnicianReport($serviceOrder, [
+                    'notes' => $validated['completion_notes'] ?? null,
+                    'additional_fee' => $hasFees ? (float) $validated['fee_amount'] : 0,
+                    'tools_materials' => $toolsMaterialsPayload,
+                    'fee_description' => $hasFees ? $validated['fee_description'] : null,
+                    'fee_tools_materials' => $hasFees ? ($validated['fee_tools_materials'] ?? null) : null,
                 ]);
-
-                WorkflowStep::create([
-                    'service_order_id' => $serviceOrder->id,
-                    'step' => 'waiting_review',
-                    'actor_id' => auth()->id(),
-                    'actor_name' => auth()->user()->name,
-                    'actor_role' => auth()->user()->role,
-                    'notes' => $hasFees
-                        ? 'Teknisi menyelesaikan pekerjaan dan melaporkan biaya tambahan.'
-                        : 'Teknisi menyelesaikan pekerjaan tanpa biaya tambahan.',
-                ]);
-
-                Cache::forget('monitoring:status_counts');
-                Cache::forget('monitoring:status_totals');
 
                 return response()->json([
                     'success' => true,

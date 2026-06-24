@@ -195,8 +195,39 @@
         inputs.forEach(input => input.addEventListener('input', () => calculateSubtotal(tr)));
     }
 
-    function removeLineItem(btn) {
+    function showEditorMessage(message, type = 'success') {
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, type);
+            return;
+        }
+
+        console[type === 'error' ? 'error' : 'info'](message);
+    }
+
+    async function confirmEditorAction(options) {
+        if (typeof window.confirmAction !== 'function') {
+            return true;
+        }
+
+        const result = await window.confirmAction(options);
+        return result?.confirmed || result === true;
+    }
+
+    async function removeLineItem(btn) {
         const tr = btn.closest('.line-item');
+        const description = tr.querySelector('.item-desc')?.value || 'Item invoice';
+        const confirmed = await confirmEditorAction({
+            type: 'danger',
+            heading: 'Hapus item invoice?',
+            message: 'Item ini akan dihapus dari draft invoice.',
+            confirmText: 'Ya, Hapus',
+            details: [{ label: 'Item', value: description }],
+        });
+
+        if (!confirmed) {
+            return;
+        }
+
         tr.remove();
         calculateTotal();
     }
@@ -261,11 +292,7 @@
         calculateTotal();
     }
 
-    function saveInvoice() {
-        const saveBtn = document.getElementById('saveBtn');
-        saveBtn.disabled = true;
-        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
-
+    async function saveInvoice() {
         const items = [];
         document.querySelectorAll('.line-item').forEach(row => {
             items.push({
@@ -275,6 +302,25 @@
                 price: parseFloat(row.querySelector('.item-price').value) || 0,
             });
         });
+
+        const confirmed = await confirmEditorAction({
+            type: 'success',
+            heading: 'Simpan perubahan invoice?',
+            message: 'Invoice akan dikirim ke manager untuk approval.',
+            confirmText: 'Ya, Simpan',
+            details: [
+                { label: 'Jumlah Item', value: `${items.length} item` },
+                { label: 'Total', value: document.getElementById('totalPrice')?.textContent || '-' },
+            ],
+        });
+
+        if (!confirmed) {
+            return;
+        }
+
+        const saveBtn = document.getElementById('saveBtn');
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
 
         fetch(`/frontdesk/invoices/${invoiceId}/edit`, {
             method: 'POST',
@@ -288,13 +334,13 @@
         .then(r => r.json())
         .then(data => {
             if (data.success) {
-                alert('Invoice berhasil disimpan. Menunggu approval manager.');
+                showEditorMessage('Invoice berhasil disimpan. Menunggu approval manager.', 'success');
                 location.reload();
             } else {
-                alert(data.message || 'Gagal menyimpan invoice');
+                showEditorMessage(data.message || 'Gagal menyimpan invoice', 'error');
             }
         })
-        .catch(() => alert('Terjadi kesalahan.'))
+        .catch(() => showEditorMessage('Terjadi kesalahan.', 'error'))
         .finally(() => {
             saveBtn.disabled = false;
             saveBtn.innerHTML = '<i class="fas fa-save"></i> Simpan Perubahan';

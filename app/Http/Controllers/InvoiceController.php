@@ -6,6 +6,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceEdit;
 use App\Models\ServiceDetail;
 use App\Models\ServiceOrder;
+use App\Support\ServiceOrderWorkflow;
 use App\Support\WorkflowLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,6 +16,15 @@ class InvoiceController extends Controller
 {
     public function print(ServiceOrder $serviceOrder)
     {
+        $visibleStatuses = [
+            'spk_invoice_approved', 'technician_assigned', 'in_progress',
+            'waiting_review', 'invoice_editing', 'fee_review',
+            'waiting_payment', 'payment_verified', 'completed', 'closed',
+        ];
+        if (!in_array($serviceOrder->status, $visibleStatuses, true)) {
+            abort(403, 'Dokumen belum disetujui manager.');
+        }
+
         $serviceOrder->load('masjid.acUnits', 'serviceDetails', 'invoice');
         if (!$serviceOrder->invoice) {
             abort(404, 'Invoice tidak ditemukan');
@@ -24,6 +34,15 @@ class InvoiceController extends Controller
 
     public function spk(ServiceOrder $serviceOrder)
     {
+        $visibleStatuses = [
+            'spk_invoice_approved', 'technician_assigned', 'in_progress',
+            'waiting_review', 'invoice_editing', 'fee_review',
+            'waiting_payment', 'payment_verified', 'completed', 'closed',
+        ];
+        if (!in_array($serviceOrder->status, $visibleStatuses, true)) {
+            abort(403, 'Dokumen belum disetujui manager.');
+        }
+
         $serviceOrder->load('masjid', 'serviceDetails');
         return view('spk', compact('serviceOrder'));
     }
@@ -35,9 +54,8 @@ class InvoiceController extends Controller
     {
         $serviceOrder = $invoice->serviceOrder;
 
-        // Security: cannot edit after payment
-        if (in_array($serviceOrder->status, ['payment_verified', 'completed'])) {
-            abort(403, 'Invoice tidak dapat diubah setelah pembayaran.');
+        if ($serviceOrder->status !== 'invoice_editing') {
+            abort(403, 'Invoice hanya dapat diubah saat status invoice_editing.');
         }
 
         $serviceOrder->load('masjid', 'serviceDetails', 'technicianAssignment');
@@ -54,9 +72,8 @@ class InvoiceController extends Controller
     {
         $serviceOrder = $invoice->serviceOrder;
 
-        // Security: cannot edit after payment
-        if (in_array($serviceOrder->status, ['payment_verified', 'completed'])) {
-            return response()->json(['success' => false, 'message' => 'Invoice tidak dapat diubah setelah pembayaran.'], 403);
+        if ($serviceOrder->status !== 'invoice_editing') {
+            return response()->json(['success' => false, 'message' => 'Invoice hanya dapat diubah saat status invoice_editing.'], 403);
         }
 
         $request->validate([
@@ -163,10 +180,11 @@ class InvoiceController extends Controller
 
             // Log workflow step
             WorkflowLogger::logInvoiceEdited($serviceOrder, count($changes) . ' perubahan', []);
+            app(ServiceOrderWorkflow::class)->submitEditedInvoiceForReview($serviceOrder);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Invoice berhasil disimpan.',
+                'message' => 'Invoice berhasil disimpan dan diajukan untuk review manager.',
                 'total' => $total,
             ]);
         });

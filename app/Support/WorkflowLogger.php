@@ -83,7 +83,7 @@ class WorkflowLogger
      */
     public static function logFeeApproved(ServiceOrder $order): WorkflowStep
     {
-        return self::log($order, 'edited_invoice_approved', 'Biaya tambahan disetujui manager');
+        return self::log($order, 'fee_review', 'Biaya tambahan disetujui manager');
     }
 
     /**
@@ -91,7 +91,12 @@ class WorkflowLogger
      */
     public static function logFeeRejected(ServiceOrder $order, string $reason): WorkflowStep
     {
-        return self::log($order, 'edited_invoice_created', "Biaya tambahan ditolak manager: {$reason}");
+        return self::log($order, 'invoice_editing', "Biaya tambahan ditolak manager: {$reason}");
+    }
+
+    public static function logSpkInvoiceRejected(ServiceOrder $order, string $reason): WorkflowStep
+    {
+        return self::log($order, 'approved', "SPK & Invoice ditolak manager: {$reason}");
     }
 
     /**

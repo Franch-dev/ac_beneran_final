@@ -30,6 +30,9 @@
             && strtolower(trim((string) ($order->status ?? ''))) === 'spk_invoice_created'
             && (bool) $order->invoice;
     };
+    $canOpenInternalPayment = static function ($order) use ($currentUser): bool {
+        return $order->canAccessInternalPayment($currentUser);
+    };
 @endphp
 <div id="monitoringSyncRoot">
 <div class="page-container page-operations page-operations--monitoring">
@@ -331,8 +334,8 @@
                             $hasInvoice = (bool) $order->invoice;
 
                             // Workflow Strict Rules — state machine gates
-                            $canAssignTech = $isManagerOrAdmin && (
-                                $isPaymentVerified
+                            $canAssignTech = ($isFrontdeskOrAdmin || $isManagerOrAdmin) && (
+                                $isSpkApproved
                                 || (
                                     $orderStatus === 'technician_assigned'
                                     && $order->technicianAssignment
@@ -394,6 +397,12 @@
                             </button>
                             @endif
 
+                            @if($canOpenInternalPayment($order))
+                            <button class="btn btn-sm btn-outline" type="button" data-payment-order-id="{{ $order->id }}" onclick="openInternalPaymentPage({{ $order->id }})">
+                                <i class="fas fa-qrcode"></i> Bayar
+                            </button>
+                            @endif
+
                             {{-- Assign technician after SPK & Invoice approval --}}
                             @if($canAssignTech)
                             <button class="btn btn-sm btn-outline btn-accent" type="button"
@@ -448,6 +457,24 @@
                             @if($canApproveAdditionalFee)
                             <button class="btn btn-sm btn-warning" type="button" onclick="approveAdditionalFee({{ $order->id }}, @json($order->order_number), @json($masjidName), @json($order->field_report_additional_fee))">
                                 <i class="fas fa-coins"></i> Approve Biaya Extra
+                            </button>
+                            <button class="btn btn-sm btn-outline" type="button" onclick="routeAdditionalFeeToInvoiceEdit({{ $order->id }})">
+                                <i class="fas fa-edit"></i> Edit Invoice
+                            </button>
+                            @endif
+
+                            @if($orderStatus === 'invoice_editing' && $isFrontdeskOrAdmin && $order->invoice)
+                            <a href="{{ route('frontdesk.invoices.edit', $order->invoice) }}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit"></i> Edit Invoice
+                            </a>
+                            @endif
+
+                            @if($orderStatus === 'fee_review' && $isManagerOrAdmin)
+                            <button class="btn btn-sm btn-success" type="button" onclick="approveEditedInvoice({{ $order->id }})">
+                                <i class="fas fa-check"></i> Approve Invoice Edit
+                            </button>
+                            <button class="btn btn-sm btn-danger" type="button" onclick="rejectEditedInvoice({{ $order->id }})">
+                                <i class="fas fa-times"></i> Tolak Invoice Edit
                             </button>
                             @endif
 
@@ -561,7 +588,7 @@
                 </button>
                 @endif
 
-                @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'payment_verified')
+                @if((auth()->user()->isFrontdesk() || auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'spk_invoice_approved')
                 <button class="btn btn-sm btn-outline btn-accent" type="button"
                     onclick='openAssignTech(@json($order->id), @json($order->order_number), @json($masjidName), @json($order->status))'>
                     <i class="fas fa-user-hard-hat"></i> Tugaskan
@@ -582,6 +609,12 @@
                 @if((auth()->user()->isManager() || auth()->user()->isAdmin()) && $order->status === 'waiting_payment')
                 <button class="btn btn-sm btn-success" type="button" onclick="confirmPayment({{ $order->id }}, @json($order->order_number), @json($masjidName), @json($order->service_date->format('d M Y')))">
                     <i class="fas fa-check-circle"></i> Konfirmasi Pembayaran
+                </button>
+                @endif
+
+                @if($canOpenInternalPayment($order))
+                <button class="btn btn-sm btn-outline" type="button" data-payment-order-id="{{ $order->id }}" onclick="openInternalPaymentPage({{ $order->id }})">
+                    <i class="fas fa-qrcode"></i> Bayar
                 </button>
                 @endif
 
@@ -627,6 +660,24 @@
                 @if($mobileIsWaitingReview && $mobileHasPendingFee)
                 <button class="btn btn-sm btn-warning" type="button" onclick="approveAdditionalFee({{ $order->id }}, @json($order->order_number), @json($masjidName), @json($order->field_report_additional_fee))">
                     <i class="fas fa-coins"></i> Approve Biaya Extra
+                </button>
+                <button class="btn btn-sm btn-outline" type="button" onclick="routeAdditionalFeeToInvoiceEdit({{ $order->id }})">
+                    <i class="fas fa-edit"></i> Edit Invoice
+                </button>
+                @endif
+
+                @if($order->status === 'invoice_editing' && (auth()->user()->isFrontdesk() || auth()->user()->isAdmin()) && $order->invoice)
+                <a href="{{ route('frontdesk.invoices.edit', $order->invoice) }}" class="btn btn-sm btn-warning">
+                    <i class="fas fa-edit"></i> Edit Invoice
+                </a>
+                @endif
+
+                @if($order->status === 'fee_review' && $mobileIsManagerOrAdmin)
+                <button class="btn btn-sm btn-success" type="button" onclick="approveEditedInvoice({{ $order->id }})">
+                    <i class="fas fa-check"></i> Approve Invoice Edit
+                </button>
+                <button class="btn btn-sm btn-danger" type="button" onclick="rejectEditedInvoice({{ $order->id }})">
+                    <i class="fas fa-times"></i> Tolak Invoice Edit
                 </button>
                 @endif
 
@@ -915,7 +966,7 @@
             <h3><i class="fas fa-exclamation-triangle" style="color:var(--warning)"></i> Order Aktif Sudah Ada!</h3>
             <p class="popup-kicker">Masjid ini memiliki service order yang belum selesai</p>
         </div>
-        <button class="popup-close" onclick="closePopup('replaceConfirmPopup')">&times;</button>
+        <button class="popup-close" onclick="cancelReplaceOrder()">&times;</button>
     </div>
     <div class="popup-body">
 
@@ -923,7 +974,7 @@
         <div class="alert alert-warning">
             <i class="fas fa-exclamation-triangle"></i>
             <div>
-                <strong>Perhatian!</strong> Tindakan ini akan menghapus order lama secara permanen.
+                <strong>Perhatian!</strong> Pilih apakah order baru ini dibatalkan atau menggantikan order aktif yang sudah ada.
             </div>
         </div>
 
@@ -955,23 +1006,23 @@
                 <i class="fas fa-info-circle"></i> Yang akan terjadi:
             </div>
             <ul>
-                <li>Order lama <strong>akan dihapus</strong> dari sistem</li>
-                <li>Order baru <strong>akan dibuat</strong> dengan data yang baru saja kamu input</li>
-                <li>Riwayat order lama <strong>tetap tersimpan</strong> di arsip</li>
+                <li><strong>Batalkan order baru</strong>: order lama tetap aktif dan tidak ada order baru dibuat</li>
+                <li><strong>Ganti order lama</strong>: order aktif lama diganti dengan data order baru yang baru saja diinput</li>
             </ul>
         </div>
 
         {{-- Tombol --}}
         <div class="popup-actions" style="flex-direction:column;gap:0.6rem">
             <button class="btn btn-danger"
+                    id="replaceConfirmButton"
                     style="width:100%;justify-content:center;padding:0.85rem;font-size:0.95rem;font-weight:700"
                     onclick="confirmReplaceOrder()">
-                <i class="fas fa-sync-alt"></i> &nbsp;Ya, Hapus Order Lama &amp; Buat Baru
+                <i class="fas fa-sync-alt"></i> &nbsp;Ganti Order Lama dengan Order Baru
             </button>
             <button class="btn btn-secondary"
                     style="width:100%;justify-content:center;padding:0.75rem;font-size:0.875rem"
                     onclick="cancelReplaceOrder()">
-                <i class="fas fa-arrow-left"></i> &nbsp;Tidak, Kembali &amp; Biarkan Order Lama
+                <i class="fas fa-ban"></i> &nbsp;Batalkan Order Baru
             </button>
         </div>
 
@@ -1237,11 +1288,117 @@ window.ROUTES_MON = {
     workflowCreateSpkInvoice: (id) => `/service-order/${id}/create-spk-invoice`,
     workflowConfirmPayment: (id) => `/service-order/${id}/confirm-payment`,
     workflowFinalizeOrder: (id) => `/service-order/${id}/finalize-order`,
+    workflowRouteFeeToInvoiceEdit: (id) => `/service-order/${id}/route-additional-fee-to-invoice-edit`,
+    workflowApproveEditedInvoice: (id) => `/service-order/${id}/approve-edited-invoice`,
+    workflowRejectEditedInvoice: (id) => `/service-order/${id}/reject-edited-invoice`,
     workflowApproveSpkInvoice: (id) => `/workflow/${id}/approve-spk-invoice`,
     workflowBase: "{{ url('/workflow') }}",
     workflowTechnicians: "{{ route('workflow.technicians') }}",
 };
 const ROUTES_MON = window.ROUTES_MON;
+async function workflowPost(url, body = null) {
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+        },
+        credentials: 'same-origin',
+        body: body ? JSON.stringify(body) : null,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.success === false) {
+        throw new Error(data.message || 'Aksi workflow gagal.');
+    }
+    return data;
+}
+async function workflowConfirm(options) {
+    if (typeof window.confirmAction !== 'function') {
+        return { confirmed: true, values: {} };
+    }
+
+    const result = await window.confirmAction(options);
+    return result?.confirmed || result === true
+        ? { confirmed: true, values: result.values || {} }
+        : { confirmed: false, values: {} };
+}
+function workflowMessage(message, type = 'error') {
+    if (typeof window.showToast === 'function') {
+        window.showToast(message, type);
+        return;
+    }
+
+    console[type === 'error' ? 'error' : 'info'](message);
+}
+window.approveAdditionalFee = window.approveAdditionalFee || async function (id) {
+    const confirmation = await workflowConfirm({
+        type: 'success',
+        heading: 'Setujui biaya tambahan?',
+        message: 'Biaya tambahan akan disetujui dan order lanjut ke pembayaran.',
+        confirmText: 'Ya, Setujui',
+    });
+    if (!confirmation.confirmed) return;
+    try {
+        await workflowPost(`/service-order/${id}/approve-additional-fee`);
+        location.reload();
+    } catch (error) {
+        workflowMessage(error.message);
+    }
+};
+window.routeAdditionalFeeToInvoiceEdit = window.routeAdditionalFeeToInvoiceEdit || async function (id) {
+    const confirmation = await workflowConfirm({
+        type: 'warning',
+        heading: 'Kirim invoice ke frontdesk?',
+        message: 'Invoice akan diedit oleh frontdesk sebelum approval manager.',
+        confirmText: 'Ya, Kirim',
+    });
+    if (!confirmation.confirmed) return;
+    try {
+        await workflowPost(ROUTES_MON.workflowRouteFeeToInvoiceEdit(id));
+        location.reload();
+    } catch (error) {
+        workflowMessage(error.message);
+    }
+};
+window.approveEditedInvoice = window.approveEditedInvoice || async function (id) {
+    const confirmation = await workflowConfirm({
+        type: 'success',
+        heading: 'Setujui invoice edit?',
+        message: 'Invoice hasil edit akan disetujui dan dipakai untuk pembayaran.',
+        confirmText: 'Ya, Setujui',
+    });
+    if (!confirmation.confirmed) return;
+    try {
+        await workflowPost(ROUTES_MON.workflowApproveEditedInvoice(id));
+        location.reload();
+    } catch (error) {
+        workflowMessage(error.message);
+    }
+};
+window.rejectEditedInvoice = window.rejectEditedInvoice || async function (id) {
+    const confirmation = await workflowConfirm({
+        type: 'danger',
+        heading: 'Tolak invoice edit?',
+        message: 'Masukkan alasan penolakan untuk frontdesk.',
+        confirmText: 'Ya, Tolak',
+        fields: [{
+            name: 'reason',
+            label: 'Alasan penolakan',
+            type: 'textarea',
+            required: true,
+            rows: 3,
+        }],
+    });
+    if (!confirmation.confirmed) return;
+    const reason = confirmation.values.reason || '';
+    try {
+        await workflowPost(ROUTES_MON.workflowRejectEditedInvoice(id), { reason: reason.trim() });
+        location.reload();
+    } catch (error) {
+        workflowMessage(error.message);
+    }
+};
 window.generateInvoice = window.generateInvoice || function () {
     if (typeof window.showToast === 'function') {
         window.showToast('Fitur invoice masih dimuat. Coba lagi.', 'warning');
@@ -1255,6 +1412,26 @@ const isFrontdesk2 = {{ auth()->user()->isFrontdesk() ? 'true' : 'false' }};
 window.HARGA_CONFIG = {
     MASJID: { '1PK': 150000, '2PK': 200000, '5PK': 350000 },
     MUSHOLLA: { '1PK': 120000, '2PK': 170000, '5PK': 300000 },
+};
+window.openInternalPaymentPage = async function (orderId) {
+    const response = await fetch(`/payments/internal/${orderId}/access-link`, {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+        },
+        credentials: 'same-origin',
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok || !payload.url) {
+        const message = payload.message || 'Akses pembayaran internal ditolak.';
+        workflowMessage(message);
+        return;
+    }
+
+    window.location.href = payload.url;
 };
 </script>
 @vite(['resources/js/monitoring.js'])

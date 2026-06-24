@@ -150,7 +150,11 @@
     @endif
 
     <!-- Form -->
-    <form id="guestOrderForm" action="{{ route('guest.order.store') }}" method="POST" class="guest-form-card">
+    <form id="guestOrderForm" action="{{ route('guest.order.store') }}" method="POST" class="guest-form-card"
+        data-confirm="Permintaan service akan dikirim untuk ditinjau tim kami."
+        data-confirm-heading="Kirim permintaan service?"
+        data-confirm-type="success"
+        data-confirm-text="Ya, Kirim">
         @csrf
 
         <!-- Honeypot -->
@@ -306,6 +310,16 @@
 
     let searchTimeout;
 
+    function revealElement(element, display = 'block') {
+        element.classList.remove('hidden');
+        element.style.display = display;
+    }
+
+    function concealElement(element) {
+        element.classList.add('hidden');
+        element.style.display = 'none';
+    }
+
     masjidSearch.addEventListener('input', function() {
         clearTimeout(searchTimeout);
         const query = this.value.trim();
@@ -348,11 +362,11 @@
         masjidSearch.value = name;
         masjidSearch.classList.add('hidden');
         showManualBtn.classList.add('hidden');
-        manualEntry.classList.add('hidden');
+        concealElement(manualEntry);
 
         document.getElementById('selectedMasjidName').textContent = name;
         document.getElementById('selectedMasjidAddress').textContent = address || 'Alamat tidak tersedia';
-        selectedMasjid.classList.remove('hidden');
+        revealElement(selectedMasjid);
 
         masjidAutocomplete.classList.remove('active');
     }
@@ -363,12 +377,12 @@
         masjidSearch.value = '';
         masjidSearch.classList.remove('hidden');
         showManualBtn.classList.remove('hidden');
-        selectedMasjid.classList.add('hidden');
-        manualEntry.classList.add('hidden');
+        concealElement(selectedMasjid);
+        concealElement(manualEntry);
     }
 
     function showManualMasjidEntry() {
-        manualEntry.classList.remove('hidden');
+        revealElement(manualEntry);
         showManualBtn.classList.add('hidden');
         masjidAutocomplete.classList.remove('active');
     }

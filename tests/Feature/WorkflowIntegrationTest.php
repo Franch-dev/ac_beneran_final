@@ -7,6 +7,8 @@ use App\Models\ServiceDetail;
 use App\Models\ServiceOrder;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class WorkflowIntegrationTest extends TestCase
@@ -42,6 +44,8 @@ class WorkflowIntegrationTest extends TestCase
     /** @test */
     public function it_can_complete_a_standard_workflow_happy_path()
     {
+        Storage::fake('local');
+
         // 1. Create Service Order (Frontdesk)
         $this->actingAs($this->frontdesk);
         $response = $this->postJson(route('service-order.store'), [
@@ -78,16 +82,9 @@ class WorkflowIntegrationTest extends TestCase
         $response = $this->postJson('/workflow/'.$order->id.'/approve-spk-invoice');
         $response->assertStatus(200);
         $order->refresh();
-        $this->assertEquals('waiting_payment', $order->status);
+        $this->assertEquals('spk_invoice_approved', $order->status);
 
-        // 5. Confirm Payment (Manager)
-        $this->actingAs($this->manager);
-        $response = $this->postJson(route('service-order.confirm-payment', $order));
-        $response->assertStatus(200);
-        $order->refresh();
-        $this->assertEquals('payment_verified', $order->status);
-
-        // 6. Assign Technician (Manager)
+        // 5. Assign Technician (Manager)
         $this->actingAs($this->manager);
         $response = $this->postJson(route('workflow.assign', $order), [
             'technician_id' => $this->technician->id
@@ -96,7 +93,7 @@ class WorkflowIntegrationTest extends TestCase
         $order->refresh();
         $this->assertEquals('technician_assigned', $order->status);
 
-        // 7. Technician starts work
+        // 6. Technician starts work
         $this->actingAs($this->technician);
         $response = $this->postJson(route('workflow.progress', $order), [
             'status' => 'in_progress',
@@ -105,21 +102,41 @@ class WorkflowIntegrationTest extends TestCase
         $order->refresh();
         $this->assertEquals('in_progress', $order->status);
 
-        // 8. Submit Field Report (Technician)
-        $response = $this->postJson(route('service-order.field-report', $order), [
-            'field_report_notes' => 'Service completed successfully.',
-            'field_report_additional_fee' => 0
+        // 7. Technician completes with photo proof
+        $response = $this->postJson(route('technician.orders.complete', $order), [
+            'photos' => [UploadedFile::fake()->image('proof.jpg')],
+            'completion_notes' => 'Service completed successfully.',
+            'has_fees' => false,
         ]);
         $response->assertStatus(200);
         $order->refresh();
         $this->assertEquals('waiting_review', $order->status);
 
-        // 9. Finalize work (Manager)
+        // 8. Finalize work (Manager)
         $this->actingAs($this->manager);
         $response = $this->postJson(route('service-order.finalize-order', $order));
         $response->assertStatus(200);
         $order->refresh();
+        $this->assertEquals('waiting_payment', $order->status);
+
+        // 9. Confirm payment
+        $this->actingAs($this->manager);
+        $response = $this->postJson(route('service-order.confirm-payment', $order));
+        $response->assertStatus(200);
+        $order->refresh();
+        $this->assertEquals('payment_verified', $order->status);
+
+        // 10. Complete and close with dual confirmation
+        $response = $this->postJson(route('service-order.finalize-order', $order));
+        $response->assertStatus(200);
+        $order->refresh();
         $this->assertEquals('completed', $order->status);
+
+        $this->actingAs($this->frontdesk)->postJson(route('service-order.frontdesk-confirm-complete', $order))->assertOk();
+        $this->actingAs($this->manager)->postJson(route('service-order.manager-confirm-complete', $order))->assertOk();
+        $order->refresh();
+        $this->assertEquals('closed', $order->status);
+        $this->assertNotNull($order->archived_at);
     }
 
     /** @test */
@@ -138,7 +155,7 @@ class WorkflowIntegrationTest extends TestCase
         ]);
 
         $response->assertStatus(422);
-        $response->assertJsonFragment(['message' => 'Order hanya bisa ditugaskan setelah pembayaran diverifikasi.']);
+        $response->assertJsonFragment(['message' => 'Order hanya bisa ditugaskan setelah SPK & Invoice disetujui.']);
     }
 
     /** @test */
@@ -188,7 +205,7 @@ class WorkflowIntegrationTest extends TestCase
         $response = $this->postJson(route('service-order.confirm-payment', $order));
 
         $response->assertStatus(422);
-        $response->assertJsonFragment(['message' => 'Order tidak menunggu pembayaran.']);
+        $response->assertJsonFragment(['message' => 'Order tidak dalam status menunggu pembayaran.']);
     }
 
     /** @test */
@@ -205,12 +222,14 @@ class WorkflowIntegrationTest extends TestCase
         $response = $this->postJson(route('service-order.finalize-order', $order));
 
         $response->assertStatus(422);
-        $response->assertJsonFragment(['message' => 'Order belum siap untuk diproses ke tahap berikutnya.']);
+        $response->assertJsonFragment(['message' => 'Order harus berstatus pembayaran terverifikasi.']);
     }
 
     /** @test */
     public function it_requires_additional_fee_approval_before_payment()
     {
+        Storage::fake('local');
+
         // Setup order in progress
         $order = ServiceOrder::factory()->create([
             'masjid_id' => $this->masjid->id,
@@ -228,11 +247,13 @@ class WorkflowIntegrationTest extends TestCase
             'status' => 'assigned'
         ]);
 
-        // Technician submits report with additional fee
         $this->actingAs($this->technician);
-        $this->postJson(route('service-order.field-report', $order), [
-            'field_report_notes' => 'Found broken parts.',
-            'field_report_additional_fee' => 50000
+        $this->postJson(route('technician.orders.complete', $order), [
+            'photos' => [UploadedFile::fake()->image('proof.jpg')],
+            'completion_notes' => 'Found broken parts.',
+            'has_fees' => true,
+            'fee_description' => 'Broken part',
+            'fee_amount' => 50000,
         ]);
 
         $order->refresh();
@@ -261,6 +282,6 @@ class WorkflowIntegrationTest extends TestCase
         $response = $this->postJson(route('service-order.finalize-order', $order));
 
         $response->assertStatus(422);
-        $response->assertJsonFragment(['message' => 'Biaya tambahan harus disetujui manager sebelum finalisasi pembayaran.']);
+        $response->assertJsonFragment(['message' => 'Biaya tambahan harus disetujui atau diedit sebelum finalisasi pembayaran.']);
     }
 }
